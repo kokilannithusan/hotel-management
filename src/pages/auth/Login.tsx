@@ -6,7 +6,6 @@ import {
   Hotel,
   Lock,
   Mail,
-  Shield,
   Check,
   Eye,
   EyeOff,

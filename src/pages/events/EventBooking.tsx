@@ -1230,10 +1230,6 @@ export const EventBookingWorkflow: React.FC = () => {
                               email: newCustomerData.email,
                               phone: newCustomerData.phone || "",
                               nationality: "",
-                              identificationType:
-                                newCustomerData.identificationType,
-                              identificationNumber:
-                                newCustomerData.identificationNumber,
                               createdAt: new Date().toISOString(),
                             };
 

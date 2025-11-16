@@ -7,19 +7,25 @@ import { Modal } from '../../components/ui/Modal';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { generateId } from '../../utils/formatters';
-import { Channel } from '../../types/entities';
+import { Channel, ChannelStatus } from '../../types/entities';
 import { Edit, Trash2, Plus, X, Check } from 'lucide-react';
 
 export const ReservationType: React.FC = () => {
   const { state, dispatch } = useHotel();
   const [showModal, setShowModal] = useState(false);
   const [editingChannel, setEditingChannel] = useState<Channel | null>(null);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    name: string;
+    type: string;
+    apiKey: string;
+    contactPerson: string;
+    status: ChannelStatus;
+  }>({
     name: '',
     type: 'Direct',
     apiKey: '',
     contactPerson: '',
-    status: 'active' as const,
+    status: 'active',
   });
 
   const handleEdit = (channel: Channel) => {
@@ -209,7 +215,7 @@ export const ReservationType: React.FC = () => {
           <Select
             label="Status"
             value={formData.status}
-            onChange={(e) => setFormData({ ...formData, status: e.target.value as 'active' | 'inactive' })}
+            onChange={(e) => setFormData({ ...formData, status: e.target.value as ChannelStatus })}
             options={[
               { value: 'active', label: 'Active' },
               { value: 'inactive', label: 'Inactive' },

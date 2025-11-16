@@ -411,7 +411,6 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
   >("dashboard");
   const [selectedRoomIds, setSelectedRoomIds] = useState<string[]>([]);
   const [showFinishConfirm, setShowFinishConfirm] = useState(false);
-  const [totalCleaningTimer, setTotalCleaningTimer] = useState<number>(0); // Total cleaning duration in seconds
   const [cleaningSessionStartTime, setCleaningSessionStartTime] = useState<
     number | null
   >(null); // When cleaning session started
@@ -584,8 +583,6 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
         if (startTime && Date.now() - startTime < 86400000) {
           // Only restore if less than 24 hours old
           setCleaningSessionStartTime(startTime);
-          const elapsed = Math.floor((Date.now() - startTime) / 1000);
-          setTotalCleaningTimer(elapsed);
         }
       } catch (e) {
         console.error("Failed to parse saved session start", e);
@@ -778,10 +775,7 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
   useEffect(() => {
     if (cleaningSessionStartTime && housekeeperStage === "activities") {
       const interval = setInterval(() => {
-        const elapsed = Math.floor(
-          (Date.now() - cleaningSessionStartTime) / 1000
-        );
-        setTotalCleaningTimer(elapsed);
+        // Timer is running based on cleaningSessionStartTime
       }, 1000);
 
       return () => clearInterval(interval);
@@ -841,7 +835,6 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
       selectedRoomIds.length === 0
     ) {
       setCleaningSessionStartTime(null);
-      setTotalCleaningTimer(0);
       setHousekeeperStage("dashboard");
     }
   }, [mode, housekeeperStage, selectedRoomIds.length]);
@@ -886,7 +879,7 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
     // Reset manager states
     setShowProfileModal(false);
     setEditingProfile(null);
-    setProfileForm({ name: "", phone: "", email: "", active: true });
+    setProfileForm({ name: "", phone: "", email: "", nic: "", address: "", active: true });
     setSelectedRoomId("");
     setSelectedHousekeeperId("");
     setShowConfirmModal(false);
@@ -1258,7 +1251,6 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
       // Start total cleaning timer if not already started
       if (!cleaningSessionStartTime) {
         setCleaningSessionStartTime(now);
-        setTotalCleaningTimer(0);
       }
 
       // Add selected rooms to history for current housekeeper (housekeeper self-selected)
@@ -1596,7 +1588,6 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
         // Stop timer if this was the last room
         if (updated.length === 0) {
           setCleaningSessionStartTime(null);
-          setTotalCleaningTimer(0);
         }
         return updated;
       });
@@ -1626,7 +1617,6 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
 
     // Stop the timer and reset
     setCleaningSessionStartTime(null);
-    setTotalCleaningTimer(0);
     setSelectedRoomIds([]);
     setShowFinishConfirm(false);
     setHousekeeperStage("dashboard");

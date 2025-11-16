@@ -100,6 +100,7 @@ export interface Season {
   startDate: string;
   endDate: string;
   isActive: boolean;
+  priceModifierPercent?: number;
 }
 
 export interface Bill {
