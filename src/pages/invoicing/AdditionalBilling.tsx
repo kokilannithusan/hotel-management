@@ -1,21 +1,27 @@
-import React, { useState } from 'react';
-import { useHotel } from '../../context/HotelContext';
-import { Card } from '../../components/ui/Card';
-import { Select } from '../../components/ui/Select';
-import { Input } from '../../components/ui/Input';
-import { Button } from '../../components/ui/Button';
-import { formatCurrency, generateId } from '../../utils/formatters';
-import { Bill } from '../../types/entities';
+import React, { useState } from "react";
+import { useHotel } from "../../context/HotelContext";
+import { Card } from "../../components/ui/Card";
+import { Select } from "../../components/ui/Select";
+import { Input } from "../../components/ui/Input";
+import { Button } from "../../components/ui/Button";
+import { formatCurrency, generateId } from "../../utils/formatters";
 
 export const AdditionalBilling: React.FC = () => {
   const { state, dispatch } = useHotel();
-  const [selectedReservation, setSelectedReservation] = useState('');
-  const [lineItems, setLineItems] = useState([{ description: '', quantity: 1, unitPrice: 0 }]);
+  const [selectedReservation, setSelectedReservation] = useState("");
+  const [lineItems, setLineItems] = useState([
+    { description: "", quantity: 1, unitPrice: 0 },
+  ]);
 
-  const selectedBill = state.bills.find((b) => b.reservationId === selectedReservation);
+  const selectedBill = state.bills.find(
+    (b) => b.reservationId === selectedReservation
+  );
 
   const handleAddLineItem = () => {
-    setLineItems([...lineItems, { description: '', quantity: 1, unitPrice: 0 }]);
+    setLineItems([
+      ...lineItems,
+      { description: "", quantity: 1, unitPrice: 0 },
+    ]);
   };
 
   const handleRemoveLineItem = (index: number) => {
@@ -35,19 +41,22 @@ export const AdditionalBilling: React.FC = () => {
         total: item.quantity * item.unitPrice,
       }));
 
-    const additionalAmount = newLineItems.reduce((sum, item) => sum + item.total, 0);
+    const additionalAmount = newLineItems.reduce(
+      (sum, item) => sum + item.total,
+      0
+    );
     const newAmount = selectedBill.amount + additionalAmount;
 
     const activeTaxes = state.taxes.filter((t) => t.isActive);
     const taxAmount = activeTaxes.reduce((sum, tax) => {
-      if (tax.type === 'percentage') {
+      if (tax.type === "percentage") {
         return sum + (newAmount * tax.rate) / 100;
       }
       return sum + tax.rate;
     }, 0);
 
     dispatch({
-      type: 'UPDATE_BILL',
+      type: "UPDATE_BILL",
       payload: {
         ...selectedBill,
         amount: newAmount,
@@ -57,8 +66,8 @@ export const AdditionalBilling: React.FC = () => {
       },
     });
 
-    alert('Additional charges added successfully!');
-    setLineItems([{ description: '', quantity: 1, unitPrice: 0 }]);
+    alert("Additional charges added successfully!");
+    setLineItems([{ description: "", quantity: 1, unitPrice: 0 }]);
   };
 
   return (
@@ -67,7 +76,9 @@ export const AdditionalBilling: React.FC = () => {
         <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
           Additional Billing
         </h1>
-        <p className="text-slate-600 mt-1 font-medium">Add extra charges and services to existing bills</p>
+        <p className="text-slate-600 mt-1 font-medium">
+          Add extra charges and services to existing bills
+        </p>
       </div>
       <Card>
         <div className="space-y-4">
@@ -76,16 +87,25 @@ export const AdditionalBilling: React.FC = () => {
             value={selectedReservation}
             onChange={(e) => setSelectedReservation(e.target.value)}
             options={state.reservations.map((r) => {
-              const customer = state.customers.find((c) => c.id === r.customerId);
-              return { value: r.id, label: `${customer?.name || 'Unknown'} - ${r.id.slice(0, 8)}` };
+              const customer = state.customers.find(
+                (c) => c.id === r.customerId
+              );
+              return {
+                value: r.id,
+                label: `${customer?.name || "Unknown"} - ${r.id.slice(0, 8)}`,
+              };
             })}
           />
 
           {selectedBill && (
             <>
               <div className="mt-4">
-                <h3 className="text-lg font-semibold mb-2">Current Bill: {selectedBill.billNumber}</h3>
-                <p className="text-sm text-slate-600">Total Amount: {formatCurrency(selectedBill.totalAmount)}</p>
+                <h3 className="text-lg font-semibold mb-2">
+                  Current Bill: {selectedBill.billNumber}
+                </h3>
+                <p className="text-sm text-slate-600">
+                  Total Amount: {formatCurrency(selectedBill.totalAmount)}
+                </p>
               </div>
 
               <div className="mt-4">
@@ -107,7 +127,8 @@ export const AdditionalBilling: React.FC = () => {
                       value={item.quantity}
                       onChange={(e) => {
                         const newItems = [...lineItems];
-                        newItems[index].quantity = parseInt(e.target.value) || 1;
+                        newItems[index].quantity =
+                          parseInt(e.target.value) || 1;
                         setLineItems(newItems);
                       }}
                       min={1}
@@ -118,7 +139,8 @@ export const AdditionalBilling: React.FC = () => {
                       value={item.unitPrice}
                       onChange={(e) => {
                         const newItems = [...lineItems];
-                        newItems[index].unitPrice = parseFloat(e.target.value) || 0;
+                        newItems[index].unitPrice =
+                          parseFloat(e.target.value) || 0;
                         setLineItems(newItems);
                       }}
                       min={0}
@@ -148,7 +170,13 @@ export const AdditionalBilling: React.FC = () => {
 
               <div className="mt-4">
                 <p className="text-lg font-semibold">
-                  Additional Total: {formatCurrency(lineItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0))}
+                  Additional Total:{" "}
+                  {formatCurrency(
+                    lineItems.reduce(
+                      (sum, item) => sum + item.quantity * item.unitPrice,
+                      0
+                    )
+                  )}
                 </p>
               </div>
 
@@ -162,4 +190,3 @@ export const AdditionalBilling: React.FC = () => {
     </div>
   );
 };
-

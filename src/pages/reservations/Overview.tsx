@@ -4,7 +4,6 @@ import { Card } from "../../components/ui/Card";
 import { PieChart } from "../../components/charts/PieChart";
 import { Button } from "../../components/ui/Button";
 import { useNavigate } from "react-router-dom";
-import { formatDate } from "../../utils/formatters";
 import { DatePicker } from "../../components/forms/DatePicker";
 
 export const ReservationsOverview: React.FC = () => {

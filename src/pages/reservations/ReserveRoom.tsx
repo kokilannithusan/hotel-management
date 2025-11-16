@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+﻿import React, { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useHotel } from "../../context/HotelContext";
 import { Card } from "../../components/ui/Card";
@@ -133,7 +133,7 @@ export const ReserveRoom: React.FC = () => {
     if (isExtendMode) {
       // In extend mode, check if room is available
       const unavailable = isRoomUnavailable();
-      
+
       if (unavailable) {
         // Room is not available - checkout the guest
         handleCheckIn(); // This is actually checkout in extend mode
@@ -240,7 +240,7 @@ export const ReserveRoom: React.FC = () => {
       checkOut: formData.checkOut,
       adults: formData.adults,
       children: formData.children,
-      status: status as const,
+      status: status,
       totalAmount,
       channelId: formData.bookingChannel || "direct",
       createdAt: new Date().toISOString(),
@@ -471,7 +471,9 @@ export const ReserveRoom: React.FC = () => {
                           Room Not Available
                         </h3>
                         <p className="text-red-700 text-xs mt-1">
-                          The selected checkout date conflicts with another reservation. The room is not available for this period.
+                          The selected checkout date conflicts with another
+                          reservation. The room is not available for this
+                          period.
                         </p>
                         <p className="text-red-600 text-xs font-semibold mt-2">
                           You can proceed to checkout the guest now.

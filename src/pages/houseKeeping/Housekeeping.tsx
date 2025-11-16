@@ -108,21 +108,91 @@ interface CleaningHistoryRecord {
 
 const activityDefinitions: Omit<Activity, "completed">[] = [
   // Washroom Activities
-  { id: "clean-mirror", label: "Clean Mirror", icon: Square, category: "washroom" },
-  { id: "scrub-toilet", label: "Scrub Toilet", icon: Bath, category: "washroom" },
-  { id: "clean-sink", label: "Clean Sink", icon: Droplets, category: "washroom" },
-  { id: "clean-shower", label: "Clean Shower/Bathtub", icon: Bath, category: "washroom" },
-  { id: "replace-towels", label: "Replace Towels", icon: Droplets, category: "washroom" },
-  { id: "sanitize", label: "Sanitize Surfaces", icon: ShieldCheck, category: "washroom" },
+  {
+    id: "clean-mirror",
+    label: "Clean Mirror",
+    icon: Square,
+    category: "washroom",
+  },
+  {
+    id: "scrub-toilet",
+    label: "Scrub Toilet",
+    icon: Bath,
+    category: "washroom",
+  },
+  {
+    id: "clean-sink",
+    label: "Clean Sink",
+    icon: Droplets,
+    category: "washroom",
+  },
+  {
+    id: "clean-shower",
+    label: "Clean Shower/Bathtub",
+    icon: Bath,
+    category: "washroom",
+  },
+  {
+    id: "replace-towels",
+    label: "Replace Towels",
+    icon: Droplets,
+    category: "washroom",
+  },
+  {
+    id: "sanitize",
+    label: "Sanitize Surfaces",
+    icon: ShieldCheck,
+    category: "washroom",
+  },
   // Bedroom Activities
-  { id: "change-beds", label: "Change Bed Sheets", icon: BedDouble, category: "bedroom" },
-  { id: "vacuum-floor", label: "Vacuum Floor", icon: Sparkles, category: "bedroom" },
-  { id: "pick-trash", label: "Pick Up Trash", icon: Trash2, category: "bedroom" },
-  { id: "restock-amenities", label: "Restock Amenities", icon: Hand, category: "bedroom" },
-  { id: "check-minibar", label: "Check Mini-Bar", icon: Wine, category: "bedroom" },
-  { id: "check-electricals", label: "Check Electricals", icon: PlugZap, category: "bedroom" },
-  { id: "replace-water", label: "Replace Water Bottles", icon: Droplet, category: "bedroom" },
-  { id: "final-inspection", label: "Final Inspection", icon: ClipboardCheck, category: "bedroom" },
+  {
+    id: "change-beds",
+    label: "Change Bed Sheets",
+    icon: BedDouble,
+    category: "bedroom",
+  },
+  {
+    id: "vacuum-floor",
+    label: "Vacuum Floor",
+    icon: Sparkles,
+    category: "bedroom",
+  },
+  {
+    id: "pick-trash",
+    label: "Pick Up Trash",
+    icon: Trash2,
+    category: "bedroom",
+  },
+  {
+    id: "restock-amenities",
+    label: "Restock Amenities",
+    icon: Hand,
+    category: "bedroom",
+  },
+  {
+    id: "check-minibar",
+    label: "Check Mini-Bar",
+    icon: Wine,
+    category: "bedroom",
+  },
+  {
+    id: "check-electricals",
+    label: "Check Electricals",
+    icon: PlugZap,
+    category: "bedroom",
+  },
+  {
+    id: "replace-water",
+    label: "Replace Water Bottles",
+    icon: Droplet,
+    category: "bedroom",
+  },
+  {
+    id: "final-inspection",
+    label: "Final Inspection",
+    icon: ClipboardCheck,
+    category: "bedroom",
+  },
 ];
 
 const createRoomActivities = (): Activity[] =>
@@ -332,53 +402,98 @@ interface HousekeepingProps {
 
 export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
   const [rooms, setRooms] = useState<Room[]>(initialRooms);
-  const [housekeepers, setHousekeepers] = useState<HousekeeperProfile[]>(initialHousekeepers);
+  const [housekeepers, setHousekeepers] =
+    useState<HousekeeperProfile[]>(initialHousekeepers);
 
   // Housekeeper states
-  const [housekeeperStage, setHousekeeperStage] = useState<"dashboard" | "selected" | "activities" | "history">("dashboard");
+  const [housekeeperStage, setHousekeeperStage] = useState<
+    "dashboard" | "selected" | "activities" | "history"
+  >("dashboard");
   const [selectedRoomIds, setSelectedRoomIds] = useState<string[]>([]);
   const [showFinishConfirm, setShowFinishConfirm] = useState(false);
   const [totalCleaningTimer, setTotalCleaningTimer] = useState<number>(0); // Total cleaning duration in seconds
-  const [cleaningSessionStartTime, setCleaningSessionStartTime] = useState<number | null>(null); // When cleaning session started
+  const [cleaningSessionStartTime, setCleaningSessionStartTime] = useState<
+    number | null
+  >(null); // When cleaning session started
   const [messages, setMessages] = useState<CleaningMessage[]>([]);
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [messageRoomId, setMessageRoomId] = useState<string | null>(null);
   const [messageNote, setMessageNote] = useState("");
   const [currentCleanerName] = useState("Housekeeper"); // In real app, get from auth context
   const [currentCleanerId] = useState("hk-1"); // In real app, get from auth context
-  const [activeActivityView, setActiveActivityView] = useState<Record<string, "bedroom" | "washroom" | null>>({}); // Room ID -> active activity view
-  const [cleaningHistory, setCleaningHistory] = useState<CleaningHistoryRecord[]>([]);
+  const [activeActivityView, setActiveActivityView] = useState<
+    Record<string, "bedroom" | "washroom" | null>
+  >({}); // Room ID -> active activity view
+  const [cleaningHistory, setCleaningHistory] = useState<
+    CleaningHistoryRecord[]
+  >([]);
   const [showHistoryDetailsModal, setShowHistoryDetailsModal] = useState(false);
-  const [selectedHistoryRecord, setSelectedHistoryRecord] = useState<CleaningHistoryRecord | null>(null);
-  const [historyDetailsActiveTab, setHistoryDetailsActiveTab] = useState<"kitchen" | "living" | "bedroom" | "bathroom" | "general">("bedroom");
+  const [selectedHistoryRecord, setSelectedHistoryRecord] =
+    useState<CleaningHistoryRecord | null>(null);
+  const [historyDetailsActiveTab, setHistoryDetailsActiveTab] = useState<
+    "kitchen" | "living" | "bedroom" | "bathroom" | "general"
+  >("bedroom");
 
   // Compute tasks by category for history details
   const historyTasksByCategory = useMemo(() => {
     if (!selectedHistoryRecord) return null;
     return {
-      kitchen: selectedHistoryRecord.completedTasks.filter(t => categorizeTask(t.id) === "kitchen"),
-      living: selectedHistoryRecord.completedTasks.filter(t => categorizeTask(t.id) === "living"),
-      bedroom: selectedHistoryRecord.completedTasks.filter(t => categorizeTask(t.id) === "bedroom"),
-      bathroom: selectedHistoryRecord.completedTasks.filter(t => categorizeTask(t.id) === "bathroom"),
-      general: selectedHistoryRecord.completedTasks.filter(t => categorizeTask(t.id) === "general"),
+      kitchen: selectedHistoryRecord.completedTasks.filter(
+        (t) => categorizeTask(t.id) === "kitchen"
+      ),
+      living: selectedHistoryRecord.completedTasks.filter(
+        (t) => categorizeTask(t.id) === "living"
+      ),
+      bedroom: selectedHistoryRecord.completedTasks.filter(
+        (t) => categorizeTask(t.id) === "bedroom"
+      ),
+      bathroom: selectedHistoryRecord.completedTasks.filter(
+        (t) => categorizeTask(t.id) === "bathroom"
+      ),
+      general: selectedHistoryRecord.completedTasks.filter(
+        (t) => categorizeTask(t.id) === "general"
+      ),
     };
   }, [selectedHistoryRecord]);
 
   const historyTabs = useMemo(() => {
     if (!historyTasksByCategory) return [];
     return [
-      { id: "kitchen" as const, label: "Kitchen Tasks", count: historyTasksByCategory.kitchen.length },
-      { id: "living" as const, label: "Living Area Tasks", count: historyTasksByCategory.living.length },
-      { id: "bedroom" as const, label: "Bedroom Tasks", count: historyTasksByCategory.bedroom.length },
-      { id: "bathroom" as const, label: "Bathroom Tasks", count: historyTasksByCategory.bathroom.length },
-      { id: "general" as const, label: "General Tasks", count: historyTasksByCategory.general.length },
+      {
+        id: "kitchen" as const,
+        label: "Kitchen Tasks",
+        count: historyTasksByCategory.kitchen.length,
+      },
+      {
+        id: "living" as const,
+        label: "Living Area Tasks",
+        count: historyTasksByCategory.living.length,
+      },
+      {
+        id: "bedroom" as const,
+        label: "Bedroom Tasks",
+        count: historyTasksByCategory.bedroom.length,
+      },
+      {
+        id: "bathroom" as const,
+        label: "Bathroom Tasks",
+        count: historyTasksByCategory.bathroom.length,
+      },
+      {
+        id: "general" as const,
+        label: "General Tasks",
+        count: historyTasksByCategory.general.length,
+      },
     ];
   }, [historyTasksByCategory]);
 
   // Manager states
   const [showProfileModal, setShowProfileModal] = useState(false);
-  const [editingProfile, setEditingProfile] = useState<HousekeeperProfile | null>(null);
-  const [profileForm, setProfileForm] = useState<Omit<HousekeeperProfile, "id">>({
+  const [editingProfile, setEditingProfile] =
+    useState<HousekeeperProfile | null>(null);
+  const [profileForm, setProfileForm] = useState<
+    Omit<HousekeeperProfile, "id">
+  >({
     name: "",
     phone: "",
     email: "",
@@ -392,14 +507,31 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
   const [selectedHousekeeperId, setSelectedHousekeeperId] = useState("");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showSuccessAlert, setShowSuccessAlert] = useState(false);
-  const [rejectedHousekeeperId, setRejectedHousekeeperId] = useState<string | null>(null);
+  const [rejectedHousekeeperId, setRejectedHousekeeperId] = useState<
+    string | null
+  >(null);
   const [showReassignModal, setShowReassignModal] = useState(false);
-  const [reassignData, setReassignData] = useState<{ roomId: string; fromCleanerId: string } | null>(null);
-  const [showHousekeeperSelectModal, setShowHousekeeperSelectModal] = useState(false);
+  const [reassignData, setReassignData] = useState<{
+    roomId: string;
+    fromCleanerId: string;
+  } | null>(null);
+  const [showHousekeeperSelectModal, setShowHousekeeperSelectModal] =
+    useState(false);
   const [isReassignment, setIsReassignment] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
-  const [selectedCleanerForHistory, setSelectedCleanerForHistory] = useState<string | null>(null);
-  const [roomHistory, setRoomHistory] = useState<Record<string, Array<{ roomNumber: string; assignedBy: "manager" | "housekeeper"; timestamp: number }>>>({}); // cleanerId -> room history array
+  const [selectedCleanerForHistory, setSelectedCleanerForHistory] = useState<
+    string | null
+  >(null);
+  const [roomHistory, setRoomHistory] = useState<
+    Record<
+      string,
+      Array<{
+        roomNumber: string;
+        assignedBy: "manager" | "housekeeper";
+        timestamp: number;
+      }>
+    >
+  >({}); // cleanerId -> room history array
 
   // Search states
   const [managerRoomSearch, setManagerRoomSearch] = useState(""); // For manager: search by room number
@@ -416,9 +548,18 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
     }
     return filtered;
   }, [rooms, mode, housekeeperFloorSearch]);
-  const inProgressRooms = useMemo(() => rooms.filter((r) => r.status === "inCleaning"), [rooms]);
-  const assignedRooms = useMemo(() => rooms.filter((r) => r.status === "assigned"), [rooms]);
-  const selectedRooms = useMemo(() => rooms.filter((r) => selectedRoomIds.includes(r.id)), [rooms, selectedRoomIds]);
+  const inProgressRooms = useMemo(
+    () => rooms.filter((r) => r.status === "inCleaning"),
+    [rooms]
+  );
+  const assignedRooms = useMemo(
+    () => rooms.filter((r) => r.status === "assigned"),
+    [rooms]
+  );
+  const selectedRooms = useMemo(
+    () => rooms.filter((r) => selectedRoomIds.includes(r.id)),
+    [rooms, selectedRoomIds]
+  );
 
   // Load data from localStorage on mount - FIX for page loading issue
   useEffect(() => {
@@ -434,11 +575,14 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
     }
 
     // Load cleaning session state
-    const savedSessionStart = localStorage.getItem("housekeeping_session_start");
+    const savedSessionStart = localStorage.getItem(
+      "housekeeping_session_start"
+    );
     if (savedSessionStart) {
       try {
         const startTime = parseInt(savedSessionStart, 10);
-        if (startTime && Date.now() - startTime < 86400000) { // Only restore if less than 24 hours old
+        if (startTime && Date.now() - startTime < 86400000) {
+          // Only restore if less than 24 hours old
           setCleaningSessionStartTime(startTime);
           const elapsed = Math.floor((Date.now() - startTime) / 1000);
           setTotalCleaningTimer(elapsed);
@@ -449,7 +593,9 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
     }
 
     // Load active activity views
-    const savedActivityViews = localStorage.getItem("housekeeping_activity_views");
+    const savedActivityViews = localStorage.getItem(
+      "housekeeping_activity_views"
+    );
     if (savedActivityViews) {
       try {
         const parsed = JSON.parse(savedActivityViews);
@@ -460,13 +606,16 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
     }
 
     // Load cleaning history
-    const savedCleaningHistory = localStorage.getItem("housekeeping_cleaning_history");
+    const savedCleaningHistory = localStorage.getItem(
+      "housekeeping_cleaning_history"
+    );
     if (savedCleaningHistory) {
       try {
         const parsed = JSON.parse(savedCleaningHistory);
         // Filter by current housekeeper ID
-        const filteredHistory = parsed.filter((record: CleaningHistoryRecord) => 
-          record.housekeeperId === currentCleanerId
+        const filteredHistory = parsed.filter(
+          (record: CleaningHistoryRecord) =>
+            record.housekeeperId === currentCleanerId
         );
         setCleaningHistory(filteredHistory);
       } catch (e) {
@@ -485,38 +634,84 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
       }
     } else {
       // Initialize with example data for testing
-      const exampleHistory: Record<string, Array<{ roomNumber: string; assignedBy: "manager" | "housekeeper"; timestamp: number }>> = {};
-      
+      const exampleHistory: Record<
+        string,
+        Array<{
+          roomNumber: string;
+          assignedBy: "manager" | "housekeeper";
+          timestamp: number;
+        }>
+      > = {};
+
       // Example data for first cleaner (if exists)
       if (initialHousekeepers.length > 0) {
         exampleHistory[initialHousekeepers[0].id] = [
-          { roomNumber: "101", assignedBy: "manager", timestamp: Date.now() - 86400000 * 2 }, // 2 days ago
-          { roomNumber: "102", assignedBy: "manager", timestamp: Date.now() - 86400000 }, // 1 day ago
-          { roomNumber: "103", assignedBy: "housekeeper", timestamp: Date.now() - 3600000 }, // 1 hour ago
-          { roomNumber: "105", assignedBy: "housekeeper", timestamp: Date.now() - 1800000 }, // 30 min ago
+          {
+            roomNumber: "101",
+            assignedBy: "manager",
+            timestamp: Date.now() - 86400000 * 2,
+          }, // 2 days ago
+          {
+            roomNumber: "102",
+            assignedBy: "manager",
+            timestamp: Date.now() - 86400000,
+          }, // 1 day ago
+          {
+            roomNumber: "103",
+            assignedBy: "housekeeper",
+            timestamp: Date.now() - 3600000,
+          }, // 1 hour ago
+          {
+            roomNumber: "105",
+            assignedBy: "housekeeper",
+            timestamp: Date.now() - 1800000,
+          }, // 30 min ago
         ];
       }
-      
+
       // Example data for second cleaner (if exists)
       if (initialHousekeepers.length > 1) {
         exampleHistory[initialHousekeepers[1].id] = [
-          { roomNumber: "201", assignedBy: "manager", timestamp: Date.now() - 86400000 * 3 }, // 3 days ago
-          { roomNumber: "202", assignedBy: "manager", timestamp: Date.now() - 86400000 * 1.5 }, // 1.5 days ago
-          { roomNumber: "204", assignedBy: "housekeeper", timestamp: Date.now() - 7200000 }, // 2 hours ago
+          {
+            roomNumber: "201",
+            assignedBy: "manager",
+            timestamp: Date.now() - 86400000 * 3,
+          }, // 3 days ago
+          {
+            roomNumber: "202",
+            assignedBy: "manager",
+            timestamp: Date.now() - 86400000 * 1.5,
+          }, // 1.5 days ago
+          {
+            roomNumber: "204",
+            assignedBy: "housekeeper",
+            timestamp: Date.now() - 7200000,
+          }, // 2 hours ago
         ];
       }
-      
+
       // Example data for third cleaner (if exists)
       if (initialHousekeepers.length > 2) {
         exampleHistory[initialHousekeepers[2].id] = [
-          { roomNumber: "301", assignedBy: "manager", timestamp: Date.now() - 86400000 * 4 }, // 4 days ago
-          { roomNumber: "302", assignedBy: "housekeeper", timestamp: Date.now() - 5400000 }, // 1.5 hours ago
+          {
+            roomNumber: "301",
+            assignedBy: "manager",
+            timestamp: Date.now() - 86400000 * 4,
+          }, // 4 days ago
+          {
+            roomNumber: "302",
+            assignedBy: "housekeeper",
+            timestamp: Date.now() - 5400000,
+          }, // 1.5 hours ago
         ];
       }
-      
+
       if (Object.keys(exampleHistory).length > 0) {
         setRoomHistory(exampleHistory);
-        localStorage.setItem("housekeeping_room_history", JSON.stringify(exampleHistory));
+        localStorage.setItem(
+          "housekeeping_room_history",
+          JSON.stringify(exampleHistory)
+        );
       }
     }
 
@@ -536,7 +731,10 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
   // Save session start time
   useEffect(() => {
     if (cleaningSessionStartTime) {
-      localStorage.setItem("housekeeping_session_start", cleaningSessionStartTime.toString());
+      localStorage.setItem(
+        "housekeeping_session_start",
+        cleaningSessionStartTime.toString()
+      );
     } else {
       localStorage.removeItem("housekeeping_session_start");
     }
@@ -544,31 +742,45 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
 
   // Save activity views
   useEffect(() => {
-    localStorage.setItem("housekeeping_activity_views", JSON.stringify(activeActivityView));
+    localStorage.setItem(
+      "housekeeping_activity_views",
+      JSON.stringify(activeActivityView)
+    );
   }, [activeActivityView]);
 
   // Save room history
   useEffect(() => {
-    localStorage.setItem("housekeeping_room_history", JSON.stringify(roomHistory));
+    localStorage.setItem(
+      "housekeeping_room_history",
+      JSON.stringify(roomHistory)
+    );
   }, [roomHistory]);
 
   // Save cleaning history
   useEffect(() => {
     // Load all history, merge with current, then save
-    const allHistory = JSON.parse(localStorage.getItem("housekeeping_cleaning_history") || "[]");
+    const allHistory = JSON.parse(
+      localStorage.getItem("housekeeping_cleaning_history") || "[]"
+    );
     // Remove old records for this housekeeper and add new ones
-    const otherHistory = allHistory.filter((record: CleaningHistoryRecord) => 
-      record.housekeeperId !== currentCleanerId
+    const otherHistory = allHistory.filter(
+      (record: CleaningHistoryRecord) =>
+        record.housekeeperId !== currentCleanerId
     );
     const updatedHistory = [...otherHistory, ...cleaningHistory];
-    localStorage.setItem("housekeeping_cleaning_history", JSON.stringify(updatedHistory));
+    localStorage.setItem(
+      "housekeeping_cleaning_history",
+      JSON.stringify(updatedHistory)
+    );
   }, [cleaningHistory, currentCleanerId]);
 
   // Total Cleaning Duration Timer - counts up from 00:00 when cleaning session starts
   useEffect(() => {
     if (cleaningSessionStartTime && housekeeperStage === "activities") {
       const interval = setInterval(() => {
-        const elapsed = Math.floor((Date.now() - cleaningSessionStartTime) / 1000);
+        const elapsed = Math.floor(
+          (Date.now() - cleaningSessionStartTime) / 1000
+        );
         setTotalCleaningTimer(elapsed);
       }, 1000);
 
@@ -579,23 +791,31 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
   // Check if all selected rooms are completed
   const allRoomsCompleted = useMemo(() => {
     if (selectedRooms.length === 0) return true;
-    return selectedRooms.every((room) => 
+    return selectedRooms.every((room) =>
       room.activities.every((activity) => activity.completed)
     );
   }, [selectedRooms]);
 
   // Page exit control - prevent leaving until all activities completed
   useEffect(() => {
-    if (mode === "housekeeper" && housekeeperStage === "activities" && selectedRooms.length > 0 && !allRoomsCompleted) {
+    if (
+      mode === "housekeeper" &&
+      housekeeperStage === "activities" &&
+      selectedRooms.length > 0 &&
+      !allRoomsCompleted
+    ) {
       const handleBeforeUnload = (e: BeforeUnloadEvent) => {
         e.preventDefault();
-        e.returnValue = "Please complete all selected room cleaning activities before leaving.";
+        e.returnValue =
+          "Please complete all selected room cleaning activities before leaving.";
         return e.returnValue;
       };
 
       const handlePopState = () => {
         if (!allRoomsCompleted) {
-          const confirmed = window.confirm("Please complete all selected room cleaning activities before leaving. Are you sure you want to leave?");
+          const confirmed = window.confirm(
+            "Please complete all selected room cleaning activities before leaving. Are you sure you want to leave?"
+          );
           if (!confirmed) {
             window.history.pushState(null, "", window.location.href);
           }
@@ -615,7 +835,11 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
 
   // Navigate to dashboard when all rooms are finished in activities stage
   useEffect(() => {
-    if (mode === "housekeeper" && housekeeperStage === "activities" && selectedRoomIds.length === 0) {
+    if (
+      mode === "housekeeper" &&
+      housekeeperStage === "activities" &&
+      selectedRoomIds.length === 0
+    ) {
       setCleaningSessionStartTime(null);
       setTotalCleaningTimer(0);
       setHousekeeperStage("dashboard");
@@ -635,7 +859,7 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
       // For now, we just ensure state persists
       // The timers and selections are already preserved via localStorage
       saveScrollPosition();
-      
+
       // Trigger a re-render to update UI (without losing state)
       // This simulates auto-refresh behavior
     }, 5000);
@@ -658,7 +882,7 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
     setHousekeeperStage("dashboard");
     setSelectedRoomIds([]);
     setShowFinishConfirm(false);
-    
+
     // Reset manager states
     setShowProfileModal(false);
     setEditingProfile(null);
@@ -680,14 +904,14 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
   const activeCleaners = useMemo(() => {
     const activeCleaning = [...inProgressRooms, ...assignedRooms];
     const cleanerMap = new Map<string, Room[]>();
-    
+
     activeCleaning.forEach((room) => {
       if (room.assignedTo) {
         const existing = cleanerMap.get(room.assignedTo) || [];
         cleanerMap.set(room.assignedTo, [...existing, room]);
       }
     });
-    
+
     return Array.from(cleanerMap.entries()).map(([name, roomList]) => ({
       name,
       rooms: roomList,
@@ -698,27 +922,32 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
   // Get progress for a cleaner's rooms
   const getCleanerProgress = (cleanerId: string | undefined) => {
     if (!cleanerId) return { completed: 0, total: 0, percentage: 0 };
-    
+
     const cleaner = housekeepers.find((hk) => hk.id === cleanerId);
     if (!cleaner) return { completed: 0, total: 0, percentage: 0 };
-    
+
     const cleanerRooms = [...inProgressRooms, ...assignedRooms].filter(
       (r) => r.assignedTo === cleaner.name
     );
-    
-    const totalActivities = cleanerRooms.reduce((acc, room) => acc + room.activities.length, 0);
+
+    const totalActivities = cleanerRooms.reduce(
+      (acc, room) => acc + room.activities.length,
+      0
+    );
     const completedActivities = cleanerRooms.reduce(
       (acc, room) => acc + room.activities.filter((a) => a.completed).length,
       0
     );
-    
+
     return {
       completed: completedActivities,
       total: totalActivities,
-      percentage: totalActivities > 0 ? Math.round((completedActivities / totalActivities) * 100) : 0,
+      percentage:
+        totalActivities > 0
+          ? Math.round((completedActivities / totalActivities) * 100)
+          : 0,
     };
   };
-
 
   // Validation functions
   const validateNIC = (nic: string): boolean => {
@@ -760,7 +989,8 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
     if (!profileForm.nic.trim()) {
       errors.nic = "NIC is required";
     } else if (!validateNIC(profileForm.nic)) {
-      errors.nic = "Please enter a valid NIC (e.g., 123456789V or 200145601234)";
+      errors.nic =
+        "Please enter a valid NIC (e.g., 123456789V or 200145601234)";
     }
 
     // Address validation
@@ -777,7 +1007,14 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
   // Manager CRUD
   const openCreateProfile = () => {
     setEditingProfile(null);
-    setProfileForm({ name: "", phone: "", email: "", nic: "", address: "", active: true });
+    setProfileForm({
+      name: "",
+      phone: "",
+      email: "",
+      nic: "",
+      address: "",
+      active: true,
+    });
     setFormErrors({});
     setShowProfileModal(true);
   };
@@ -803,14 +1040,18 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
     }
 
     setIsSaving(true);
-    
+
     try {
       // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
       if (editingProfile) {
         setHousekeepers((prev) =>
-          prev.map((hk) => (hk.id === editingProfile.id ? { ...editingProfile, ...profileForm } : hk))
+          prev.map((hk) =>
+            hk.id === editingProfile.id
+              ? { ...editingProfile, ...profileForm }
+              : hk
+          )
         );
       } else {
         setHousekeepers((prev) => [
@@ -842,15 +1083,24 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
   };
 
   // Add room to cleaner's history
-  const addRoomToHistory = (cleanerId: string, roomNumber: string, assignedBy: "manager" | "housekeeper" = "manager") => {
+  const addRoomToHistory = (
+    cleanerId: string,
+    roomNumber: string,
+    assignedBy: "manager" | "housekeeper" = "manager"
+  ) => {
     setRoomHistory((prev) => {
       const cleanerHistory = prev[cleanerId] || [];
       // Check if room already exists in history for this cleaner
-      const exists = cleanerHistory.some((entry) => entry.roomNumber === roomNumber);
+      const exists = cleanerHistory.some(
+        (entry) => entry.roomNumber === roomNumber
+      );
       if (!exists) {
         return {
           ...prev,
-          [cleanerId]: [...cleanerHistory, { roomNumber, assignedBy, timestamp: Date.now() }],
+          [cleanerId]: [
+            ...cleanerHistory,
+            { roomNumber, assignedBy, timestamp: Date.now() },
+          ],
         };
       }
       return prev;
@@ -882,9 +1132,11 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
   };
 
   const handleAssignment = (confirmed: boolean) => {
-    const housekeeper = housekeepers.find((hk) => hk.id === selectedHousekeeperId);
+    const housekeeper = housekeepers.find(
+      (hk) => hk.id === selectedHousekeeperId
+    );
     if (!housekeeper) return;
-    
+
     if (confirmed) {
       // Cleaner said YES
       const room = rooms.find((r) => r.id === selectedRoomId);
@@ -946,12 +1198,16 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
 
   const handleReassign = (newHousekeeperId: string) => {
     if (!selectedRoomId || !rejectedHousekeeperId) return;
-    
-    const newHousekeeper = housekeepers.find((hk) => hk.id === newHousekeeperId);
-    const oldHousekeeper = housekeepers.find((hk) => hk.id === rejectedHousekeeperId);
-    
+
+    const newHousekeeper = housekeepers.find(
+      (hk) => hk.id === newHousekeeperId
+    );
+    const oldHousekeeper = housekeepers.find(
+      (hk) => hk.id === rejectedHousekeeperId
+    );
+
     if (!newHousekeeper || !oldHousekeeper) return;
-    
+
     // Remove from old cleaner and assign to new cleaner
     setRooms((prev) =>
       prev.map((room) =>
@@ -960,7 +1216,7 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
           : room
       )
     );
-    
+
     setSelectedRoomId("");
     setSelectedHousekeeperId("");
     setRejectedHousekeeperId(null);
@@ -973,10 +1229,12 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
   // Reassign room during active cleaning
   const handleReassignActiveCleaning = (newHousekeeperId: string) => {
     if (!reassignData) return;
-    
-    const newHousekeeper = housekeepers.find((hk) => hk.id === newHousekeeperId);
+
+    const newHousekeeper = housekeepers.find(
+      (hk) => hk.id === newHousekeeperId
+    );
     if (!newHousekeeper) return;
-    
+
     // Set the selected room and housekeeper, then show confirmation modal
     setSelectedRoomId(reassignData.roomId);
     setSelectedHousekeeperId(newHousekeeperId);
@@ -988,7 +1246,9 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
   // Housekeeper Selection
   const toggleSelectedRoom = (roomId: string) => {
     setSelectedRoomIds((prev) =>
-      prev.includes(roomId) ? prev.filter((id) => id !== roomId) : [...prev, roomId]
+      prev.includes(roomId)
+        ? prev.filter((id) => id !== roomId)
+        : [...prev, roomId]
     );
   };
 
@@ -1000,13 +1260,15 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
         setCleaningSessionStartTime(now);
         setTotalCleaningTimer(0);
       }
-      
+
       // Add selected rooms to history for current housekeeper (housekeeper self-selected)
       selectedRoomIds.forEach((roomId) => {
         const room = rooms.find((r) => r.id === roomId);
         if (room) {
           // Find housekeeper by name (currentCleanerName) or use first active
-          const cleaner = housekeepers.find((hk) => hk.name === currentCleanerName) || housekeepers.find((hk) => hk.active);
+          const cleaner =
+            housekeepers.find((hk) => hk.name === currentCleanerName) ||
+            housekeepers.find((hk) => hk.active);
           if (cleaner) {
             addRoomToHistory(cleaner.id, room.number, "housekeeper");
             // Also update room assignment if not already assigned
@@ -1020,13 +1282,17 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
           }
         }
       });
-      
+
       // Allow 1 or more rooms to proceed
       setHousekeeperStage("activities");
       setRooms((prev) =>
         prev.map((room) => {
           if (selectedRoomIds.includes(room.id)) {
-            return { ...room, status: "inCleaning", startTime: room.startTime || now };
+            return {
+              ...room,
+              status: "inCleaning",
+              startTime: room.startTime || now,
+            };
           }
           return room;
         })
@@ -1042,7 +1308,7 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
       handleRemoveRoom(roomId);
       return;
     }
-    
+
     // Simple cancellation - just remove from selection
     setSelectedRoomIds((prev) => prev.filter((id) => id !== roomId));
   };
@@ -1053,7 +1319,7 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
     if (!room) return;
 
     // Calculate time spent on this room
-    const timeSpent = room.startTime 
+    const timeSpent = room.startTime
       ? Math.floor((Date.now() - room.startTime) / 1000)
       : 0;
 
@@ -1074,7 +1340,14 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
     setSelectedRoomIds((prev) => prev.filter((id) => id !== roomId));
     setRooms((prev) =>
       prev.map((r) =>
-        r.id === roomId ? { ...r, status: "checkout", startTime: undefined, assignedTo: undefined } : r
+        r.id === roomId
+          ? {
+              ...r,
+              status: "checkout",
+              startTime: undefined,
+              assignedTo: undefined,
+            }
+          : r
       )
     );
 
@@ -1090,7 +1363,9 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+    return `${mins.toString().padStart(2, "0")}:${secs
+      .toString()
+      .padStart(2, "0")}`;
   };
 
   // Format time as HH:MM:SS for longer durations
@@ -1098,12 +1373,21 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
     const hrs = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
-    return `${hrs.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+    return `${hrs.toString().padStart(2, "0")}:${mins
+      .toString()
+      .padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
   // Helper function to categorize tasks
-  const categorizeTask = (activityId: ActivityId): "kitchen" | "living" | "bedroom" | "bathroom" | "general" => {
-    const taskMap: Partial<Record<ActivityId, "kitchen" | "living" | "bedroom" | "bathroom" | "general">> = {
+  const categorizeTask = (
+    activityId: ActivityId
+  ): "kitchen" | "living" | "bedroom" | "bathroom" | "general" => {
+    const taskMap: Partial<
+      Record<
+        ActivityId,
+        "kitchen" | "living" | "bedroom" | "bathroom" | "general"
+      >
+    > = {
       "check-minibar": "kitchen",
       "vacuum-floor": "living",
       "change-beds": "bedroom",
@@ -1115,7 +1399,7 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
       "clean-sink": "bathroom",
       "clean-shower": "bathroom",
       "replace-towels": "bathroom",
-      "sanitize": "bathroom",
+      sanitize: "bathroom",
       "clean-bathroom": "bathroom",
       "mop-floor": "living",
       "check-electricals": "general",
@@ -1127,14 +1411,18 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
   // Format date for display
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
   };
 
   // Format date as dd-mm-yyyy
   const formatDateDDMMYYYY = (timestamp: number): string => {
     const date = new Date(timestamp);
-    const day = date.getDate().toString().padStart(2, '0');
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, "0");
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
     const year = date.getFullYear();
     return `${day}-${month}-${year}`;
   };
@@ -1142,16 +1430,12 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
   // Format time for display (HH:MM AM/PM)
   const formatTimeDisplay = (timestamp: number): string => {
     const date = new Date(timestamp);
-    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+    return date.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
   };
-
-  // Handle view history details
-  const handleViewHistoryDetails = (record: CleaningHistoryRecord) => {
-    setSelectedHistoryRecord(record);
-    setHistoryDetailsActiveTab("bedroom"); // Reset to default tab
-    setShowHistoryDetailsModal(true);
-  };
-
 
   // Select all activities for a specific room
   const handleSelectAllActivities = (roomId: string) => {
@@ -1177,10 +1461,10 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
     const room = rooms.find((r) => r.id === messageRoomId);
     if (!room) return;
 
-    const timeSpent = room.startTime 
+    const timeSpent = room.startTime
       ? formatTime(Math.floor((Date.now() - room.startTime) / 1000))
       : formatTime(0);
-    
+
     const newMessage: CleaningMessage = {
       id: `msg-${Date.now()}`,
       roomNumber: room.number,
@@ -1191,17 +1475,20 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
     };
 
     setMessages((prev) => [...prev, newMessage]);
-    
+
     // Also remove the room
     handleRemoveRoom(messageRoomId);
-    
+
     setShowMessageModal(false);
     setMessageRoomId(null);
     setMessageNote("");
   };
 
   // Toggle activity view for a room (Bedroom/Washroom)
-  const toggleActivityView = (roomId: string, category: "bedroom" | "washroom") => {
+  const toggleActivityView = (
+    roomId: string,
+    category: "bedroom" | "washroom"
+  ) => {
     setActiveActivityView((prev) => {
       const current = prev[roomId];
       // If clicking the same category, hide it. Otherwise, show the clicked category
@@ -1215,30 +1502,43 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
   const handleStartCleaning = (roomId: string) => {
     setHousekeeperStage("activities");
     setRooms((prev) =>
-      prev.map((room) => (room.id === roomId ? { ...room, status: "inCleaning" } : room))
+      prev.map((room) =>
+        room.id === roomId ? { ...room, status: "inCleaning" } : room
+      )
     );
   };
 
   const toggleActivity = (activityId: ActivityId, roomId: string) => {
     const room = rooms.find((r) => r.id === roomId);
     if (!room) return;
-    
+
     // Find the index of the clicked activity
-    const activityIndex = room.activities.findIndex((act) => act.id === activityId);
+    const activityIndex = room.activities.findIndex(
+      (act) => act.id === activityId
+    );
     if (activityIndex === -1) return;
-    
+
     // Check if all previous activities in the same category are completed
     const category = room.activities[activityIndex].category;
-    const categoryActivities = room.activities.filter((act) => act.category === category);
-    const currentCategoryIndex = categoryActivities.findIndex((act) => act.id === activityId);
-    const previousCategoryActivities = categoryActivities.slice(0, currentCategoryIndex);
-    const allPreviousCompleted = previousCategoryActivities.every((act) => act.completed);
-    
+    const categoryActivities = room.activities.filter(
+      (act) => act.category === category
+    );
+    const currentCategoryIndex = categoryActivities.findIndex(
+      (act) => act.id === activityId
+    );
+    const previousCategoryActivities = categoryActivities.slice(
+      0,
+      currentCategoryIndex
+    );
+    const allPreviousCompleted = previousCategoryActivities.every(
+      (act) => act.completed
+    );
+
     // If previous activities in the same category are not completed, don't allow toggling
     if (!allPreviousCompleted && !room.activities[activityIndex].completed) {
       return;
     }
-    
+
     setRooms((prev) =>
       prev.map((room) => {
         if (room.id !== roomId) return room;
@@ -1260,8 +1560,8 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
       const endTime = Date.now();
       const startTime = room.startTime || endTime;
       const duration = Math.floor((endTime - startTime) / 1000);
-      const cleaningDate = new Date(endTime).toISOString().split('T')[0];
-      
+      const cleaningDate = new Date(endTime).toISOString().split("T")[0];
+
       // Create cleaning history record
       const historyRecord: CleaningHistoryRecord = {
         id: `history-${roomId}-${endTime}`,
@@ -1274,20 +1574,22 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
         endTime,
         duration,
         status: "completed",
-        completedTasks: room.activities.map(act => ({ ...act })), // Snapshot of completed activities
+        completedTasks: room.activities.map((act) => ({ ...act })), // Snapshot of completed activities
         housekeeperId: currentCleanerId,
         housekeeperName: currentCleanerName,
       };
-      
+
       // Add to cleaning history
       setCleaningHistory((prev) => [historyRecord, ...prev]);
-      
+
       setRooms((prev) =>
         prev.map((r) =>
-          r.id === roomId ? { ...r, status: "available", startTime: undefined } : r
+          r.id === roomId
+            ? { ...r, status: "available", startTime: undefined }
+            : r
         )
       );
-      
+
       // Remove room from selected (navigation handled by useEffect)
       setSelectedRoomIds((prev) => {
         const updated = prev.filter((id) => id !== roomId);
@@ -1298,7 +1600,7 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
         }
         return updated;
       });
-      
+
       // Clear activity view for finished room
       setActiveActivityView((prev) => {
         const updated = { ...prev };
@@ -1308,19 +1610,20 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
     }
   };
 
-
   const confirmFinishAll = () => {
     selectedRooms.forEach((room) => {
       setRooms((prev) =>
         prev.map((r) =>
-          r.id === room.id ? { ...r, status: "available", startTime: undefined } : r
+          r.id === room.id
+            ? { ...r, status: "available", startTime: undefined }
+            : r
         )
       );
     });
-    
+
     // Clear all activity views
     setActiveActivityView({});
-    
+
     // Stop the timer and reset
     setCleaningSessionStartTime(null);
     setTotalCleaningTimer(0);
@@ -1338,14 +1641,23 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
               <div className="rounded-3xl border border-slate-100 bg-white p-4 sm:p-6 shadow-lg">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div className="min-w-0">
-                    <p className="text-xs uppercase tracking-[0.3em] text-blue-400">Housekeeping Dashboard</p>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Checkout Queue</h1>
-                    <p className="text-sm text-slate-500">Select one or more rooms in checkout state to start cleaning.</p>
+                    <p className="text-xs uppercase tracking-[0.3em] text-blue-400">
+                      Housekeeping Dashboard
+                    </p>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">
+                      Checkout Queue
+                    </h1>
+                    <p className="text-sm text-slate-500">
+                      Select one or more rooms in checkout state to start
+                      cleaning.
+                    </p>
                   </div>
                   <div className="flex flex-col gap-3 sm:items-end w-full sm:w-auto">
                     <div className="rounded-2xl bg-blue-50 px-4 py-3 w-full sm:w-auto sm:text-right">
                       <p className="text-xs text-blue-500">Selected</p>
-                      <p className="text-2xl font-bold text-blue-700">{selectedRoomIds.length}</p>
+                      <p className="text-2xl font-bold text-blue-700">
+                        {selectedRoomIds.length}
+                      </p>
                     </div>
                     <div className="flex gap-2 w-full sm:w-auto">
                       <Button
@@ -1363,7 +1675,8 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
                         disabled={selectedRoomIds.length < 1}
                         className="bg-gradient-to-r from-blue-600 to-cyan-500 w-full sm:w-auto"
                       >
-                        Proceed ({selectedRoomIds.length} {selectedRoomIds.length === 1 ? 'room' : 'rooms'})
+                        Proceed ({selectedRoomIds.length}{" "}
+                        {selectedRoomIds.length === 1 ? "room" : "rooms"})
                       </Button>
                     </div>
                   </div>
@@ -1372,14 +1685,20 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
 
               {selectedRoomIds.length > 0 && (
                 <div className="rounded-3xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
-                  <p className="text-xs uppercase tracking-widest text-slate-400 mb-3">Selected Rooms</p>
+                  <p className="text-xs uppercase tracking-widest text-slate-400 mb-3">
+                    Selected Rooms
+                  </p>
                   <div className="flex flex-wrap gap-2">
                     {selectedRooms.map((room) => (
                       <button
                         key={room.id}
                         onClick={() => handleCancelRoom(room.id)}
                         className="flex items-center gap-2 rounded-full bg-slate-50 px-3 py-2 text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-100 transition"
-                        title={room.status === "inCleaning" ? "Remove room (will notify manager)" : "Cancel room"}
+                        title={
+                          room.status === "inCleaning"
+                            ? "Remove room (will notify manager)"
+                            : "Cancel room"
+                        }
                       >
                         #{room.number}
                         <XCircle className="h-3 w-3 sm:h-4 sm:w-4 text-rose-500" />
@@ -1393,7 +1712,9 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div className="flex items-center gap-2 text-slate-600">
                     <AlertTriangle className="h-5 w-5 text-rose-500" />
-                    <span className="font-semibold text-sm sm:text-base">Checkout Rooms</span>
+                    <span className="font-semibold text-sm sm:text-base">
+                      Checkout Rooms
+                    </span>
                   </div>
                   <div className="relative flex-1 sm:max-w-md">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -1401,7 +1722,9 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
                       type="text"
                       placeholder="Search by floor number..."
                       value={housekeeperFloorSearch}
-                      onChange={(e) => setHousekeeperFloorSearch(e.target.value)}
+                      onChange={(e) =>
+                        setHousekeeperFloorSearch(e.target.value)
+                      }
                       className="pl-10"
                     />
                   </div>
@@ -1414,19 +1737,27 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
                         key={room.id}
                         onClick={() => toggleSelectedRoom(room.id)}
                         className={`flex flex-col gap-4 rounded-[20px] border border-slate-200 bg-white p-4 sm:p-5 text-left shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg ${
-                          isSelected ? "ring-2 ring-blue-400 shadow-blue-100" : ""
+                          isSelected
+                            ? "ring-2 ring-blue-400 shadow-blue-100"
+                            : ""
                         }`}
                       >
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-xs uppercase tracking-widest text-slate-400">Room</p>
-                            <p className="text-2xl font-bold text-slate-900">{room.number}</p>
+                            <p className="text-xs uppercase tracking-widest text-slate-400">
+                              Room
+                            </p>
+                            <p className="text-2xl font-bold text-slate-900">
+                              {room.number}
+                            </p>
                           </div>
                           <span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-500">
                             Checkout
                           </span>
                         </div>
-                        <p className="text-sm text-slate-500">{room.type} • Floor {room.floor}</p>
+                        <p className="text-sm text-slate-500">
+                          {room.type} • Floor {room.floor}
+                        </p>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2 text-sm text-slate-500">
                             <DoorOpen className="h-4 w-4 text-blue-500" />
@@ -1434,10 +1765,14 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
                           </div>
                           <div
                             className={`h-6 w-6 rounded-full border-2 flex items-center justify-center ${
-                              isSelected ? "border-blue-500 bg-blue-500" : "border-slate-300"
+                              isSelected
+                                ? "border-blue-500 bg-blue-500"
+                                : "border-slate-300"
                             }`}
                           >
-                            {isSelected && <CheckCircle2 className="h-5 w-5 text-white" />}
+                            {isSelected && (
+                              <CheckCircle2 className="h-5 w-5 text-white" />
+                            )}
                           </div>
                         </div>
                       </button>
@@ -1454,7 +1789,9 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
               <div className="space-y-4">
                 <div className="flex items-center gap-2 text-slate-600">
                   <Sparkles className="h-5 w-5 text-blue-500" />
-                  <span className="font-semibold text-sm sm:text-base">Rooms in Cleaning Progress</span>
+                  <span className="font-semibold text-sm sm:text-base">
+                    Rooms in Cleaning Progress
+                  </span>
                 </div>
                 <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 w-full min-w-0">
                   {inProgressRooms.map((room) => (
@@ -1464,8 +1801,12 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
                     >
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-xs uppercase tracking-widest text-blue-400">Room</p>
-                          <p className="text-2xl font-bold text-slate-900">{room.number}</p>
+                          <p className="text-xs uppercase tracking-widest text-blue-400">
+                            Room
+                          </p>
+                          <p className="text-2xl font-bold text-slate-900">
+                            {room.number}
+                          </p>
                           <p className="text-sm text-slate-500">{room.type}</p>
                         </div>
                         <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-600">
@@ -1488,13 +1829,20 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
             <div className="space-y-6">
               <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-lg">
                 <div className="flex flex-wrap items-center justify-between gap-4">
-                  <Button variant="secondary" onClick={() => setHousekeeperStage("dashboard")}>
+                  <Button
+                    variant="secondary"
+                    onClick={() => setHousekeeperStage("dashboard")}
+                  >
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Back
                   </Button>
                   <div>
-                    <p className="text-xs uppercase tracking-[0.3em] text-blue-400">Selected Rooms</p>
-                    <h2 className="text-2xl font-bold text-slate-900">Ready to Start Cleaning</h2>
+                    <p className="text-xs uppercase tracking-[0.3em] text-blue-400">
+                      Selected Rooms
+                    </p>
+                    <h2 className="text-2xl font-bold text-slate-900">
+                      Ready to Start Cleaning
+                    </h2>
                   </div>
                 </div>
               </div>
@@ -1507,9 +1855,15 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
                   >
                     <div className="flex flex-col gap-4">
                       <div>
-                        <p className="text-xs uppercase tracking-widest text-slate-400">Room</p>
-                        <p className="text-3xl font-bold text-slate-900">{room.number}</p>
-                        <p className="text-sm text-slate-500 mt-1">{room.type} • Floor {room.floor}</p>
+                        <p className="text-xs uppercase tracking-widest text-slate-400">
+                          Room
+                        </p>
+                        <p className="text-3xl font-bold text-slate-900">
+                          {room.number}
+                        </p>
+                        <p className="text-sm text-slate-500 mt-1">
+                          {room.type} • Floor {room.floor}
+                        </p>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-500">
@@ -1538,43 +1892,55 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
               <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-lg">
                 <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
                   <div>
-                    <p className="text-xs uppercase tracking-[0.3em] text-blue-400">Room Cleaning Activities</p>
+                    <p className="text-xs uppercase tracking-[0.3em] text-blue-400">
+                      Room Cleaning Activities
+                    </p>
                     <h2 className="text-3xl font-bold text-slate-900">
-                      {selectedRooms.length} {selectedRooms.length === 1 ? 'Room' : 'Rooms'} Selected
+                      {selectedRooms.length}{" "}
+                      {selectedRooms.length === 1 ? "Room" : "Rooms"} Selected
                     </h2>
-                    <p className="text-slate-500">Mark each activity once completed for all rooms.</p>
+                    <p className="text-slate-500">
+                      Mark each activity once completed for all rooms.
+                    </p>
                   </div>
                   <div className="flex flex-col items-end gap-2">
-                    <Button 
-                      variant="secondary" 
+                    <Button
+                      variant="secondary"
                       onClick={() => {
                         if (!allRoomsCompleted) {
-                          const confirmed = window.confirm("Please complete all selected room cleaning activities before leaving. Are you sure you want to go back?");
+                          const confirmed = window.confirm(
+                            "Please complete all selected room cleaning activities before leaving. Are you sure you want to go back?"
+                          );
                           if (!confirmed) return;
                         }
                         setHousekeeperStage("dashboard");
                       }}
                       disabled={!allRoomsCompleted}
-                      className={!allRoomsCompleted ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
+                      className={
+                        !allRoomsCompleted
+                          ? "opacity-50 cursor-not-allowed"
+                          : "cursor-pointer"
+                      }
                     >
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Back
-                  </Button>
+                      <ArrowLeft className="mr-2 h-4 w-4" />
+                      Back
+                    </Button>
                     {!allRoomsCompleted && (
                       <div className="w-full p-3 rounded-lg bg-amber-50 border border-amber-200">
                         <p className="text-sm font-semibold text-amber-800 flex items-center gap-2">
                           <AlertTriangle className="h-4 w-4" />
-                          Please complete all selected room cleaning activities before leaving.
+                          Please complete all selected room cleaning activities
+                          before leaving.
                         </p>
                       </div>
                     )}
                   </div>
                 </div>
 
-                  <div className="mb-6 flex flex-wrap gap-2">
-                    {selectedRooms.map((room) => (
+                <div className="mb-6 flex flex-wrap gap-2">
+                  {selectedRooms.map((room) => (
                     <div
-                        key={room.id}
+                      key={room.id}
                       className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white"
                     >
                       Room {room.number}
@@ -1591,224 +1957,289 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
                       key={room.id}
                       className="rounded-3xl border border-slate-200 bg-white p-4 sm:p-6 shadow-lg w-full max-w-[600px] min-h-[600px] flex flex-col"
                     >
-                          {/* Room content - same as below */}
-                          {(() => {
-                            const washroomActivities = room.activities.filter((act) => act.category === "washroom");
-                            const bedroomActivities = room.activities.filter((act) => act.category === "bedroom");
-                            
-                            return (
-                              <>
-                                <div className="mb-6">
-                                  <div className="flex items-center justify-between mb-2">
-                                    <h3 className="text-2xl font-bold text-slate-900">Room {room.number}</h3>
-                                    {/* Show Remove Room button only if no activities are completed */}
-                                    {room.activities.every((a) => !a.completed) && (
-                                      <Button
-                                        size="sm"
-                                        variant="secondary"
-                                        onClick={() => handleRemoveRoom(room.id)}
-                                        className="border-rose-300 text-rose-600 hover:bg-rose-50 cursor-pointer"
-                                      >
-                                        <XCircle className="mr-2 h-4 w-4" />
-                                        Remove Room
-                                      </Button>
-                                    )}
-                                  </div>
-                                  <p className="text-sm text-slate-500 mb-3">{room.type} • Floor {room.floor}</p>
-                                  
-                                  {/* Progress Bar */}
-                                  <div className="mb-4">
-                                    <div className="flex items-center justify-between mb-1">
-                                      <span className="text-xs font-medium text-slate-600">Progress</span>
-                                      <span className="text-xs font-semibold text-slate-700">
-                                        {Math.round((room.activities.filter((a) => a.completed).length / room.activities.length) * 100)}%
-                                      </span>
-                                    </div>
-                                    <div className="w-full bg-slate-200 rounded-full h-2">
-                                      <div
-                                        className="bg-blue-500 h-2 rounded-full transition-all"
-                                        style={{
-                                          width: `${(room.activities.filter((a) => a.completed).length / room.activities.length) * 100}%`,
-                                        }}
-                                      />
-                                    </div>
-                                  </div>
+                      {/* Room content - same as below */}
+                      {(() => {
+                        const washroomActivities = room.activities.filter(
+                          (act) => act.category === "washroom"
+                        );
+                        const bedroomActivities = room.activities.filter(
+                          (act) => act.category === "bedroom"
+                        );
 
-                                  {/* Select All Activities Button */}
-                                  {!room.activities.every((a) => a.completed) && (
-                                    <Button
-                                      size="sm"
-                                      variant="secondary"
-                                      onClick={() => handleSelectAllActivities(room.id)}
-                                      className="w-full mb-4 border-blue-300 text-blue-600 hover:bg-blue-50 cursor-pointer"
-                                    >
-                                      <CheckCircle2 className="mr-2 h-4 w-4" />
-                                      Select All Activities for Room {room.number}
-                                    </Button>
-                                  )}
-
-                                  {/* Activity View Buttons */}
-                                  <div className="flex gap-2 mb-4">
-                                    <Button
-                                      size="sm"
-                                      variant="secondary"
-                                      onClick={() => toggleActivityView(room.id, "washroom")}
-                                      className={`flex-1 cursor-pointer ${
-                                        activeActivityView[room.id] === "washroom"
-                                          ? "bg-blue-100 border-blue-400 text-blue-700"
-                                          : "border-slate-300"
-                                      }`}
-                                    >
-                                      <Bath className="mr-2 h-4 w-4" />
-                                      Washroom Activities
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="secondary"
-                                      onClick={() => toggleActivityView(room.id, "bedroom")}
-                                      className={`flex-1 cursor-pointer ${
-                                        activeActivityView[room.id] === "bedroom"
-                                          ? "bg-blue-100 border-blue-400 text-blue-700"
-                                          : "border-slate-300"
-                                      }`}
-                                    >
-                                      <BedDouble className="mr-2 h-4 w-4" />
-                                      Bedroom Activities
-                                    </Button>
-                                  </div>
-
-                                  {/* Washroom Activities - Only show when active */}
-                                  {activeActivityView[room.id] === "washroom" && (
-                                    <div className="mb-3">
-                                      <div className="space-y-2">
-                                        {washroomActivities.map((activity) => {
-                                          const Icon = activity.icon;
-                                          const categoryActivities = washroomActivities;
-                                          const currentCategoryIndex = categoryActivities.findIndex((act) => act.id === activity.id);
-                                          const previousCategoryActivities = categoryActivities.slice(0, currentCategoryIndex);
-                                          const allPreviousCompleted = previousCategoryActivities.every((act) => act.completed);
-                                          const isLocked = !allPreviousCompleted && !activity.completed;
-                                          
-                                          return (
-                                            <button
-                                              key={activity.id}
-                                              onClick={() => toggleActivity(activity.id, room.id)}
-                                              disabled={isLocked}
-                                              className={`w-full rounded-xl border-2 p-4 text-left shadow-sm transition-all ${
-                                                activity.completed
-                                                  ? "border-emerald-400 bg-emerald-50 cursor-pointer"
-                                                  : isLocked
-                                                  ? "border-rose-400 bg-rose-50 cursor-not-allowed opacity-75"
-                                                  : "border-slate-200 bg-white hover:border-blue-300 cursor-pointer"
-                                              }`}
-                                            >
-                                              <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-3">
-                                                  <div
-                                                    className={`rounded-lg p-2 ${
-                                                      activity.completed
-                                                        ? "bg-emerald-500 text-white"
-                                                        : isLocked
-                                                        ? "bg-rose-500 text-white"
-                                                        : "bg-slate-100 text-slate-600"
-                                                    }`}
-                                                  >
-                                                    <Icon className="h-4 w-4" />
-                                                  </div>
-                                                  <div>
-                                                    <p className="text-sm font-semibold text-slate-900">{activity.label}</p>
-                                                  </div>
-                                                </div>
-                                                {activity.completed ? (
-                                                  <CheckCircle2 className="h-5 w-5 text-emerald-500 flex-shrink-0" />
-                                                ) : isLocked ? (
-                                                  <XCircle className="h-5 w-5 text-rose-500 flex-shrink-0" />
-                                                ) : (
-                                                  <ListChecks className="h-5 w-5 text-slate-300 flex-shrink-0" />
-                                                )}
-                                              </div>
-                                            </button>
-                                          );
-                                        })}
-                                      </div>
-                                    </div>
-                                  )}
-
-                                  {/* Bedroom Activities - Only show when active */}
-                                  {activeActivityView[room.id] === "bedroom" && (
-                                    <div>
-                                      <div className="space-y-2">
-                                        {bedroomActivities.map((activity) => {
-                                          const Icon = activity.icon;
-                                          const categoryActivities = bedroomActivities;
-                                          const currentCategoryIndex = categoryActivities.findIndex((act) => act.id === activity.id);
-                                          const previousCategoryActivities = categoryActivities.slice(0, currentCategoryIndex);
-                                          const allPreviousCompleted = previousCategoryActivities.every((act) => act.completed);
-                                          const isLocked = !allPreviousCompleted && !activity.completed;
-                                          
-                                          return (
-                                            <button
-                                              key={activity.id}
-                                              onClick={() => toggleActivity(activity.id, room.id)}
-                                              disabled={isLocked}
-                                              className={`w-full rounded-xl border-2 p-4 text-left shadow-sm transition-all ${
-                                                activity.completed
-                                                  ? "border-emerald-400 bg-emerald-50 cursor-pointer"
-                                                  : isLocked
-                                                  ? "border-rose-400 bg-rose-50 cursor-not-allowed opacity-75"
-                                                  : "border-slate-200 bg-white hover:border-blue-300 cursor-pointer"
-                                              }`}
-                                            >
-                                              <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-3">
-                                                  <div
-                                                    className={`rounded-lg p-2 ${
-                                                      activity.completed
-                                                        ? "bg-emerald-500 text-white"
-                                                        : isLocked
-                                                        ? "bg-rose-500 text-white"
-                                                        : "bg-slate-100 text-slate-600"
-                                                    }`}
-                                                  >
-                                                    <Icon className="h-4 w-4" />
-                                                  </div>
-                                                  <div>
-                                                    <p className="text-sm font-semibold text-slate-900">{activity.label}</p>
-                                                  </div>
-                                                </div>
-                                                {activity.completed ? (
-                                                  <CheckCircle2 className="h-5 w-5 text-emerald-500 flex-shrink-0" />
-                                                ) : isLocked ? (
-                                                  <XCircle className="h-5 w-5 text-rose-500 flex-shrink-0" />
-                                                ) : (
-                                                  <ListChecks className="h-5 w-5 text-slate-300 flex-shrink-0" />
-                                                )}
-                                              </div>
-                                            </button>
-                                          );
-                                        })}
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-
-                                {/* Individual Room Finish Button */}
-                                <div className="mt-auto pt-2 border-t border-slate-200">
+                        return (
+                          <>
+                            <div className="mb-6">
+                              <div className="flex items-center justify-between mb-2">
+                                <h3 className="text-2xl font-bold text-slate-900">
+                                  Room {room.number}
+                                </h3>
+                                {/* Show Remove Room button only if no activities are completed */}
+                                {room.activities.every((a) => !a.completed) && (
                                   <Button
                                     size="sm"
-                                    onClick={() => handleFinishCleaning(room.id)}
-                                    disabled={!room.activities.every((a) => a.completed)}
-                                    className="w-full bg-gradient-to-r from-emerald-500 to-green-500 cursor-pointer disabled:cursor-not-allowed"
+                                    variant="secondary"
+                                    onClick={() => handleRemoveRoom(room.id)}
+                                    className="border-rose-300 text-rose-600 hover:bg-rose-50 cursor-pointer"
                                   >
-                                    Finish Room {room.number}
+                                    <XCircle className="mr-2 h-4 w-4" />
+                                    Remove Room
                                   </Button>
+                                )}
+                              </div>
+                              <p className="text-sm text-slate-500 mb-3">
+                                {room.type} • Floor {room.floor}
+                              </p>
+
+                              {/* Progress Bar */}
+                              <div className="mb-4">
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="text-xs font-medium text-slate-600">
+                                    Progress
+                                  </span>
+                                  <span className="text-xs font-semibold text-slate-700">
+                                    {Math.round(
+                                      (room.activities.filter(
+                                        (a) => a.completed
+                                      ).length /
+                                        room.activities.length) *
+                                        100
+                                    )}
+                                    %
+                                  </span>
                                 </div>
-                              </>
-                            );
-                          })()}
-                        </div>
-                      );
-                    })}
+                                <div className="w-full bg-slate-200 rounded-full h-2">
+                                  <div
+                                    className="bg-blue-500 h-2 rounded-full transition-all"
+                                    style={{
+                                      width: `${
+                                        (room.activities.filter(
+                                          (a) => a.completed
+                                        ).length /
+                                          room.activities.length) *
+                                        100
+                                      }%`,
+                                    }}
+                                  />
+                                </div>
+                              </div>
+
+                              {/* Select All Activities Button */}
+                              {!room.activities.every((a) => a.completed) && (
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  onClick={() =>
+                                    handleSelectAllActivities(room.id)
+                                  }
+                                  className="w-full mb-4 border-blue-300 text-blue-600 hover:bg-blue-50 cursor-pointer"
+                                >
+                                  <CheckCircle2 className="mr-2 h-4 w-4" />
+                                  Select All Activities for Room {room.number}
+                                </Button>
+                              )}
+
+                              {/* Activity View Buttons */}
+                              <div className="flex gap-2 mb-4">
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  onClick={() =>
+                                    toggleActivityView(room.id, "washroom")
+                                  }
+                                  className={`flex-1 cursor-pointer ${
+                                    activeActivityView[room.id] === "washroom"
+                                      ? "bg-blue-100 border-blue-400 text-blue-700"
+                                      : "border-slate-300"
+                                  }`}
+                                >
+                                  <Bath className="mr-2 h-4 w-4" />
+                                  Washroom Activities
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  onClick={() =>
+                                    toggleActivityView(room.id, "bedroom")
+                                  }
+                                  className={`flex-1 cursor-pointer ${
+                                    activeActivityView[room.id] === "bedroom"
+                                      ? "bg-blue-100 border-blue-400 text-blue-700"
+                                      : "border-slate-300"
+                                  }`}
+                                >
+                                  <BedDouble className="mr-2 h-4 w-4" />
+                                  Bedroom Activities
+                                </Button>
+                              </div>
+
+                              {/* Washroom Activities - Only show when active */}
+                              {activeActivityView[room.id] === "washroom" && (
+                                <div className="mb-3">
+                                  <div className="space-y-2">
+                                    {washroomActivities.map((activity) => {
+                                      const Icon = activity.icon;
+                                      const categoryActivities =
+                                        washroomActivities;
+                                      const currentCategoryIndex =
+                                        categoryActivities.findIndex(
+                                          (act) => act.id === activity.id
+                                        );
+                                      const previousCategoryActivities =
+                                        categoryActivities.slice(
+                                          0,
+                                          currentCategoryIndex
+                                        );
+                                      const allPreviousCompleted =
+                                        previousCategoryActivities.every(
+                                          (act) => act.completed
+                                        );
+                                      const isLocked =
+                                        !allPreviousCompleted &&
+                                        !activity.completed;
+
+                                      return (
+                                        <button
+                                          key={activity.id}
+                                          onClick={() =>
+                                            toggleActivity(activity.id, room.id)
+                                          }
+                                          disabled={isLocked}
+                                          className={`w-full rounded-xl border-2 p-4 text-left shadow-sm transition-all ${
+                                            activity.completed
+                                              ? "border-emerald-400 bg-emerald-50 cursor-pointer"
+                                              : isLocked
+                                              ? "border-rose-400 bg-rose-50 cursor-not-allowed opacity-75"
+                                              : "border-slate-200 bg-white hover:border-blue-300 cursor-pointer"
+                                          }`}
+                                        >
+                                          <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                              <div
+                                                className={`rounded-lg p-2 ${
+                                                  activity.completed
+                                                    ? "bg-emerald-500 text-white"
+                                                    : isLocked
+                                                    ? "bg-rose-500 text-white"
+                                                    : "bg-slate-100 text-slate-600"
+                                                }`}
+                                              >
+                                                <Icon className="h-4 w-4" />
+                                              </div>
+                                              <div>
+                                                <p className="text-sm font-semibold text-slate-900">
+                                                  {activity.label}
+                                                </p>
+                                              </div>
+                                            </div>
+                                            {activity.completed ? (
+                                              <CheckCircle2 className="h-5 w-5 text-emerald-500 flex-shrink-0" />
+                                            ) : isLocked ? (
+                                              <XCircle className="h-5 w-5 text-rose-500 flex-shrink-0" />
+                                            ) : (
+                                              <ListChecks className="h-5 w-5 text-slate-300 flex-shrink-0" />
+                                            )}
+                                          </div>
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Bedroom Activities - Only show when active */}
+                              {activeActivityView[room.id] === "bedroom" && (
+                                <div>
+                                  <div className="space-y-2">
+                                    {bedroomActivities.map((activity) => {
+                                      const Icon = activity.icon;
+                                      const categoryActivities =
+                                        bedroomActivities;
+                                      const currentCategoryIndex =
+                                        categoryActivities.findIndex(
+                                          (act) => act.id === activity.id
+                                        );
+                                      const previousCategoryActivities =
+                                        categoryActivities.slice(
+                                          0,
+                                          currentCategoryIndex
+                                        );
+                                      const allPreviousCompleted =
+                                        previousCategoryActivities.every(
+                                          (act) => act.completed
+                                        );
+                                      const isLocked =
+                                        !allPreviousCompleted &&
+                                        !activity.completed;
+
+                                      return (
+                                        <button
+                                          key={activity.id}
+                                          onClick={() =>
+                                            toggleActivity(activity.id, room.id)
+                                          }
+                                          disabled={isLocked}
+                                          className={`w-full rounded-xl border-2 p-4 text-left shadow-sm transition-all ${
+                                            activity.completed
+                                              ? "border-emerald-400 bg-emerald-50 cursor-pointer"
+                                              : isLocked
+                                              ? "border-rose-400 bg-rose-50 cursor-not-allowed opacity-75"
+                                              : "border-slate-200 bg-white hover:border-blue-300 cursor-pointer"
+                                          }`}
+                                        >
+                                          <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                              <div
+                                                className={`rounded-lg p-2 ${
+                                                  activity.completed
+                                                    ? "bg-emerald-500 text-white"
+                                                    : isLocked
+                                                    ? "bg-rose-500 text-white"
+                                                    : "bg-slate-100 text-slate-600"
+                                                }`}
+                                              >
+                                                <Icon className="h-4 w-4" />
+                                              </div>
+                                              <div>
+                                                <p className="text-sm font-semibold text-slate-900">
+                                                  {activity.label}
+                                                </p>
+                                              </div>
+                                            </div>
+                                            {activity.completed ? (
+                                              <CheckCircle2 className="h-5 w-5 text-emerald-500 flex-shrink-0" />
+                                            ) : isLocked ? (
+                                              <XCircle className="h-5 w-5 text-rose-500 flex-shrink-0" />
+                                            ) : (
+                                              <ListChecks className="h-5 w-5 text-slate-300 flex-shrink-0" />
+                                            )}
+                                          </div>
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Individual Room Finish Button */}
+                            <div className="mt-auto pt-2 border-t border-slate-200">
+                              <Button
+                                size="sm"
+                                onClick={() => handleFinishCleaning(room.id)}
+                                disabled={
+                                  !room.activities.every((a) => a.completed)
+                                }
+                                className="w-full bg-gradient-to-r from-emerald-500 to-green-500 cursor-pointer disabled:cursor-not-allowed"
+                              >
+                                Finish Room {room.number}
+                              </Button>
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -1818,11 +2249,20 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
               <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-lg">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div>
-                    <p className="text-xs uppercase tracking-[0.3em] text-blue-400">Cleaning History</p>
-                    <h2 className="text-2xl font-bold text-slate-900">Completed Rooms</h2>
-                    <p className="text-sm text-slate-500">View all rooms you have finished cleaning</p>
+                    <p className="text-xs uppercase tracking-[0.3em] text-blue-400">
+                      Cleaning History
+                    </p>
+                    <h2 className="text-2xl font-bold text-slate-900">
+                      Completed Rooms
+                    </h2>
+                    <p className="text-sm text-slate-500">
+                      View all rooms you have finished cleaning
+                    </p>
                   </div>
-                  <Button variant="secondary" onClick={() => setHousekeeperStage("dashboard")}>
+                  <Button
+                    variant="secondary"
+                    onClick={() => setHousekeeperStage("dashboard")}
+                  >
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Back to Dashboard
                   </Button>
@@ -1837,7 +2277,9 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
                         <th className="px-4 py-3 font-semibold">Room Number</th>
                         <th className="px-4 py-3 font-semibold">Floor</th>
                         <th className="px-4 py-3 font-semibold">Room Type</th>
-                        <th className="px-4 py-3 font-semibold">Cleaning Date</th>
+                        <th className="px-4 py-3 font-semibold">
+                          Cleaning Date
+                        </th>
                         <th className="px-4 py-3 font-semibold">Start Time</th>
                         <th className="px-4 py-3 font-semibold">End Time</th>
                         <th className="px-4 py-3 font-semibold">Duration</th>
@@ -1846,14 +2288,31 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
                     </thead>
                     <tbody>
                       {cleaningHistory.map((record) => (
-                        <tr key={record.id} className="border-b border-slate-100 last:border-none hover:bg-slate-50">
-                          <td className="px-4 py-3 font-semibold text-slate-900">#{record.roomNumber}</td>
-                          <td className="px-4 py-3 text-slate-600">{record.floor}</td>
-                          <td className="px-4 py-3 text-slate-600">{record.roomType}</td>
-                          <td className="px-4 py-3 text-slate-600">{formatDate(record.cleaningDate)}</td>
-                          <td className="px-4 py-3 text-slate-600">{formatTimeDisplay(record.startTime)}</td>
-                          <td className="px-4 py-3 text-slate-600">{formatTimeDisplay(record.endTime)}</td>
-                          <td className="px-4 py-3 text-slate-600">{formatTimeLong(record.duration)}</td>
+                        <tr
+                          key={record.id}
+                          className="border-b border-slate-100 last:border-none hover:bg-slate-50"
+                        >
+                          <td className="px-4 py-3 font-semibold text-slate-900">
+                            #{record.roomNumber}
+                          </td>
+                          <td className="px-4 py-3 text-slate-600">
+                            {record.floor}
+                          </td>
+                          <td className="px-4 py-3 text-slate-600">
+                            {record.roomType}
+                          </td>
+                          <td className="px-4 py-3 text-slate-600">
+                            {formatDate(record.cleaningDate)}
+                          </td>
+                          <td className="px-4 py-3 text-slate-600">
+                            {formatTimeDisplay(record.startTime)}
+                          </td>
+                          <td className="px-4 py-3 text-slate-600">
+                            {formatTimeDisplay(record.endTime)}
+                          </td>
+                          <td className="px-4 py-3 text-slate-600">
+                            {formatTimeLong(record.duration)}
+                          </td>
                           <td className="px-4 py-3">
                             <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
                               Completed
@@ -1867,8 +2326,12 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
               ) : (
                 <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-12 text-center">
                   <History className="h-12 w-12 mx-auto mb-4 text-slate-300" />
-                  <p className="text-slate-500 font-medium">No cleaning history available</p>
-                  <p className="text-sm text-slate-400 mt-2">Completed rooms will appear here</p>
+                  <p className="text-slate-500 font-medium">
+                    No cleaning history available
+                  </p>
+                  <p className="text-sm text-slate-400 mt-2">
+                    Completed rooms will appear here
+                  </p>
                 </div>
               )}
             </div>
@@ -1881,10 +2344,15 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
           >
             <div className="space-y-4">
               <p className="text-sm text-slate-600">
-                Are you sure all cleaning tasks are completed for all {selectedRooms.length} rooms?
+                Are you sure all cleaning tasks are completed for all{" "}
+                {selectedRooms.length} rooms?
               </p>
               <div className="flex gap-3">
-                <Button variant="secondary" className="flex-1" onClick={() => setShowFinishConfirm(false)}>
+                <Button
+                  variant="secondary"
+                  className="flex-1"
+                  onClick={() => setShowFinishConfirm(false)}
+                >
                   Cancel
                 </Button>
                 <Button className="flex-1" onClick={confirmFinishAll}>
@@ -1908,26 +2376,44 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
                 <>
                   <div className="rounded-lg bg-slate-50 p-4 space-y-2">
                     <div className="flex justify-between">
-                      <span className="text-sm font-medium text-slate-600">Room Number:</span>
+                      <span className="text-sm font-medium text-slate-600">
+                        Room Number:
+                      </span>
                       <span className="text-sm font-semibold text-slate-900">
                         {rooms.find((r) => r.id === messageRoomId)?.number}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm font-medium text-slate-600">Cleaner Name:</span>
-                      <span className="text-sm font-semibold text-slate-900">{currentCleanerName}</span>
+                      <span className="text-sm font-medium text-slate-600">
+                        Cleaner Name:
+                      </span>
+                      <span className="text-sm font-semibold text-slate-900">
+                        {currentCleanerName}
+                      </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm font-medium text-slate-600">Time Spent:</span>
+                      <span className="text-sm font-medium text-slate-600">
+                        Time Spent:
+                      </span>
                       <span className="text-sm font-semibold text-rose-600">
-                        {messageRoomId && rooms.find((r) => r.id === messageRoomId)?.startTime
-                          ? formatTime(Math.floor((Date.now() - (rooms.find((r) => r.id === messageRoomId)?.startTime || 0)) / 1000))
+                        {messageRoomId &&
+                        rooms.find((r) => r.id === messageRoomId)?.startTime
+                          ? formatTime(
+                              Math.floor(
+                                (Date.now() -
+                                  (rooms.find((r) => r.id === messageRoomId)
+                                    ?.startTime || 0)) /
+                                  1000
+                              )
+                            )
                           : formatTime(0)}
                       </span>
                     </div>
                   </div>
                   <div>
-                    <label className="text-sm font-semibold text-slate-600 mb-2 block">Optional Note:</label>
+                    <label className="text-sm font-semibold text-slate-600 mb-2 block">
+                      Optional Note:
+                    </label>
                     <textarea
                       value={messageNote}
                       onChange={(e) => setMessageNote(e.target.value)}
@@ -1972,31 +2458,47 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <p className="text-xs text-slate-500 mb-1">Room Number</p>
-                      <p className="text-lg font-bold text-slate-900">#{selectedHistoryRecord.roomNumber}</p>
+                      <p className="text-lg font-bold text-slate-900">
+                        #{selectedHistoryRecord.roomNumber}
+                      </p>
                     </div>
                     <div>
                       <p className="text-xs text-slate-500 mb-1">Room Type</p>
-                      <p className="text-lg font-semibold text-slate-700">{selectedHistoryRecord.roomType}</p>
+                      <p className="text-lg font-semibold text-slate-700">
+                        {selectedHistoryRecord.roomType}
+                      </p>
                     </div>
                     <div>
                       <p className="text-xs text-slate-500 mb-1">Floor</p>
-                      <p className="text-sm font-semibold text-slate-700">{selectedHistoryRecord.floor}</p>
+                      <p className="text-sm font-semibold text-slate-700">
+                        {selectedHistoryRecord.floor}
+                      </p>
                     </div>
                     <div>
-                      <p className="text-xs text-slate-500 mb-1">Cleaning Date</p>
-                      <p className="text-sm font-semibold text-slate-700">{formatDate(selectedHistoryRecord.cleaningDate)}</p>
+                      <p className="text-xs text-slate-500 mb-1">
+                        Cleaning Date
+                      </p>
+                      <p className="text-sm font-semibold text-slate-700">
+                        {formatDate(selectedHistoryRecord.cleaningDate)}
+                      </p>
                     </div>
                     <div>
                       <p className="text-xs text-slate-500 mb-1">Start Time</p>
-                      <p className="text-sm font-semibold text-slate-700">{formatTimeDisplay(selectedHistoryRecord.startTime)}</p>
+                      <p className="text-sm font-semibold text-slate-700">
+                        {formatTimeDisplay(selectedHistoryRecord.startTime)}
+                      </p>
                     </div>
                     <div>
                       <p className="text-xs text-slate-500 mb-1">End Time</p>
-                      <p className="text-sm font-semibold text-slate-700">{formatTimeDisplay(selectedHistoryRecord.endTime)}</p>
+                      <p className="text-sm font-semibold text-slate-700">
+                        {formatTimeDisplay(selectedHistoryRecord.endTime)}
+                      </p>
                     </div>
                     <div className="col-span-2">
                       <p className="text-xs text-slate-500 mb-1">Duration</p>
-                      <p className="text-lg font-bold text-blue-600">{formatTimeLong(selectedHistoryRecord.duration)}</p>
+                      <p className="text-lg font-bold text-blue-600">
+                        {formatTimeLong(selectedHistoryRecord.duration)}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -2022,25 +2524,30 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
 
                 {/* Tasks by Category */}
                 <div className="min-h-[200px]">
-                  {historyTasksByCategory[historyDetailsActiveTab].length > 0 ? (
+                  {historyTasksByCategory[historyDetailsActiveTab].length >
+                  0 ? (
                     <div className="grid gap-3 sm:grid-cols-2">
-                      {historyTasksByCategory[historyDetailsActiveTab].map((task) => {
-                        const Icon = task.icon;
-                        return (
-                          <div
-                            key={task.id}
-                            className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
-                          >
-                            <div className="flex-shrink-0 rounded-full bg-emerald-100 p-2">
-                              <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                      {historyTasksByCategory[historyDetailsActiveTab].map(
+                        (task) => {
+                          const Icon = task.icon;
+                          return (
+                            <div
+                              key={task.id}
+                              className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
+                            >
+                              <div className="flex-shrink-0 rounded-full bg-emerald-100 p-2">
+                                <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-semibold text-slate-900">
+                                  {task.label}
+                                </p>
+                              </div>
+                              <Icon className="h-5 w-5 text-slate-400 flex-shrink-0" />
                             </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-semibold text-slate-900">{task.label}</p>
-                            </div>
-                            <Icon className="h-5 w-5 text-slate-400 flex-shrink-0" />
-                          </div>
-                        );
-                      })}
+                          );
+                        }
+                      )}
                     </div>
                   ) : (
                     <div className="text-center py-12 text-slate-400">
@@ -2085,7 +2592,7 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
     const filtered = rooms.filter((r) => r.status === "checkout");
     // Filter by room number if search is active (manager view)
     if (managerRoomSearch) {
-      return filtered.filter((r) => 
+      return filtered.filter((r) =>
         r.number.toLowerCase().includes(managerRoomSearch.toLowerCase())
       );
     }
@@ -2098,12 +2605,23 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
         <section className="rounded-3xl border border-slate-100 bg-white p-4 sm:p-6 shadow-lg">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="min-w-0">
-              <p className="text-xs uppercase tracking-[0.3em] text-blue-400">Manager</p>
-              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Housekeeper Management</h1>
-              <p className="text-sm text-slate-500">Create, update, and manage the housekeeping team.</p>
+              <p className="text-xs uppercase tracking-[0.3em] text-blue-400">
+                Manager
+              </p>
+              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">
+                Housekeeper Management
+              </h1>
+              <p className="text-sm text-slate-500">
+                Create, update, and manage the housekeeping team.
+              </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-              <Button size="sm" variant="secondary" onClick={openCreateProfile} className="w-full sm:w-auto">
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={openCreateProfile}
+                className="w-full sm:w-auto"
+              >
                 Add Housekeeper
               </Button>
             </div>
@@ -2114,8 +2632,12 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
           <div className="rounded-3xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
             <div className="flex flex-col items-start justify-start gap-3">
               <div className="w-full">
-                <p className="text-xs sm:text-sm font-medium text-slate-600 mb-1">Checked-out Rooms</p>
-                <p className="text-3xl sm:text-4xl font-bold text-rose-600">{managerMetrics.checkout}</p>
+                <p className="text-xs sm:text-sm font-medium text-slate-600 mb-1">
+                  Checked-out Rooms
+                </p>
+                <p className="text-3xl sm:text-4xl font-bold text-rose-600">
+                  {managerMetrics.checkout}
+                </p>
               </div>
               <div className="rounded-2xl bg-rose-100 p-2">
                 <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6 text-rose-600" />
@@ -2125,8 +2647,12 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
           <div className="rounded-3xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
             <div className="flex flex-col items-start justify-start gap-3">
               <div className="w-full">
-                <p className="text-xs sm:text-sm font-medium text-slate-600 mb-1">Rooms in Cleaning</p>
-                <p className="text-3xl sm:text-4xl font-bold text-blue-600">{managerMetrics.inCleaning}</p>
+                <p className="text-xs sm:text-sm font-medium text-slate-600 mb-1">
+                  Rooms in Cleaning
+                </p>
+                <p className="text-3xl sm:text-4xl font-bold text-blue-600">
+                  {managerMetrics.inCleaning}
+                </p>
               </div>
               <div className="rounded-2xl bg-blue-100 p-2">
                 <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
@@ -2136,8 +2662,12 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
           <div className="rounded-3xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
             <div className="flex flex-col items-start justify-start gap-3">
               <div className="w-full">
-                <p className="text-xs sm:text-sm font-medium text-slate-600 mb-1">Assigned Rooms</p>
-                <p className="text-3xl sm:text-4xl font-bold text-amber-600">{managerMetrics.assigned}</p>
+                <p className="text-xs sm:text-sm font-medium text-slate-600 mb-1">
+                  Assigned Rooms
+                </p>
+                <p className="text-3xl sm:text-4xl font-bold text-amber-600">
+                  {managerMetrics.assigned}
+                </p>
               </div>
               <div className="rounded-2xl bg-amber-100 p-2">
                 <ClipboardCheck className="h-5 w-5 sm:h-6 sm:w-6 text-amber-600" />
@@ -2147,8 +2677,12 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
           <div className="rounded-3xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
             <div className="flex flex-col items-start justify-start gap-3">
               <div className="w-full">
-                <p className="text-xs sm:text-sm font-medium text-slate-600 mb-1">Completed</p>
-                <p className="text-3xl sm:text-4xl font-bold text-emerald-600">{managerMetrics.available}</p>
+                <p className="text-xs sm:text-sm font-medium text-slate-600 mb-1">
+                  Completed
+                </p>
+                <p className="text-3xl sm:text-4xl font-bold text-emerald-600">
+                  {managerMetrics.available}
+                </p>
               </div>
               <div className="rounded-2xl bg-emerald-100 p-2">
                 <CheckCircle2 className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-600" />
@@ -2161,58 +2695,87 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
         <section className="rounded-3xl border border-cyan-200 bg-gradient-to-br from-cyan-50 to-blue-50 p-6 shadow-md">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-lg md:text-xl font-bold text-slate-900">Housekeeper Activities</h3>
-              <p className="text-xs text-slate-500 mt-1">Real-time view of rooms selected by housekeepers</p>
+              <h3 className="text-lg md:text-xl font-bold text-slate-900">
+                Housekeeper Activities
+              </h3>
+              <p className="text-xs text-slate-500 mt-1">
+                Real-time view of rooms selected by housekeepers
+              </p>
             </div>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {housekeepers.filter((hk) => hk.active).map((cleaner) => {
-              const cleanerHistory = roomHistory[cleaner.id] || [];
-              const selfSelectedRooms = cleanerHistory.filter((entry) => entry.assignedBy === "housekeeper");
-              const managerAssignedRooms = cleanerHistory.filter((entry) => entry.assignedBy === "manager");
-              const currentRooms = rooms.filter((r) => r.assignedTo === cleaner.name && r.status !== "available");
-              
-              return (
-                <div
-                  key={cleaner.id}
-                  className="rounded-2xl border border-cyan-200 bg-white p-4 shadow-sm"
-                >
-                  <div className="mb-3">
-                    <p className="font-semibold text-slate-900">{cleaner.name}</p>
-                    <p className="text-xs text-slate-500">{cleaner.email}</p>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-600">Self-Selected Rooms:</span>
-                      <span className="font-bold text-cyan-600">{selfSelectedRooms.length}</span>
+            {housekeepers
+              .filter((hk) => hk.active)
+              .map((cleaner) => {
+                const cleanerHistory = roomHistory[cleaner.id] || [];
+                const selfSelectedRooms = cleanerHistory.filter(
+                  (entry) => entry.assignedBy === "housekeeper"
+                );
+                const managerAssignedRooms = cleanerHistory.filter(
+                  (entry) => entry.assignedBy === "manager"
+                );
+                const currentRooms = rooms.filter(
+                  (r) =>
+                    r.assignedTo === cleaner.name && r.status !== "available"
+                );
+
+                return (
+                  <div
+                    key={cleaner.id}
+                    className="rounded-2xl border border-cyan-200 bg-white p-4 shadow-sm"
+                  >
+                    <div className="mb-3">
+                      <p className="font-semibold text-slate-900">
+                        {cleaner.name}
+                      </p>
+                      <p className="text-xs text-slate-500">{cleaner.email}</p>
                     </div>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-600">Manager-Assigned:</span>
-                      <span className="font-bold text-purple-600">{managerAssignedRooms.length}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-600">Currently Active:</span>
-                      <span className="font-bold text-blue-600">{currentRooms.length}</span>
-                    </div>
-                    {selfSelectedRooms.length > 0 && (
-                      <div className="mt-2 pt-2 border-t border-slate-200">
-                        <p className="text-xs font-semibold text-slate-700 mb-1">Recently Selected:</p>
-                        <div className="flex flex-wrap gap-1">
-                          {selfSelectedRooms.slice(-3).map((entry, idx) => (
-                            <span
-                              key={idx}
-                              className="rounded-full bg-cyan-100 px-2 py-0.5 text-xs font-semibold text-cyan-700"
-                            >
-                              #{entry.roomNumber}
-                            </span>
-                          ))}
-                        </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-600">
+                          Self-Selected Rooms:
+                        </span>
+                        <span className="font-bold text-cyan-600">
+                          {selfSelectedRooms.length}
+                        </span>
                       </div>
-                    )}
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-600">
+                          Manager-Assigned:
+                        </span>
+                        <span className="font-bold text-purple-600">
+                          {managerAssignedRooms.length}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-600">
+                          Currently Active:
+                        </span>
+                        <span className="font-bold text-blue-600">
+                          {currentRooms.length}
+                        </span>
+                      </div>
+                      {selfSelectedRooms.length > 0 && (
+                        <div className="mt-2 pt-2 border-t border-slate-200">
+                          <p className="text-xs font-semibold text-slate-700 mb-1">
+                            Recently Selected:
+                          </p>
+                          <div className="flex flex-wrap gap-1">
+                            {selfSelectedRooms.slice(-3).map((entry, idx) => (
+                              <span
+                                key={idx}
+                                className="rounded-full bg-cyan-100 px-2 py-0.5 text-xs font-semibold text-cyan-700"
+                              >
+                                #{entry.roomNumber}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
             {housekeepers.filter((hk) => hk.active).length === 0 && (
               <div className="col-span-full text-center py-4 text-slate-500 text-sm">
                 No active housekeepers
@@ -2223,94 +2786,118 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
 
         <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-md">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg md:text-xl font-bold text-slate-900">Active Cleaners Monitoring</h3>
+            <h3 className="text-lg md:text-xl font-bold text-slate-900">
+              Active Cleaners Monitoring
+            </h3>
             {messages.length > 0 && (
               <div className="flex items-center gap-2 rounded-full bg-rose-100 px-3 py-1">
                 <MessageSquare className="h-4 w-4 text-rose-600" />
-                <span className="text-xs font-semibold text-rose-600">{messages.length} Message{messages.length !== 1 ? 's' : ''}</span>
+                <span className="text-xs font-semibold text-rose-600">
+                  {messages.length} Message{messages.length !== 1 ? "s" : ""}
+                </span>
               </div>
             )}
           </div>
           {activeCleaners.length > 0 ? (
             <div className="overflow-x-auto pb-4">
               <div className="flex gap-4 min-w-max">
-              {activeCleaners.map((cleaner) => {
-                const progress = getCleanerProgress(cleaner.profile?.id);
-                const allCompleted = cleaner.rooms.every((room) =>
-                  room.activities.every((act) => act.completed)
-                );
-                  
+                {activeCleaners.map((cleaner) => {
+                  const progress = getCleanerProgress(cleaner.profile?.id);
+                  const allCompleted = cleaner.rooms.every((room) =>
+                    room.activities.every((act) => act.completed)
+                  );
+
                   // Calculate total time spent across all rooms
                   const totalTimeSpent = cleaner.rooms.reduce((total, room) => {
                     if (room.startTime) {
-                      const calculatedTime = Math.floor((Date.now() - room.startTime) / 1000);
+                      const calculatedTime = Math.floor(
+                        (Date.now() - room.startTime) / 1000
+                      );
                       return total + calculatedTime;
                     }
                     return total;
                   }, 0);
-                
-                return (
+
+                  return (
                     <div
                       key={cleaner.name}
                       className="rounded-3xl border border-blue-200 bg-gradient-to-br from-blue-50 to-cyan-50 p-4 sm:p-5 shadow-sm min-w-[280px] sm:min-w-[320px] flex-shrink-0"
                     >
-                    <div className="mb-4">
-                      <p className="text-sm font-semibold text-slate-600">Cleaner</p>
-                      <p className="text-lg md:text-xl font-bold text-slate-900">{cleaner.name}</p>
-                      {cleaner.profile && (
-                        <p className="text-xs text-slate-500 mt-1">{cleaner.profile.phone}</p>
-                      )}
-                    </div>
-
-                    <div className="space-y-3 mb-4">
-                      <div>
-                        <p className="text-sm font-semibold text-slate-700 mb-2">
-                            Current Rooms: {cleaner.rooms.length}
+                      <div className="mb-4">
+                        <p className="text-sm font-semibold text-slate-600">
+                          Cleaner
                         </p>
-                        <div className="flex flex-wrap gap-2">
+                        <p className="text-lg md:text-xl font-bold text-slate-900">
+                          {cleaner.name}
+                        </p>
+                        {cleaner.profile && (
+                          <p className="text-xs text-slate-500 mt-1">
+                            {cleaner.profile.phone}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="space-y-3 mb-4">
+                        <div>
+                          <p className="text-sm font-semibold text-slate-700 mb-2">
+                            Current Rooms: {cleaner.rooms.length}
+                          </p>
+                          <div className="flex flex-wrap gap-2">
                             {cleaner.rooms.map((room) => {
-                              const displayTime = room.startTime 
-                                ? Math.floor((Date.now() - room.startTime) / 1000)
+                              const displayTime = room.startTime
+                                ? Math.floor(
+                                    (Date.now() - room.startTime) / 1000
+                                  )
                                 : 0;
-                              
+
                               return (
-                            <div key={room.id} className="flex items-center gap-2">
-                              <span className="inline-block rounded-lg bg-white px-2 py-1 text-xs font-semibold text-blue-600 border border-blue-200">
-                                #{room.number}
-                              </span>
+                                <div
+                                  key={room.id}
+                                  className="flex items-center gap-2"
+                                >
+                                  <span className="inline-block rounded-lg bg-white px-2 py-1 text-xs font-semibold text-blue-600 border border-blue-200">
+                                    #{room.number}
+                                  </span>
                                   <span className="text-xs text-slate-500">
                                     {formatTime(displayTime)}
                                   </span>
-                              <button
-                                onClick={() => {
-                                  setReassignData({
-                                    roomId: room.id,
-                                    fromCleanerId: cleaner.profile?.id || "",
-                                  });
-                                  setShowReassignModal(true);
-                                }}
-                                className="text-blue-500 hover:text-blue-700 text-xs font-semibold"
-                                title="Reassign this room"
-                              >
-                                ↻
-                              </button>
-                            </div>
+                                  <button
+                                    onClick={() => {
+                                      setReassignData({
+                                        roomId: room.id,
+                                        fromCleanerId:
+                                          cleaner.profile?.id || "",
+                                      });
+                                      setShowReassignModal(true);
+                                    }}
+                                    className="text-blue-500 hover:text-blue-700 text-xs font-semibold"
+                                    title="Reassign this room"
+                                  >
+                                    ↻
+                                  </button>
+                                </div>
                               );
                             })}
+                          </div>
                         </div>
-                      </div>
 
-                      <div>
-                        <div className="flex items-center justify-between mb-2">
-                            <p className="text-sm font-semibold text-slate-700">Time Started</p>
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="text-sm font-semibold text-slate-700">
+                              Time Started
+                            </p>
                             <p className="text-xs text-slate-500">
-                              {cleaner.rooms[0]?.startTime 
-                                ? new Date(cleaner.rooms[0].startTime).toLocaleTimeString()
+                              {cleaner.rooms[0]?.startTime
+                                ? new Date(
+                                    cleaner.rooms[0].startTime
+                                  ).toLocaleTimeString()
                                 : "N/A"}
                             </p>
                           </div>
                           <div className="flex items-center justify-between mb-2">
-                            <p className="text-sm font-semibold text-slate-700">Time Spent</p>
+                            <p className="text-sm font-semibold text-slate-700">
+                              Time Spent
+                            </p>
                             <p className="text-sm font-bold text-blue-600">
                               {formatTime(totalTimeSpent)}
                             </p>
@@ -2319,37 +2906,41 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
 
                         <div>
                           <div className="flex items-center justify-between mb-2">
-                            <p className="text-sm font-semibold text-slate-700">Activity Progress</p>
-                          <p className="text-sm font-bold text-blue-600">{progress.percentage}%</p>
+                            <p className="text-sm font-semibold text-slate-700">
+                              Activity Progress
+                            </p>
+                            <p className="text-sm font-bold text-blue-600">
+                              {progress.percentage}%
+                            </p>
+                          </div>
+                          <div className="w-full bg-slate-200 rounded-full h-2">
+                            <div
+                              className={`h-2 rounded-full transition-all ${
+                                allCompleted ? "bg-emerald-500" : "bg-blue-500"
+                              }`}
+                              style={{ width: `${progress.percentage}%` }}
+                            />
+                          </div>
+                          <p className="text-xs text-slate-500 mt-1">
+                            {progress.completed} of {progress.total} activities
+                          </p>
                         </div>
-                        <div className="w-full bg-slate-200 rounded-full h-2">
-                          <div
-                            className={`h-2 rounded-full transition-all ${
-                              allCompleted ? "bg-emerald-500" : "bg-blue-500"
-                            }`}
-                            style={{ width: `${progress.percentage}%` }}
-                          />
-                        </div>
-                        <p className="text-xs text-slate-500 mt-1">
-                          {progress.completed} of {progress.total} activities
-                        </p>
-                      </div>
 
-                      <div>
-                        <span
-                          className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${
-                            allCompleted
-                              ? "bg-emerald-100 text-emerald-700"
-                              : "bg-blue-100 text-blue-700"
-                          }`}
-                        >
-                          {allCompleted ? "Completed" : "In Progress"}
-                        </span>
+                        <div>
+                          <span
+                            className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${
+                              allCompleted
+                                ? "bg-emerald-100 text-emerald-700"
+                                : "bg-blue-100 text-blue-700"
+                            }`}
+                          >
+                            {allCompleted ? "Completed" : "In Progress"}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
               </div>
             </div>
           ) : (
@@ -2364,13 +2955,16 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
           <section className="rounded-3xl border border-rose-200 bg-rose-50 p-6 shadow-md">
             <div className="flex items-center gap-2 mb-4">
               <MessageSquare className="h-5 w-5 text-rose-600" />
-              <h3 className="text-lg md:text-xl font-bold text-slate-900">Cleaning Messages</h3>
+              <h3 className="text-lg md:text-xl font-bold text-slate-900">
+                Cleaning Messages
+              </h3>
             </div>
             <div className="space-y-3 max-h-96 overflow-y-auto">
               {messages.map((msg) => {
                 const room = rooms.find((r) => r.number === msg.roomNumber);
-                const isAvailableForReassignment = room && room.status === "checkout";
-                
+                const isAvailableForReassignment =
+                  room && room.status === "checkout";
+
                 return (
                   <div
                     key={msg.id}
@@ -2390,14 +2984,20 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
                       </span>
                     </div>
                     {msg.note && (
-                      <p className="text-sm text-slate-600 mt-2 italic">"{msg.note}"</p>
+                      <p className="text-sm text-slate-600 mt-2 italic">
+                        "{msg.note}"
+                      </p>
                     )}
                     {isAvailableForReassignment && (
                       <div className="mt-4 pt-4 border-t border-rose-200">
-                        <p className="text-xs font-semibold text-slate-700 mb-2">Assign to another cleaner:</p>
+                        <p className="text-xs font-semibold text-slate-700 mb-2">
+                          Assign to another cleaner:
+                        </p>
                         <div className="flex flex-wrap gap-2">
                           {housekeepers
-                            .filter((hk) => hk.active && hk.name !== msg.cleanerName)
+                            .filter(
+                              (hk) => hk.active && hk.name !== msg.cleanerName
+                            )
                             .map((hk) => (
                               <Button
                                 key={hk.id}
@@ -2414,8 +3014,12 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
                                 {hk.name}
                               </Button>
                             ))}
-                          {housekeepers.filter((hk) => hk.active && hk.name !== msg.cleanerName).length === 0 && (
-                            <p className="text-xs text-slate-500">No other active cleaners available</p>
+                          {housekeepers.filter(
+                            (hk) => hk.active && hk.name !== msg.cleanerName
+                          ).length === 0 && (
+                            <p className="text-xs text-slate-500">
+                              No other active cleaners available
+                            </p>
                           )}
                         </div>
                       </div>
@@ -2429,7 +3033,9 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
 
         <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-md">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-            <h3 className="text-lg md:text-xl font-bold text-slate-900">Checked-out Rooms</h3>
+            <h3 className="text-lg md:text-xl font-bold text-slate-900">
+              Checked-out Rooms
+            </h3>
             <div className="relative flex-1 sm:max-w-md">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
@@ -2451,9 +3057,15 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
-                      <p className="text-xs uppercase tracking-widest text-slate-400">Room</p>
-                      <p className="text-2xl font-bold text-slate-900">{room.number}</p>
-                      <p className="text-sm text-slate-500">{room.type} • Floor {room.floor}</p>
+                      <p className="text-xs uppercase tracking-widest text-slate-400">
+                        Room
+                      </p>
+                      <p className="text-2xl font-bold text-slate-900">
+                        {room.number}
+                      </p>
+                      <p className="text-sm text-slate-500">
+                        {room.type} • Floor {room.floor}
+                      </p>
                     </div>
                     <div className="flex flex-col items-end gap-2">
                       <span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-500">
@@ -2487,11 +3099,15 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
             >
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
-                  <p className="text-lg font-semibold text-slate-900">{hk.name}</p>
+                  <p className="text-lg font-semibold text-slate-900">
+                    {hk.name}
+                  </p>
                 </div>
                 <span
                   className={`rounded-full px-3 py-1 text-xs font-semibold w-fit ${
-                    hk.active ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-500"
+                    hk.active
+                      ? "bg-emerald-50 text-emerald-600"
+                      : "bg-slate-100 text-slate-500"
                   }`}
                 >
                   {hk.active ? "Active" : "Inactive"}
@@ -2536,9 +3152,10 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
           )}
         </section>
 
-
         <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-md">
-          <h3 className="text-xl font-bold text-slate-900 mb-4">Cleaner Assignment Table</h3>
+          <h3 className="text-xl font-bold text-slate-900 mb-4">
+            Cleaner Assignment Table
+          </h3>
           <div className="overflow-x-auto">
             <table className="min-w-full text-left text-sm">
               <thead>
@@ -2552,19 +3169,36 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
               </thead>
               <tbody>
                 {housekeepers.map((cleaner) => {
-                  const cleanerRooms = rooms.filter((room) => room.assignedTo === cleaner.name);
-                  const allCompleted = cleanerRooms.length > 0 && cleanerRooms.every((room) => room.status === "available");
-                  const hasPending = cleanerRooms.some((room) => room.status !== "available");
-                  
+                  const cleanerRooms = rooms.filter(
+                    (room) => room.assignedTo === cleaner.name
+                  );
+                  const allCompleted =
+                    cleanerRooms.length > 0 &&
+                    cleanerRooms.every((room) => room.status === "available");
+                  const hasPending = cleanerRooms.some(
+                    (room) => room.status !== "available"
+                  );
+
                   // Get all room numbers from history (both assigned and selected)
                   const cleanerHistory = roomHistory[cleaner.id] || [];
-                  const allHistoryRooms = cleanerHistory.map((entry) => entry.roomNumber);
-                  const managerAssignedRooms = cleanerHistory.filter((entry) => entry.assignedBy === "manager").map((entry) => entry.roomNumber);
-                  const selfSelectedRooms = cleanerHistory.filter((entry) => entry.assignedBy === "housekeeper").map((entry) => entry.roomNumber);
-                  
+                  const allHistoryRooms = cleanerHistory.map(
+                    (entry) => entry.roomNumber
+                  );
+                  const managerAssignedRooms = cleanerHistory
+                    .filter((entry) => entry.assignedBy === "manager")
+                    .map((entry) => entry.roomNumber);
+                  const selfSelectedRooms = cleanerHistory
+                    .filter((entry) => entry.assignedBy === "housekeeper")
+                    .map((entry) => entry.roomNumber);
+
                   return (
-                    <tr key={cleaner.id} className="border-b border-slate-100 last:border-none">
-                      <td className="px-4 py-3 font-semibold text-slate-900">{cleaner.name}</td>
+                    <tr
+                      key={cleaner.id}
+                      className="border-b border-slate-100 last:border-none"
+                    >
+                      <td className="px-4 py-3 font-semibold text-slate-900">
+                        {cleaner.name}
+                      </td>
                       <td className="px-4 py-3">
                         <span
                           className={`rounded-full px-3 py-1 text-xs font-semibold ${
@@ -2582,7 +3216,8 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
                             <>
                               <div className="flex flex-wrap gap-1">
                                 {allHistoryRooms.map((roomNum, idx) => {
-                                  const isManagerAssigned = managerAssignedRooms.includes(roomNum);
+                                  const isManagerAssigned =
+                                    managerAssignedRooms.includes(roomNum);
                                   return (
                                     <span
                                       key={idx}
@@ -2591,11 +3226,17 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
                                           ? "bg-purple-100 text-purple-700"
                                           : "bg-cyan-100 text-cyan-700"
                                       }`}
-                                      title={isManagerAssigned ? "Assigned by Manager" : "Selected by Housekeeper"}
+                                      title={
+                                        isManagerAssigned
+                                          ? "Assigned by Manager"
+                                          : "Selected by Housekeeper"
+                                      }
                                     >
                                       #{roomNum}
                                       {isManagerAssigned ? (
-                                        <span className="text-purple-500">M</span>
+                                        <span className="text-purple-500">
+                                          M
+                                        </span>
                                       ) : (
                                         <span className="text-cyan-500">S</span>
                                       )}
@@ -2604,7 +3245,9 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
                                 })}
                               </div>
                               <div className="text-xs text-slate-400 mt-1">
-                                Total: {allHistoryRooms.length} | Manager: {managerAssignedRooms.length} | Self: {selfSelectedRooms.length}
+                                Total: {allHistoryRooms.length} | Manager:{" "}
+                                {managerAssignedRooms.length} | Self:{" "}
+                                {selfSelectedRooms.length}
                               </div>
                             </>
                           ) : cleanerRooms.length > 0 ? (
@@ -2630,7 +3273,9 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
                             </span>
                           )
                         ) : (
-                          <span className="flex items-center gap-2 font-semibold text-slate-400">—</span>
+                          <span className="flex items-center gap-2 font-semibold text-slate-400">
+                            —
+                          </span>
                         )}
                       </td>
                       <td className="px-4 py-3">
@@ -2657,7 +3302,11 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
             <div className="mb-4">
               <p className="text-sm font-semibold text-amber-900 mb-2">
                 Cleaner unavailable. Please reassign room{" "}
-                <strong>{rooms.find((room) => room.id === selectedRoomId)?.number ?? "--"}</strong> to another cleaner:
+                <strong>
+                  {rooms.find((room) => room.id === selectedRoomId)?.number ??
+                    "--"}
+                </strong>{" "}
+                to another cleaner:
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -2709,7 +3358,8 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
               value={profileForm.name}
               onChange={(e) => {
                 setProfileForm((prev) => ({ ...prev, name: e.target.value }));
-                if (formErrors.name) setFormErrors((prev) => ({ ...prev, name: "" }));
+                if (formErrors.name)
+                  setFormErrors((prev) => ({ ...prev, name: "" }));
               }}
               className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm outline-none focus:border-blue-400 ${
                 formErrors.name ? "border-red-500" : "border-slate-200"
@@ -2732,7 +3382,8 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
                 // Only allow numbers
                 const value = e.target.value.replace(/\D/g, "");
                 setProfileForm((prev) => ({ ...prev, phone: value }));
-                if (formErrors.phone) setFormErrors((prev) => ({ ...prev, phone: "" }));
+                if (formErrors.phone)
+                  setFormErrors((prev) => ({ ...prev, phone: "" }));
               }}
               className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm outline-none focus:border-blue-400 ${
                 formErrors.phone ? "border-red-500" : "border-slate-200"
@@ -2745,13 +3396,16 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
 
           {/* Email */}
           <div>
-            <label className="text-sm font-semibold text-slate-600">Email</label>
+            <label className="text-sm font-semibold text-slate-600">
+              Email
+            </label>
             <input
               type="email"
               value={profileForm.email}
               onChange={(e) => {
                 setProfileForm((prev) => ({ ...prev, email: e.target.value }));
-                if (formErrors.email) setFormErrors((prev) => ({ ...prev, email: "" }));
+                if (formErrors.email)
+                  setFormErrors((prev) => ({ ...prev, email: "" }));
               }}
               className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm outline-none focus:border-blue-400 ${
                 formErrors.email ? "border-red-500" : "border-slate-200"
@@ -2771,8 +3425,12 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
               type="text"
               value={profileForm.nic}
               onChange={(e) => {
-                setProfileForm((prev) => ({ ...prev, nic: e.target.value.toUpperCase() }));
-                if (formErrors.nic) setFormErrors((prev) => ({ ...prev, nic: "" }));
+                setProfileForm((prev) => ({
+                  ...prev,
+                  nic: e.target.value.toUpperCase(),
+                }));
+                if (formErrors.nic)
+                  setFormErrors((prev) => ({ ...prev, nic: "" }));
               }}
               placeholder="e.g., 123456789V or 200145601234"
               className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm outline-none focus:border-blue-400 ${
@@ -2792,8 +3450,12 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
             <textarea
               value={profileForm.address}
               onChange={(e) => {
-                setProfileForm((prev) => ({ ...prev, address: e.target.value }));
-                if (formErrors.address) setFormErrors((prev) => ({ ...prev, address: "" }));
+                setProfileForm((prev) => ({
+                  ...prev,
+                  address: e.target.value,
+                }));
+                if (formErrors.address)
+                  setFormErrors((prev) => ({ ...prev, address: "" }));
               }}
               rows={3}
               className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm outline-none focus:border-blue-400 resize-y ${
@@ -2813,7 +3475,10 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
             <select
               value={profileForm.active ? "active" : "inactive"}
               onChange={(e) =>
-                setProfileForm((prev) => ({ ...prev, active: e.target.value === "active" }))
+                setProfileForm((prev) => ({
+                  ...prev,
+                  active: e.target.value === "active",
+                }))
               }
               className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-400"
             >
@@ -2858,7 +3523,10 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
         <div className="space-y-4">
           <p className="text-sm text-slate-600">
             Assign room{" "}
-            <strong>{rooms.find((room) => room.id === selectedRoomId)?.number ?? "--"}</strong> to:
+            <strong>
+              {rooms.find((room) => room.id === selectedRoomId)?.number ?? "--"}
+            </strong>{" "}
+            to:
           </p>
           <div className="space-y-2 max-h-60 overflow-y-auto">
             {housekeepers
@@ -2914,14 +3582,30 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
             {isReassignment ? (
               <>
                 Reassign room{" "}
-                <strong>{rooms.find((room) => room.id === selectedRoomId)?.number ?? "--"}</strong> to{" "}
-                <strong>{housekeepers.find((hk) => hk.id === selectedHousekeeperId)?.name ?? "--"}</strong>?
+                <strong>
+                  {rooms.find((room) => room.id === selectedRoomId)?.number ??
+                    "--"}
+                </strong>{" "}
+                to{" "}
+                <strong>
+                  {housekeepers.find((hk) => hk.id === selectedHousekeeperId)
+                    ?.name ?? "--"}
+                </strong>
+                ?
               </>
             ) : (
               <>
                 Assign room{" "}
-                <strong>{rooms.find((room) => room.id === selectedRoomId)?.number ?? "--"}</strong> to{" "}
-                <strong>{housekeepers.find((hk) => hk.id === selectedHousekeeperId)?.name ?? "--"}</strong>?
+                <strong>
+                  {rooms.find((room) => room.id === selectedRoomId)?.number ??
+                    "--"}
+                </strong>{" "}
+                to{" "}
+                <strong>
+                  {housekeepers.find((hk) => hk.id === selectedHousekeeperId)
+                    ?.name ?? "--"}
+                </strong>
+                ?
               </>
             )}
           </p>
@@ -2952,13 +3636,17 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
           <p className="text-sm text-slate-600">
             Reassign room{" "}
             <strong>
-              {reassignData ? rooms.find((r) => r.id === reassignData.roomId)?.number : "--"}
+              {reassignData
+                ? rooms.find((r) => r.id === reassignData.roomId)?.number
+                : "--"}
             </strong>{" "}
             to another cleaner:
           </p>
           <div className="space-y-2 max-h-60 overflow-y-auto">
             {housekeepers
-              .filter((hk) => hk.active && hk.id !== reassignData?.fromCleanerId)
+              .filter(
+                (hk) => hk.active && hk.id !== reassignData?.fromCleanerId
+              )
               .map((hk) => (
                 <button
                   key={hk.id}
@@ -2969,8 +3657,9 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
                   <p className="text-sm text-slate-500">{hk.phone}</p>
                 </button>
               ))}
-            {housekeepers.filter((hk) => hk.active && hk.id !== reassignData?.fromCleanerId)
-              .length === 0 && (
+            {housekeepers.filter(
+              (hk) => hk.active && hk.id !== reassignData?.fromCleanerId
+            ).length === 0 && (
               <p className="text-sm text-slate-500 text-center py-4">
                 No other active cleaners available
               </p>
@@ -2998,80 +3687,116 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
         title="Assigned Room History"
       >
         <div className="space-y-4">
-          {selectedCleanerForHistory && (() => {
-            const cleaner = housekeepers.find((hk) => hk.id === selectedCleanerForHistory);
-            const cleanerHistory = roomHistory[selectedCleanerForHistory] || [];
-            
-            // Sample data if no real data
-            const sampleData = [
-              { roomNumber: "204", assignedBy: "manager" as const, timestamp: Date.now() - 86400000 * 5 },
-              { roomNumber: "305", assignedBy: "manager" as const, timestamp: Date.now() - 86400000 * 4 },
-              { roomNumber: "112", assignedBy: "manager" as const, timestamp: Date.now() - 86400000 * 3 },
-              { roomNumber: "218", assignedBy: "housekeeper" as const, timestamp: Date.now() - 86400000 * 2 },
-              { roomNumber: "407", assignedBy: "housekeeper" as const, timestamp: Date.now() - 86400000 * 1 },
-            ];
-            
-            const displayHistory = cleanerHistory.length > 0 ? cleanerHistory : sampleData;
-            
-            return (
-              <>
-                <div className="mb-4">
-                  <p className="text-sm text-slate-600">
-                    All room details for <strong>{cleaner?.name ?? "--"}</strong>: Shows both manager-assigned and housekeeper-selected rooms.
-                  </p>
-                </div>
-                <div className="max-h-96 overflow-y-auto">
-                  {displayHistory.length > 0 ? (
-                    <div className="space-y-3">
-                      {displayHistory.map((entry, index) => {
-                        return (
-                          <div
-                            key={index}
-                            className="rounded-lg border border-slate-200 bg-white px-4 py-3"
-                          >
-                            <div className="flex flex-col gap-2">
-                              <div className="flex items-center gap-2">
-                                <span className="text-base font-bold text-slate-900">Room {entry.roomNumber}</span>
-                                <span className="text-slate-400">•</span>
-                                <span className={`text-sm font-semibold ${
-                                  entry.assignedBy === "manager"
-                                    ? "text-purple-700"
-                                    : "text-cyan-700"
-                                }`}>
-                                  {entry.assignedBy === "manager" ? "Assigned by Manager" : "Selected by Housekeeper"}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-4 text-sm text-slate-600">
-                                <span>Completed Date: {formatDateDDMMYYYY(entry.timestamp)}</span>
-                                <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700">
-                                  Completed
-                                </span>
+          {selectedCleanerForHistory &&
+            (() => {
+              const cleaner = housekeepers.find(
+                (hk) => hk.id === selectedCleanerForHistory
+              );
+              const cleanerHistory =
+                roomHistory[selectedCleanerForHistory] || [];
+
+              // Sample data if no real data
+              const sampleData = [
+                {
+                  roomNumber: "204",
+                  assignedBy: "manager" as const,
+                  timestamp: Date.now() - 86400000 * 5,
+                },
+                {
+                  roomNumber: "305",
+                  assignedBy: "manager" as const,
+                  timestamp: Date.now() - 86400000 * 4,
+                },
+                {
+                  roomNumber: "112",
+                  assignedBy: "manager" as const,
+                  timestamp: Date.now() - 86400000 * 3,
+                },
+                {
+                  roomNumber: "218",
+                  assignedBy: "housekeeper" as const,
+                  timestamp: Date.now() - 86400000 * 2,
+                },
+                {
+                  roomNumber: "407",
+                  assignedBy: "housekeeper" as const,
+                  timestamp: Date.now() - 86400000 * 1,
+                },
+              ];
+
+              const displayHistory =
+                cleanerHistory.length > 0 ? cleanerHistory : sampleData;
+
+              return (
+                <>
+                  <div className="mb-4">
+                    <p className="text-sm text-slate-600">
+                      All room details for{" "}
+                      <strong>{cleaner?.name ?? "--"}</strong>: Shows both
+                      manager-assigned and housekeeper-selected rooms.
+                    </p>
+                  </div>
+                  <div className="max-h-96 overflow-y-auto">
+                    {displayHistory.length > 0 ? (
+                      <div className="space-y-3">
+                        {displayHistory.map((entry, index) => {
+                          return (
+                            <div
+                              key={index}
+                              className="rounded-lg border border-slate-200 bg-white px-4 py-3"
+                            >
+                              <div className="flex flex-col gap-2">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-base font-bold text-slate-900">
+                                    Room {entry.roomNumber}
+                                  </span>
+                                  <span className="text-slate-400">•</span>
+                                  <span
+                                    className={`text-sm font-semibold ${
+                                      entry.assignedBy === "manager"
+                                        ? "text-purple-700"
+                                        : "text-cyan-700"
+                                    }`}
+                                  >
+                                    {entry.assignedBy === "manager"
+                                      ? "Assigned by Manager"
+                                      : "Selected by Housekeeper"}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-4 text-sm text-slate-600">
+                                  <span>
+                                    Completed Date:{" "}
+                                    {formatDateDDMMYYYY(entry.timestamp)}
+                                  </span>
+                                  <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700">
+                                    Completed
+                                  </span>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <div className="text-center py-12 text-slate-500">
-                      <Clock className="h-12 w-12 mx-auto mb-3 text-slate-300" />
-                      <p className="text-sm">No room history available</p>
-                    </div>
-                  )}
-                </div>
-                <Button
-                  variant="secondary"
-                  className="w-full"
-                  onClick={() => {
-                    setShowHistoryModal(false);
-                    setSelectedCleanerForHistory(null);
-                  }}
-                >
-                  Close
-                </Button>
-              </>
-            );
-          })()}
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12 text-slate-500">
+                        <Clock className="h-12 w-12 mx-auto mb-3 text-slate-300" />
+                        <p className="text-sm">No room history available</p>
+                      </div>
+                    )}
+                  </div>
+                  <Button
+                    variant="secondary"
+                    className="w-full"
+                    onClick={() => {
+                      setShowHistoryModal(false);
+                      setSelectedCleanerForHistory(null);
+                    }}
+                  >
+                    Close
+                  </Button>
+                </>
+              );
+            })()}
         </div>
       </Modal>
 
@@ -3079,7 +3804,9 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
         <div className="fixed top-4 right-4 z-50 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 shadow-lg">
           <div className="flex items-center gap-3">
             <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-            <p className="font-semibold text-emerald-900">Room assigned successfully!</p>
+            <p className="font-semibold text-emerald-900">
+              Room assigned successfully!
+            </p>
           </div>
         </div>
       )}

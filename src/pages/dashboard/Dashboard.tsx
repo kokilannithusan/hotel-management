@@ -1,16 +1,10 @@
-import { useEffect, useMemo, useState, FormEvent } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useHotel } from "../../context/HotelContext";
 import { Card } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
-import { Input } from "../../components/ui/Input";
-import { Select } from "../../components/ui/Select";
 import { Modal } from "../../components/ui/Modal";
-import { formatCurrency, formatDate } from "../../utils/formatters";
-import type {
-  Reservation,
-  Room,
-  ReservationStatus,
-} from "../../types/entities";
+import { formatCurrency } from "../../utils/formatters";
+import type { ReservationStatus } from "../../types/entities";
 import RoomCalendar from "../../components/organisms/RoomCalendar";
 
 type ReservationExtended = {
@@ -33,28 +27,8 @@ type ReservationExtended = {
   commissionAmount?: number;
 };
 
-const statuses = [
-  "Booked",
-  "Confirmed",
-  "Checked in",
-  "Checked out",
-  "Cancelled",
-];
 const DAY_MS = 24 * 60 * 60 * 1000;
 const overviewStatuses: string[] = ["Booked", "Confirmed", "Checked in"];
-
-const roundCurrency = (value: number) =>
-  Math.round((value + Number.EPSILON) * 100) / 100;
-
-const diffInNights = (start?: string, end?: string) => {
-  if (!start || !end) return 0;
-  const checkIn = new Date(start);
-  const checkOut = new Date(end);
-  if (Number.isNaN(checkIn.getTime()) || Number.isNaN(checkOut.getTime()))
-    return 0;
-  const diff = Math.round((checkOut.getTime() - checkIn.getTime()) / DAY_MS);
-  return diff > 0 ? diff : 0;
-};
 
 type TodayRoomStatus = {
   room: string;
@@ -102,8 +76,6 @@ const roomStatusLabelMap: Record<string, string> = {
   cleaned: "Available",
 };
 
-const normalizeRoomNumber = (value: string) => value.split("-")[0].trim();
-
 function StatusBadge({ status }: { status: string }) {
   const colors: Record<string, string> = {
     Booked: "bg-blue-100 text-blue-800",
@@ -141,10 +113,6 @@ export function Dashboard() {
 
   const roomById = useMemo(() => {
     return new Map(state.rooms.map((room) => [room.id, room]));
-  }, [state.rooms]);
-
-  const roomByNumber = useMemo(() => {
-    return new Map(state.rooms.map((room) => [room.roomNumber, room]));
   }, [state.rooms]);
 
   const roomTypeMap = useMemo(() => {

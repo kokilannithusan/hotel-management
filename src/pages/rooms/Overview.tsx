@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import { useHotel } from "../../context/HotelContext";
 import { Card } from "../../components/ui/Card";
 import { Select } from "../../components/ui/Select";
@@ -26,8 +26,7 @@ export const RoomsOverview: React.FC = () => {
   };
 
   const closeRoomCalendar = () => setCalendarRoom(null);
-  const [currentMonth, setCurrentMonth] = useState(new Date());
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const currentMonth = new Date();
 
   const filteredRooms =
     selectedRoomType === "all"
@@ -49,62 +48,6 @@ export const RoomsOverview: React.FC = () => {
   };
 
   const daysInMonth = getDaysInMonth(currentMonth);
-
-  const scrollToStart = () => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTo({
-        left: 0,
-        behavior: "smooth",
-      });
-    }
-  };
-
-  const nextMonth = () => {
-    setCurrentMonth(
-      new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1)
-    );
-    setTimeout(scrollToStart, 100);
-  };
-
-  const prevMonth = () => {
-    setCurrentMonth(
-      new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1)
-    );
-    setTimeout(scrollToStart, 100);
-  };
-
-  const isDateBooked = (roomId: string, date: Date) => {
-    const dateStr = date.toISOString().split("T")[0];
-    return state.reservations.some((res) => {
-      if (res.roomId !== roomId) return false;
-      const checkIn = new Date(res.checkIn);
-      const checkOut = new Date(res.checkOut);
-      const currentDate = new Date(dateStr);
-      return (
-        currentDate >= checkIn &&
-        currentDate < checkOut &&
-        res.status !== "canceled"
-      );
-    });
-  };
-
-  const getReservationForDate = (roomId: string, date: Date) => {
-    const dateStr = date.toISOString().split("T")[0];
-    return state.reservations.find((res) => {
-      if (res.roomId !== roomId || res.status === "canceled") return false;
-      const checkIn = new Date(res.checkIn);
-      const checkOut = new Date(res.checkOut);
-      const currentDate = new Date(dateStr);
-      return currentDate >= checkIn && currentDate < checkOut;
-    });
-  };
-
-  const statusColors: Record<string, string> = {
-    confirmed: "bg-blue-500",
-    "checked-in": "bg-emerald-500",
-    "checked-out": "bg-slate-400",
-    canceled: "bg-red-500",
-  };
 
   const getCustomerName = (customerId: string) => {
     const customer = state.customers.find((c) => c.id === customerId);

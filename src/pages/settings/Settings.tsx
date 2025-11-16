@@ -1,48 +1,50 @@
-import React, { useState } from 'react';
-import { useHotel } from '../../context/HotelContext';
-import { Card } from '../../components/ui/Card';
-import { Input } from '../../components/ui/Input';
-import { Button } from '../../components/ui/Button';
-import { Table } from '../../components/ui/Table';
-import { Modal } from '../../components/ui/Modal';
-import { Select } from '../../components/ui/Select';
-import { generateId } from '../../utils/formatters';
-import { User } from '../../types/entities';
-import { storageKeys, clearAllStorage } from '../../utils/storage';
+import React, { useState } from "react";
+import { useHotel } from "../../context/HotelContext";
+import { Card } from "../../components/ui/Card";
+import { Input } from "../../components/ui/Input";
+import { Button } from "../../components/ui/Button";
+import { Table } from "../../components/ui/Table";
+import { Modal } from "../../components/ui/Modal";
+import { Select } from "../../components/ui/Select";
+import { generateId } from "../../utils/formatters";
+import { User } from "../../types/entities";
+import { clearAllStorage } from "../../utils/storage";
 
 export const Settings: React.FC = () => {
   const { state, dispatch, initializeData } = useHotel();
-  const [activeTab, setActiveTab] = useState<'hotel' | 'users' | 'data'>('hotel');
+  const [activeTab, setActiveTab] = useState<"hotel" | "users" | "data">(
+    "hotel"
+  );
   const [showUserModal, setShowUserModal] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [userFormData, setUserFormData] = useState({
-    name: '',
-    email: '',
-    role: 'Receptionist',
+    name: "",
+    email: "",
+    role: "Receptionist",
     isActive: true,
   });
 
   const [hotelFormData, setHotelFormData] = useState(
     state.settings || {
       id: generateId(),
-      name: '',
-      address: '',
-      city: '',
-      country: '',
-      phone: '',
-      email: '',
-      website: '',
-      currency: 'USD',
-      timezone: 'UTC',
+      name: "",
+      address: "",
+      city: "",
+      country: "",
+      phone: "",
+      email: "",
+      website: "",
+      currency: "USD",
+      timezone: "UTC",
     }
   );
 
   const handleSaveHotel = () => {
     dispatch({
-      type: 'UPDATE_SETTINGS',
+      type: "UPDATE_SETTINGS",
       payload: hotelFormData,
     });
-    alert('Hotel settings saved!');
+    alert("Hotel settings saved!");
   };
 
   const handleEditUser = (user: User) => {
@@ -58,19 +60,24 @@ export const Settings: React.FC = () => {
 
   const handleAddUser = () => {
     setEditingUser(null);
-    setUserFormData({ name: '', email: '', role: 'Receptionist', isActive: true });
+    setUserFormData({
+      name: "",
+      email: "",
+      role: "Receptionist",
+      isActive: true,
+    });
     setShowUserModal(true);
   };
 
   const handleSaveUser = () => {
     if (editingUser) {
       dispatch({
-        type: 'UPDATE_USER',
+        type: "UPDATE_USER",
         payload: { ...editingUser, ...userFormData },
       });
     } else {
       dispatch({
-        type: 'ADD_USER',
+        type: "ADD_USER",
         payload: {
           id: generateId(),
           ...userFormData,
@@ -82,7 +89,7 @@ export const Settings: React.FC = () => {
 
   const handleDeleteUser = (user: User) => {
     if (window.confirm(`Are you sure you want to delete ${user.name}?`)) {
-      dispatch({ type: 'DELETE_USER', payload: user.id });
+      dispatch({ type: "DELETE_USER", payload: user.id });
     }
   };
 
@@ -95,11 +102,13 @@ export const Settings: React.FC = () => {
       receipts: state.receipts,
       // ... add other data as needed
     };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const blob = new Blob([JSON.stringify(data, null, 2)], {
+      type: "application/json",
+    });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = `hotel-data-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `hotel-data-${new Date().toISOString().split("T")[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -111,42 +120,48 @@ export const Settings: React.FC = () => {
     const reader = new FileReader();
     reader.onload = (event) => {
       try {
-        const data = JSON.parse(event.target?.result as string);
+        JSON.parse(event.target?.result as string);
         // In a real app, you would validate and import the data
-        alert('Data import functionality would be implemented here');
+        alert("Data import functionality would be implemented here");
       } catch (error) {
-        alert('Error importing data');
+        alert("Error importing data");
       }
     };
     reader.readAsText(file);
   };
 
   const userColumns = [
-    { key: 'name', header: 'Name' },
-    { key: 'email', header: 'Email' },
-    { key: 'role', header: 'Role' },
+    { key: "name", header: "Name" },
+    { key: "email", header: "Email" },
+    { key: "role", header: "Role" },
     {
-      key: 'isActive',
-      header: 'Status',
+      key: "isActive",
+      header: "Status",
       render: (u: User) => (
         <span
           className={`px-2 py-1 text-xs font-semibold rounded-full ${
-            u.isActive ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-800'
+            u.isActive
+              ? "bg-green-100 text-green-800"
+              : "bg-slate-100 text-slate-800"
           }`}
         >
-          {u.isActive ? 'Active' : 'Inactive'}
+          {u.isActive ? "Active" : "Inactive"}
         </span>
       ),
     },
     {
-      key: 'actions',
-      header: 'Actions',
+      key: "actions",
+      header: "Actions",
       render: (u: User) => (
         <div className="flex gap-2">
           <Button size="sm" variant="outline" onClick={() => handleEditUser(u)}>
             Edit
           </Button>
-          <Button size="sm" variant="danger" onClick={() => handleDeleteUser(u)}>
+          <Button
+            size="sm"
+            variant="danger"
+            onClick={() => handleDeleteUser(u)}
+          >
             Delete
           </Button>
         </div>
@@ -160,19 +175,21 @@ export const Settings: React.FC = () => {
         <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
           Settings
         </h1>
-        <p className="text-slate-600 mt-1 font-medium">Configure hotel settings and preferences</p>
+        <p className="text-slate-600 mt-1 font-medium">
+          Configure hotel settings and preferences
+        </p>
       </div>
 
       <div className="border-b border-slate-200">
         <nav className="flex space-x-8">
-          {(['hotel', 'users', 'data'] as const).map((tab) => (
+          {(["hotel", "users", "data"] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`py-4 px-1 border-b-2 font-medium text-sm ${
                 activeTab === tab
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+                  ? "border-blue-500 text-blue-600"
+                  : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
               }`}
             >
               {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -181,57 +198,84 @@ export const Settings: React.FC = () => {
         </nav>
       </div>
 
-      {activeTab === 'hotel' && (
+      {activeTab === "hotel" && (
         <Card title="Hotel Information">
           <div className="space-y-4">
             <Input
               label="Hotel Name"
               value={hotelFormData.name}
-              onChange={(e) => setHotelFormData({ ...hotelFormData, name: e.target.value })}
+              onChange={(e) =>
+                setHotelFormData({ ...hotelFormData, name: e.target.value })
+              }
             />
             <Input
               label="Address"
               value={hotelFormData.address}
-              onChange={(e) => setHotelFormData({ ...hotelFormData, address: e.target.value })}
+              onChange={(e) =>
+                setHotelFormData({ ...hotelFormData, address: e.target.value })
+              }
             />
             <div className="grid grid-cols-2 gap-4">
               <Input
                 label="City"
                 value={hotelFormData.city}
-                onChange={(e) => setHotelFormData({ ...hotelFormData, city: e.target.value })}
+                onChange={(e) =>
+                  setHotelFormData({ ...hotelFormData, city: e.target.value })
+                }
               />
               <Input
                 label="Country"
                 value={hotelFormData.country}
-                onChange={(e) => setHotelFormData({ ...hotelFormData, country: e.target.value })}
+                onChange={(e) =>
+                  setHotelFormData({
+                    ...hotelFormData,
+                    country: e.target.value,
+                  })
+                }
               />
             </div>
             <Input
               label="Phone"
               value={hotelFormData.phone}
-              onChange={(e) => setHotelFormData({ ...hotelFormData, phone: e.target.value })}
+              onChange={(e) =>
+                setHotelFormData({ ...hotelFormData, phone: e.target.value })
+              }
             />
             <Input
               label="Email"
               type="email"
               value={hotelFormData.email}
-              onChange={(e) => setHotelFormData({ ...hotelFormData, email: e.target.value })}
+              onChange={(e) =>
+                setHotelFormData({ ...hotelFormData, email: e.target.value })
+              }
             />
             <Input
               label="Website"
-              value={hotelFormData.website || ''}
-              onChange={(e) => setHotelFormData({ ...hotelFormData, website: e.target.value })}
+              value={hotelFormData.website || ""}
+              onChange={(e) =>
+                setHotelFormData({ ...hotelFormData, website: e.target.value })
+              }
             />
             <div className="grid grid-cols-2 gap-4">
               <Input
                 label="Currency"
                 value={hotelFormData.currency}
-                onChange={(e) => setHotelFormData({ ...hotelFormData, currency: e.target.value })}
+                onChange={(e) =>
+                  setHotelFormData({
+                    ...hotelFormData,
+                    currency: e.target.value,
+                  })
+                }
               />
               <Input
                 label="Timezone"
                 value={hotelFormData.timezone}
-                onChange={(e) => setHotelFormData({ ...hotelFormData, timezone: e.target.value })}
+                onChange={(e) =>
+                  setHotelFormData({
+                    ...hotelFormData,
+                    timezone: e.target.value,
+                  })
+                }
               />
             </div>
             <Button onClick={handleSaveHotel}>Save Hotel Settings</Button>
@@ -239,7 +283,7 @@ export const Settings: React.FC = () => {
         </Card>
       )}
 
-      {activeTab === 'users' && (
+      {activeTab === "users" && (
         <>
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold">User Management</h2>
@@ -252,10 +296,13 @@ export const Settings: React.FC = () => {
           <Modal
             isOpen={showUserModal}
             onClose={() => setShowUserModal(false)}
-            title={editingUser ? 'Edit User' : 'Add User'}
+            title={editingUser ? "Edit User" : "Add User"}
             footer={
               <>
-                <Button variant="secondary" onClick={() => setShowUserModal(false)}>
+                <Button
+                  variant="secondary"
+                  onClick={() => setShowUserModal(false)}
+                >
                   Cancel
                 </Button>
                 <Button onClick={handleSaveUser}>Save</Button>
@@ -266,31 +313,42 @@ export const Settings: React.FC = () => {
               <Input
                 label="Name"
                 value={userFormData.name}
-                onChange={(e) => setUserFormData({ ...userFormData, name: e.target.value })}
+                onChange={(e) =>
+                  setUserFormData({ ...userFormData, name: e.target.value })
+                }
                 required
               />
               <Input
                 label="Email"
                 type="email"
                 value={userFormData.email}
-                onChange={(e) => setUserFormData({ ...userFormData, email: e.target.value })}
+                onChange={(e) =>
+                  setUserFormData({ ...userFormData, email: e.target.value })
+                }
                 required
               />
               <Select
                 label="Role"
                 value={userFormData.role}
-                onChange={(e) => setUserFormData({ ...userFormData, role: e.target.value })}
+                onChange={(e) =>
+                  setUserFormData({ ...userFormData, role: e.target.value })
+                }
                 options={[
-                  { value: 'Admin', label: 'Admin' },
-                  { value: 'Manager', label: 'Manager' },
-                  { value: 'Receptionist', label: 'Receptionist' },
+                  { value: "Admin", label: "Admin" },
+                  { value: "Manager", label: "Manager" },
+                  { value: "Receptionist", label: "Receptionist" },
                 ]}
               />
               <div className="flex items-center">
                 <input
                   type="checkbox"
                   checked={userFormData.isActive}
-                  onChange={(e) => setUserFormData({ ...userFormData, isActive: e.target.checked })}
+                  onChange={(e) =>
+                    setUserFormData({
+                      ...userFormData,
+                      isActive: e.target.checked,
+                    })
+                  }
                   className="mr-2"
                 />
                 <label>Active</label>
@@ -300,7 +358,7 @@ export const Settings: React.FC = () => {
         </>
       )}
 
-      {activeTab === 'data' && (
+      {activeTab === "data" && (
         <Card title="Data Management">
           <div className="space-y-4">
             <div>
@@ -322,16 +380,22 @@ export const Settings: React.FC = () => {
                 <Button
                   variant="outline"
                   onClick={() => {
-                    if (window.confirm('Are you sure you want to reset all data to sample data? This will replace all current data.')) {
+                    if (
+                      window.confirm(
+                        "Are you sure you want to reset all data to sample data? This will replace all current data."
+                      )
+                    ) {
                       clearAllStorage();
                       initializeData();
-                      alert('Data has been reset to sample data!');
+                      alert("Data has been reset to sample data!");
                     }
                   }}
                 >
                   Reset to Sample Data
                 </Button>
-                <p className="text-sm text-slate-600">This will reload all sample data from the mock data file.</p>
+                <p className="text-sm text-slate-600">
+                  This will reload all sample data from the mock data file.
+                </p>
               </div>
             </div>
             <div>
@@ -339,7 +403,11 @@ export const Settings: React.FC = () => {
               <Button
                 variant="danger"
                 onClick={() => {
-                  if (window.confirm('Are you sure you want to clear all data? This cannot be undone!')) {
+                  if (
+                    window.confirm(
+                      "Are you sure you want to clear all data? This cannot be undone!"
+                    )
+                  ) {
                     clearAllStorage();
                     window.location.reload();
                   }
@@ -354,4 +422,3 @@ export const Settings: React.FC = () => {
     </div>
   );
 };
-
