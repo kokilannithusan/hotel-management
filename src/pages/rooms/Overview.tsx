@@ -295,8 +295,18 @@ export const RoomsOverview: React.FC = () => {
         <Modal
           isOpen={!!selectedRoom}
           onClose={() => setSelectedRoom(null)}
-          title={`Room ${selectedRoom.roomNumber} Details`}
-          footer={<Button onClick={() => setSelectedRoom(null)}>Close</Button>}
+          title={`Room ${selectedRoom.roomNumber} - Detailed Information`}
+          size="3xl"
+          footer={
+            <div className="flex gap-3 w-full sm:w-auto">
+              <Button
+                onClick={() => setSelectedRoom(null)}
+                className="flex-1 sm:flex-none"
+              >
+                Close
+              </Button>
+            </div>
+          }
         >
           {/* Shared calendar renderer */}
           {(() => {
@@ -400,38 +410,60 @@ export const RoomsOverview: React.FC = () => {
             if (room.status === "available") {
               const resInfo = nextReservation;
               return (
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">
-                    Reservation Information
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-slate-500">Room Number</p>
-                      <p className="text-base font-medium">{room.roomNumber}</p>
+                <div className="space-y-6">
+                  <div className="bg-gradient-to-br from-green-50 to-green-100 border-l-4 border-green-500 rounded-lg p-4">
+                    <h3 className="text-lg font-bold text-green-800 flex items-center gap-2">
+                      <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                      Reservation Information
+                    </h3>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                        Room Number
+                      </p>
+                      <p className="text-lg font-bold text-slate-900">
+                        {room.roomNumber}
+                      </p>
                     </div>
-                    <div>
-                      <p className="text-sm text-slate-500">Room Type</p>
-                      <p className="text-base font-medium">
+                    <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                        Room Type
+                      </p>
+                      <p className="text-lg font-bold text-slate-900">
                         {roomType?.name || "N/A"}
                       </p>
                     </div>
-                    <div>
-                      <p className="text-sm text-slate-500">Adults</p>
-                      <p className="text-base">{resInfo?.adults ?? "-"}</p>
+                    <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                        Adults
+                      </p>
+                      <p className="text-lg font-bold text-slate-900">
+                        {resInfo?.adults ?? "-"}
+                      </p>
                     </div>
-                    <div>
-                      <p className="text-sm text-slate-500">Children</p>
-                      <p className="text-base">{resInfo?.children ?? "-"}</p>
+                    <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                        Children
+                      </p>
+                      <p className="text-lg font-bold text-slate-900">
+                        {resInfo?.children ?? "-"}
+                      </p>
                     </div>
-                    <div>
-                      <p className="text-sm text-slate-500">Status</p>
-                      <p className="text-base font-semibold text-green-700">
+                    <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                        Status
+                      </p>
+                      <p className="text-lg font-bold text-green-700 flex items-center gap-2">
+                        <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
                         Available
                       </p>
                     </div>
-                    <div>
-                      <p className="text-sm text-slate-500">Channel</p>
-                      <p className="text-base">
+                    <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                        Channel
+                      </p>
+                      <p className="text-lg font-bold text-slate-900">
                         {resInfo
                           ? state.channels.find(
                               (ch) => ch.id === resInfo.channelId
@@ -439,80 +471,118 @@ export const RoomsOverview: React.FC = () => {
                           : "-"}
                       </p>
                     </div>
-                    <div>
-                      <p className="text-sm text-slate-500">Total Amount</p>
-                      <p className="text-base">
+                    <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                        Total Amount
+                      </p>
+                      <p className="text-lg font-bold text-blue-600">
                         {resInfo ? formatCurrency(resInfo.totalAmount) : "-"}
                       </p>
                     </div>
-                    <div className="md:col-span-2">
-                      <p className="text-sm text-slate-500">Notes</p>
-                      <p className="text-base">
+                    <div className="md:col-span-2 bg-white rounded-lg p-4 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                        Notes
+                      </p>
+                      <p className="text-base text-slate-700">
                         {resInfo ? resInfo.notes || "-" : "Available"}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between mt-2">
-                    <h4 className="text-lg font-semibold">
-                      Availability Calendar
-                    </h4>
-                    <button
-                      className="p-1 rounded hover:bg-slate-100"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setCalendarRoom(room);
-                        setCalendarMonthForRoom(new Date());
-                      }}
-                      title="Open room calendar"
-                    >
-                      <CalendarIcon className="w-5 h-5 text-slate-700" />
-                    </button>
+
+                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-l-4 border-blue-500 rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-lg font-bold text-blue-800 flex items-center gap-2">
+                        <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                        Availability Calendar
+                      </h4>
+                      <button
+                        className="p-2 rounded-lg hover:bg-blue-200/50 transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCalendarRoom(room);
+                          setCalendarMonthForRoom(new Date());
+                        }}
+                        title="Open room calendar"
+                      >
+                        <CalendarIcon className="w-5 h-5 text-blue-700" />
+                      </button>
+                    </div>
                   </div>
                   {renderCalendar()}
+
                   {/* Room Details - show all room fields from data */}
-                  <div>
-                    <h3 className="text-lg font-semibold">Room Details</h3>
+                  <div className="bg-gradient-to-br from-slate-50 to-slate-100 border-l-4 border-slate-500 rounded-lg p-4">
+                    <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2 mb-4">
+                      <span className="w-2 h-2 bg-slate-500 rounded-full"></span>
+                      Room Details
+                    </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm text-slate-500">ID</p>
-                        <p className="text-base font-medium">{room.id}</p>
+                      <div className="bg-white rounded-lg p-3 shadow-sm border border-slate-200">
+                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
+                          ID
+                        </p>
+                        <p className="text-base font-medium text-slate-900">
+                          {room.id}
+                        </p>
                       </div>
-                      <div>
-                        <p className="text-sm text-slate-500">Room Number</p>
-                        <p className="text-base font-medium">
+                      <div className="bg-white rounded-lg p-3 shadow-sm border border-slate-200">
+                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
+                          Room Number
+                        </p>
+                        <p className="text-base font-medium text-slate-900">
                           {room.roomNumber}
                         </p>
                       </div>
-                      <div>
-                        <p className="text-sm text-slate-500">Room Type</p>
-                        <p className="text-base">{roomType?.name || "N/A"}</p>
+                      <div className="bg-white rounded-lg p-3 shadow-sm border border-slate-200">
+                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
+                          Room Type
+                        </p>
+                        <p className="text-base text-slate-900">
+                          {roomType?.name || "N/A"}
+                        </p>
                       </div>
-                      <div>
-                        <p className="text-sm text-slate-500">Area</p>
-                        <p className="text-base">
+                      <div className="bg-white rounded-lg p-3 shadow-sm border border-slate-200">
+                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
+                          Area
+                        </p>
+                        <p className="text-base text-slate-900">
                           {state.roomAreas.find((a) => a.id === room.areaId)
                             ?.name || "-"}
                         </p>
                       </div>
-                      <div>
-                        <p className="text-sm text-slate-500">Status</p>
-                        <p className="text-base">{room.status}</p>
+                      <div className="bg-white rounded-lg p-3 shadow-sm border border-slate-200">
+                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
+                          Status
+                        </p>
+                        <p className="text-base text-slate-900">
+                          {room.status}
+                        </p>
                       </div>
-                      <div>
-                        <p className="text-sm text-slate-500">Floor</p>
-                        <p className="text-base">{room.floor ?? "-"}</p>
+                      <div className="bg-white rounded-lg p-3 shadow-sm border border-slate-200">
+                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
+                          Floor
+                        </p>
+                        <p className="text-base text-slate-900">
+                          {room.floor ?? "-"}
+                        </p>
                       </div>
-                      <div>
-                        <p className="text-sm text-slate-500">Size</p>
-                        <p className="text-base">{room.size ?? "-"}</p>
+                      <div className="bg-white rounded-lg p-3 shadow-sm border border-slate-200">
+                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
+                          Size
+                        </p>
+                        <p className="text-base text-slate-900">
+                          {room.size ?? "-"}
+                        </p>
                       </div>
-                      <div className="md:col-span-2">
-                        <p className="text-sm text-slate-500">Amenities</p>
+                      <div className="md:col-span-2 bg-white rounded-lg p-3 shadow-sm border border-slate-200">
+                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                          Amenities
+                        </p>
                         <div className="flex flex-wrap gap-2 mt-1">
                           {room.amenities.map((am) => (
                             <span
                               key={am}
-                              className="text-xs bg-slate-100 px-2 py-1 rounded"
+                              className="text-xs bg-blue-100 text-blue-700 font-medium px-3 py-1 rounded-full"
                             >
                               {state.amenities.find((x) => x.id === am)?.name ||
                                 am}
@@ -529,38 +599,60 @@ export const RoomsOverview: React.FC = () => {
             if (room.status === "maintenance") {
               const resInfo = nextReservation;
               return (
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">
-                    Reservation Information
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-slate-500">Room Number</p>
-                      <p className="text-base font-medium">{room.roomNumber}</p>
+                <div className="space-y-6">
+                  <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-l-4 border-yellow-500 rounded-lg p-4">
+                    <h3 className="text-lg font-bold text-yellow-800 flex items-center gap-2">
+                      <span className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></span>
+                      Reservation Information
+                    </h3>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                        Room Number
+                      </p>
+                      <p className="text-lg font-bold text-slate-900">
+                        {room.roomNumber}
+                      </p>
                     </div>
-                    <div>
-                      <p className="text-sm text-slate-500">Room Type</p>
-                      <p className="text-base font-medium">
+                    <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                        Room Type
+                      </p>
+                      <p className="text-lg font-bold text-slate-900">
                         {roomType?.name || "N/A"}
                       </p>
                     </div>
-                    <div>
-                      <p className="text-sm text-slate-500">Adults</p>
-                      <p className="text-base">{resInfo?.adults ?? "-"}</p>
+                    <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                        Adults
+                      </p>
+                      <p className="text-lg font-bold text-slate-900">
+                        {resInfo?.adults ?? "-"}
+                      </p>
                     </div>
-                    <div>
-                      <p className="text-sm text-slate-500">Children</p>
-                      <p className="text-base">{resInfo?.children ?? "-"}</p>
+                    <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                        Children
+                      </p>
+                      <p className="text-lg font-bold text-slate-900">
+                        {resInfo?.children ?? "-"}
+                      </p>
                     </div>
-                    <div>
-                      <p className="text-sm text-slate-500">Status</p>
-                      <p className="text-base font-semibold text-yellow-700">
+                    <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                        Status
+                      </p>
+                      <p className="text-lg font-bold text-yellow-700 flex items-center gap-2">
+                        <span className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></span>
                         Maintenance
                       </p>
                     </div>
-                    <div>
-                      <p className="text-sm text-slate-500">Channel</p>
-                      <p className="text-base">
+                    <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                        Channel
+                      </p>
+                      <p className="text-lg font-bold text-slate-900">
                         {resInfo
                           ? state.channels.find(
                               (ch) => ch.id === resInfo.channelId
@@ -568,23 +660,29 @@ export const RoomsOverview: React.FC = () => {
                           : "-"}
                       </p>
                     </div>
-                    <div>
-                      <p className="text-sm text-slate-500">Total Amount</p>
-                      <p className="text-base">
+                    <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                        Total Amount
+                      </p>
+                      <p className="text-lg font-bold text-slate-900">
                         {resInfo ? formatCurrency(resInfo.totalAmount) : "-"}
                       </p>
                     </div>
-                    <div className="md:col-span-2">
-                      <p className="text-sm text-slate-500">Notes</p>
-                      <p className="text-base">Maintenance</p>
+                    <div className="md:col-span-2 bg-white rounded-lg p-4 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                        Notes
+                      </p>
+                      <p className="text-lg font-bold text-slate-900">
+                        Maintenance
+                      </p>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between mt-2">
-                    <h4 className="text-lg font-semibold">
+                  <div className="flex items-center justify-between mt-6 bg-gradient-to-br from-yellow-50 to-yellow-100 border-l-4 border-yellow-500 rounded-lg p-4">
+                    <h4 className="text-lg font-bold text-yellow-800">
                       Maintenance Calendar
                     </h4>
                     <button
-                      className="p-1 rounded hover:bg-slate-100"
+                      className="px-4 py-2 rounded-lg bg-yellow-500 hover:bg-yellow-600 text-white font-medium transition-colors flex items-center gap-2"
                       onClick={(e) => {
                         e.stopPropagation();
                         setCalendarRoom(room);
@@ -597,49 +695,79 @@ export const RoomsOverview: React.FC = () => {
                   </div>
                   {renderCalendar()}
                   {/* Room Details - show all room fields from data */}
-                  <div>
-                    <h3 className="text-lg font-semibold">Room Details</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm text-slate-500">ID</p>
-                        <p className="text-base font-medium">{room.id}</p>
+                  <div className="space-y-4">
+                    <div className="bg-gradient-to-br from-slate-50 to-slate-100 border-l-4 border-slate-500 rounded-lg p-4">
+                      <h3 className="text-lg font-bold text-slate-800">
+                        Room Details
+                      </h3>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                          ID
+                        </p>
+                        <p className="text-lg font-bold text-slate-900">
+                          {room.id}
+                        </p>
                       </div>
-                      <div>
-                        <p className="text-sm text-slate-500">Room Number</p>
-                        <p className="text-base font-medium">
+                      <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                          Room Number
+                        </p>
+                        <p className="text-lg font-bold text-slate-900">
                           {room.roomNumber}
                         </p>
                       </div>
-                      <div>
-                        <p className="text-sm text-slate-500">Room Type</p>
-                        <p className="text-base">{roomType?.name || "N/A"}</p>
+                      <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                          Room Type
+                        </p>
+                        <p className="text-lg font-bold text-slate-900">
+                          {roomType?.name || "N/A"}
+                        </p>
                       </div>
-                      <div>
-                        <p className="text-sm text-slate-500">Area</p>
-                        <p className="text-base">
+                      <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                          Area
+                        </p>
+                        <p className="text-lg font-bold text-slate-900">
                           {state.roomAreas.find((a) => a.id === room.areaId)
                             ?.name || "-"}
                         </p>
                       </div>
-                      <div>
-                        <p className="text-sm text-slate-500">Status</p>
-                        <p className="text-base">{room.status}</p>
+                      <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                          Status
+                        </p>
+                        <p className="text-lg font-bold text-slate-900">
+                          {room.status}
+                        </p>
                       </div>
-                      <div>
-                        <p className="text-sm text-slate-500">Floor</p>
-                        <p className="text-base">{room.floor ?? "-"}</p>
+                      <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                          Floor
+                        </p>
+                        <p className="text-lg font-bold text-slate-900">
+                          {room.floor ?? "-"}
+                        </p>
                       </div>
-                      <div>
-                        <p className="text-sm text-slate-500">Size</p>
-                        <p className="text-base">{room.size ?? "-"}</p>
+                      <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                          Size
+                        </p>
+                        <p className="text-lg font-bold text-slate-900">
+                          {room.size ?? "-"}
+                        </p>
                       </div>
-                      <div className="md:col-span-2">
-                        <p className="text-sm text-slate-500">Amenities</p>
+                      <div className="md:col-span-2 bg-white rounded-lg p-4 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                          Amenities
+                        </p>
                         <div className="flex flex-wrap gap-2 mt-1">
                           {room.amenities.map((am) => (
                             <span
                               key={am}
-                              className="text-xs bg-slate-100 px-2 py-1 rounded"
+                              className="text-xs bg-blue-100 text-blue-700 font-medium px-3 py-1 rounded-full"
                             >
                               {state.amenities.find((x) => x.id === am)?.name ||
                                 am}
@@ -661,94 +789,147 @@ export const RoomsOverview: React.FC = () => {
               ? state.customers.find((c) => c.id === res.customerId)
               : null;
             return (
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Customer Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-slate-500">Name</p>
-                    <p className="text-base">{customer?.name || "N/A"}</p>
+              <div className="space-y-6">
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-l-4 border-blue-500 rounded-lg p-4">
+                  <h3 className="text-lg font-bold text-blue-800 flex items-center gap-2">
+                    <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+                    Customer Information
+                  </h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                      Name
+                    </p>
+                    <p className="text-lg font-bold text-slate-900">
+                      {customer?.name || "N/A"}
+                    </p>
                   </div>
-                  <div>
-                    <p className="text-sm text-slate-500">Email</p>
-                    <p className="text-base">{customer?.email || "N/A"}</p>
+                  <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                      Email
+                    </p>
+                    <p className="text-lg font-bold text-slate-900">
+                      {customer?.email || "N/A"}
+                    </p>
                   </div>
-                  <div>
-                    <p className="text-sm text-slate-500">Phone</p>
-                    <p className="text-base">{customer?.phone || "N/A"}</p>
+                  <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                      Phone
+                    </p>
+                    <p className="text-lg font-bold text-slate-900">
+                      {customer?.phone || "N/A"}
+                    </p>
                   </div>
-                  <div>
-                    <p className="text-sm text-slate-500">Nationality</p>
-                    <p className="text-base">
+                  <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                      Nationality
+                    </p>
+                    <p className="text-lg font-bold text-slate-900">
                       {customer?.nationality || "N/A"}
                     </p>
                   </div>
-                  <div>
-                    <p className="text-sm text-slate-500">Check-In Date</p>
-                    <p className="text-base">
+                  <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                      Check-In Date
+                    </p>
+                    <p className="text-lg font-bold text-slate-900">
                       {res ? formatDate(res.checkIn) : "-"}
                     </p>
                   </div>
-                  <div>
-                    <p className="text-sm text-slate-500">Check-Out Date</p>
-                    <p className="text-base">
+                  <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                      Check-Out Date
+                    </p>
+                    <p className="text-lg font-bold text-slate-900">
                       {res ? formatDate(res.checkOut) : "-"}
                     </p>
                   </div>
                 </div>
 
-                <h3 className="text-lg font-semibold">
-                  Reservation Information
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-slate-500">Room Number</p>
-                    <p className="text-base">{room.roomNumber}</p>
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-l-4 border-blue-500 rounded-lg p-4">
+                  <h3 className="text-lg font-bold text-blue-800 flex items-center gap-2">
+                    <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+                    Reservation Information
+                  </h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                      Room Number
+                    </p>
+                    <p className="text-lg font-bold text-slate-900">
+                      {room.roomNumber}
+                    </p>
                   </div>
-                  <div>
-                    <p className="text-sm text-slate-500">Room Type</p>
-                    <p className="text-base">{roomType?.name || "N/A"}</p>
+                  <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                      Room Type
+                    </p>
+                    <p className="text-lg font-bold text-slate-900">
+                      {roomType?.name || "N/A"}
+                    </p>
                   </div>
-                  <div>
-                    <p className="text-sm text-slate-500">Adults</p>
-                    <p className="text-base">{res?.adults ?? "-"}</p>
+                  <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                      Adults
+                    </p>
+                    <p className="text-lg font-bold text-slate-900">
+                      {res?.adults ?? "-"}
+                    </p>
                   </div>
-                  <div>
-                    <p className="text-sm text-slate-500">Children</p>
-                    <p className="text-base">{res?.children ?? "-"}</p>
+                  <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                      Children
+                    </p>
+                    <p className="text-lg font-bold text-slate-900">
+                      {res?.children ?? "-"}
+                    </p>
                   </div>
-                  <div>
-                    <p className="text-sm text-slate-500">Status</p>
-                    <p className="text-base font-semibold text-blue-700">
+                  <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                      Status
+                    </p>
+                    <p className="text-lg font-bold text-blue-700 flex items-center gap-2">
+                      <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
                       Occupied
                     </p>
                   </div>
-                  <div>
-                    <p className="text-sm text-slate-500">Channel</p>
-                    <p className="text-base">
+                  <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                      Channel
+                    </p>
+                    <p className="text-lg font-bold text-slate-900">
                       {res
                         ? state.channels.find((ch) => ch.id === res.channelId)
                             ?.name || "-"
                         : "-"}
                     </p>
                   </div>
-                  <div>
-                    <p className="text-sm text-slate-500">Total Amount</p>
-                    <p className="text-base">
+                  <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                      Total Amount
+                    </p>
+                    <p className="text-lg font-bold text-slate-900">
                       {res ? formatCurrency(res.totalAmount) : "-"}
                     </p>
                   </div>
-                  <div className="md:col-span-2">
-                    <p className="text-sm text-slate-500">Notes</p>
-                    <p className="text-base">
+                  <div className="md:col-span-2 bg-white rounded-lg p-4 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                      Notes
+                    </p>
+                    <p className="text-lg font-bold text-slate-900">
                       {res?.notes || "Late check-out requested"}
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between mt-2">
-                  <h4 className="text-lg font-semibold">Occupancy Calendar</h4>
+                <div className="flex items-center justify-between mt-6 bg-gradient-to-br from-blue-50 to-blue-100 border-l-4 border-blue-500 rounded-lg p-4">
+                  <h4 className="text-lg font-bold text-blue-800">
+                    Occupancy Calendar
+                  </h4>
                   <button
-                    className="p-1 rounded hover:bg-slate-100"
+                    className="px-4 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-medium transition-colors flex items-center gap-2"
                     onClick={(e) => {
                       e.stopPropagation();
                       setCalendarRoom(room);
@@ -761,47 +942,79 @@ export const RoomsOverview: React.FC = () => {
                 </div>
                 {renderCalendar()}
                 {/* Room Details - show all room fields from data */}
-                <div>
-                  <h3 className="text-lg font-semibold">Room Details</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-slate-500">ID</p>
-                      <p className="text-base font-medium">{room.id}</p>
+                <div className="space-y-4">
+                  <div className="bg-gradient-to-br from-slate-50 to-slate-100 border-l-4 border-slate-500 rounded-lg p-4">
+                    <h3 className="text-lg font-bold text-slate-800">
+                      Room Details
+                    </h3>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                        ID
+                      </p>
+                      <p className="text-lg font-bold text-slate-900">
+                        {room.id}
+                      </p>
                     </div>
-                    <div>
-                      <p className="text-sm text-slate-500">Room Number</p>
-                      <p className="text-base font-medium">{room.roomNumber}</p>
+                    <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                        Room Number
+                      </p>
+                      <p className="text-lg font-bold text-slate-900">
+                        {room.roomNumber}
+                      </p>
                     </div>
-                    <div>
-                      <p className="text-sm text-slate-500">Room Type</p>
-                      <p className="text-base">{roomType?.name || "N/A"}</p>
+                    <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                        Room Type
+                      </p>
+                      <p className="text-lg font-bold text-slate-900">
+                        {roomType?.name || "N/A"}
+                      </p>
                     </div>
-                    <div>
-                      <p className="text-sm text-slate-500">Area</p>
-                      <p className="text-base">
+                    <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                        Area
+                      </p>
+                      <p className="text-lg font-bold text-slate-900">
                         {state.roomAreas.find((a) => a.id === room.areaId)
                           ?.name || "-"}
                       </p>
                     </div>
-                    <div>
-                      <p className="text-sm text-slate-500">Status</p>
-                      <p className="text-base">{room.status}</p>
+                    <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                        Status
+                      </p>
+                      <p className="text-lg font-bold text-slate-900">
+                        {room.status}
+                      </p>
                     </div>
-                    <div>
-                      <p className="text-sm text-slate-500">Floor</p>
-                      <p className="text-base">{room.floor ?? "-"}</p>
+                    <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                        Floor
+                      </p>
+                      <p className="text-lg font-bold text-slate-900">
+                        {room.floor ?? "-"}
+                      </p>
                     </div>
-                    <div>
-                      <p className="text-sm text-slate-500">Size</p>
-                      <p className="text-base">{room.size ?? "-"}</p>
+                    <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                        Size
+                      </p>
+                      <p className="text-lg font-bold text-slate-900">
+                        {room.size ?? "-"}
+                      </p>
                     </div>
-                    <div className="md:col-span-2">
-                      <p className="text-sm text-slate-500">Amenities</p>
+                    <div className="md:col-span-2 bg-white rounded-lg p-4 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                        Amenities
+                      </p>
                       <div className="flex flex-wrap gap-2 mt-1">
                         {room.amenities.map((am) => (
                           <span
                             key={am}
-                            className="text-xs bg-slate-100 px-2 py-1 rounded"
+                            className="text-xs bg-blue-100 text-blue-700 font-medium px-3 py-1 rounded-full"
                           >
                             {state.amenities.find((x) => x.id === am)?.name ||
                               am}

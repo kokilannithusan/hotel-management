@@ -1,6 +1,5 @@
-import React from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { X } from "lucide-react";
-import { Button } from "./Button";
 
 interface ModalProps {
   isOpen: boolean;
@@ -19,6 +18,33 @@ export const Modal: React.FC<ModalProps> = ({
   footer,
   size = "lg",
 }) => {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [showTopShadow, setShowTopShadow] = useState(false);
+  const [showBottomShadow, setShowBottomShadow] = useState(false);
+
+  useEffect(() => {
+    const checkScroll = () => {
+      if (scrollRef.current) {
+        const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+
+        setShowTopShadow(scrollTop > 10);
+        setShowBottomShadow(scrollTop < scrollHeight - clientHeight - 10);
+      }
+    };
+
+    checkScroll();
+    const scrollElement = scrollRef.current;
+    scrollElement?.addEventListener("scroll", checkScroll);
+
+    // Check after content loads
+    const timer = setTimeout(checkScroll, 100);
+
+    return () => {
+      scrollElement?.removeEventListener("scroll", checkScroll);
+      clearTimeout(timer);
+    };
+  }, [isOpen, children]);
+
   if (!isOpen) return null;
 
   const sizeClasses = {
@@ -33,35 +59,56 @@ export const Modal: React.FC<ModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto animate-fade-in">
-      <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+    <div className="fixed inset-0 z-50 flex items-center justify-center animate-fade-in">
+      <div
+        className="fixed inset-0 transition-all duration-300 bg-slate-900 bg-opacity-50 backdrop-blur-sm animate-fade-in"
+        onClick={onClose}
+      />
+      <div
+        className={`relative flex flex-col bg-white dark:bg-gray-900 premium-card shadow-premium-lg transform transition-all duration-300 scale-100 animate-fade-in ${sizeClasses[size]} w-full mx-4 max-h-[90vh] rounded-xl overflow-hidden`}
+      >
+        {/* Fixed Header */}
         <div
-          className="fixed inset-0 transition-all duration-300 bg-slate-900 bg-opacity-50 backdrop-blur-sm animate-fade-in"
-          onClick={onClose}
-        />
-        <div
-          className={`inline-block align-bottom premium-card text-left overflow-hidden shadow-premium-lg transform transition-all duration-300 scale-100 animate-fade-in sm:my-8 sm:align-middle ${sizeClasses[size]} sm:w-full`}
+          className={`flex-shrink-0 sticky top-0 z-10 bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 transition-shadow duration-300 ${
+            showTopShadow ? "shadow-xl" : "shadow-lg"
+          }`}
         >
-          <div className="bg-white dark:bg-gray-900 px-6 pt-6 pb-4 sm:p-6 sm:pb-4">
-            <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-200 dark:border-gray-700">
-              <h3 className="text-xl font-bold text-slate-900 dark:text-gray-100">
-                {title}
-              </h3>
-              <button
-                onClick={onClose}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-gray-300 focus:outline-none p-1 hover:bg-slate-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-            <div className="mt-4">{children}</div>
+          <div className="flex items-center justify-between">
+            <h3 className="text-xl font-bold text-white flex items-center gap-2">
+              {title}
+            </h3>
+            <button
+              onClick={onClose}
+              className="text-white/80 hover:text-white hover:bg-white/20 focus:outline-none p-2 rounded-lg transition-all duration-200"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
-          {footer && (
-            <div className="bg-gradient-to-r from-slate-50 to-stone-50 dark:from-gray-800 dark:to-gray-900 px-6 py-4 sm:px-6 sm:flex sm:flex-row-reverse border-t border-slate-200 dark:border-gray-700">
-              {footer}
-            </div>
-          )}
         </div>
+
+        {/* Scrollable Content with custom scrollbar */}
+        <div
+          ref={scrollRef}
+          className="flex-1 overflow-y-auto px-6 py-6 scroll-smooth modal-scrollable"
+        >
+          {children}
+        </div>
+
+        {/* Bottom Scroll Indicator */}
+        {showBottomShadow && (
+          <div className="absolute bottom-16 left-0 right-0 h-12 bg-gradient-to-t from-white/90 to-transparent pointer-events-none" />
+        )}
+
+        {/* Fixed Footer */}
+        {footer && (
+          <div
+            className={`flex-shrink-0 sticky bottom-0 bg-gradient-to-r from-slate-50 to-stone-50 dark:from-gray-800 dark:to-gray-900 px-6 py-4 sm:flex sm:flex-row-reverse border-t border-slate-200 dark:border-gray-700 transition-shadow duration-300 ${
+              showBottomShadow ? "shadow-2xl" : "shadow-lg"
+            }`}
+          >
+            {footer}
+          </div>
+        )}
       </div>
     </div>
   );

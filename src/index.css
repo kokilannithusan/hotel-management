@@ -99,6 +99,32 @@
     @apply transition-transform duration-300 hover:scale-105;
   }
 
+  /* Modal scrollbar styling - override global hide */
+  .modal-scrollable {
+    scrollbar-width: thin !important;
+    scrollbar-color: #3b82f6 #e2e8f0 !important;
+  }
+
+  .modal-scrollable::-webkit-scrollbar {
+    width: 8px !important;
+    height: 8px !important;
+  }
+
+  .modal-scrollable::-webkit-scrollbar-track {
+    background: #e2e8f0;
+    border-radius: 4px;
+  }
+
+  .modal-scrollable::-webkit-scrollbar-thumb {
+    background: #3b82f6;
+    border-radius: 4px;
+    transition: background 0.2s;
+  }
+
+  .modal-scrollable::-webkit-scrollbar-thumb:hover {
+    background: #2563eb;
+  }
+
   /* Glass morphism effect */
   .glass {
     @apply bg-white/80 backdrop-blur-md border border-white/20;
