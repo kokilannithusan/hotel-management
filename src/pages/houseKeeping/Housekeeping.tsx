@@ -411,7 +411,7 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
   >("dashboard");
   const [selectedRoomIds, setSelectedRoomIds] = useState<string[]>([]);
   const [showFinishConfirm, setShowFinishConfirm] = useState(false);
-  const [totalCleaningTimer, setTotalCleaningTimer] = useState<number>(0); // Total cleaning duration in seconds
+  const [_totalCleaningTimer, setTotalCleaningTimer] = useState<number>(0); // Total cleaning duration in seconds
   const [cleaningSessionStartTime, setCleaningSessionStartTime] = useState<
     number | null
   >(null); // When cleaning session started
@@ -886,7 +886,14 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
     // Reset manager states
     setShowProfileModal(false);
     setEditingProfile(null);
-    setProfileForm({ name: "", phone: "", email: "", active: true });
+    setProfileForm({
+      name: "",
+      phone: "",
+      email: "",
+      nic: "",
+      address: "",
+      active: true,
+    });
     setSelectedRoomId("");
     setSelectedHousekeeperId("");
     setShowConfirmModal(false);

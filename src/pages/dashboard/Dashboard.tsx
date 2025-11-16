@@ -4,7 +4,6 @@ import { Card } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
 import { Modal } from "../../components/ui/Modal";
 import { formatCurrency } from "../../utils/formatters";
-import type { ReservationStatus } from "../../types/entities";
 import RoomCalendar from "../../components/organisms/RoomCalendar";
 import { CheckInDialog } from "../../components/dialogs/CheckInDialog";
 import { CheckOutDialog } from "../../components/dialogs/CheckOutDialog";
@@ -62,14 +61,6 @@ const reservationStatusLabelMap: Record<string, string> = {
   canceled: "Cancelled",
 };
 
-const reservationStatusValueMap: Record<string, ReservationStatus> = {
-  Booked: "confirmed",
-  Confirmed: "confirmed",
-  "Checked in": "checked-in",
-  "Checked out": "checked-out",
-  Cancelled: "canceled",
-};
-
 const roomStatusLabelMap: Record<string, string> = {
   available: "Available",
   occupied: "Occupied",
@@ -99,7 +90,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export function Dashboard() {
-  const { state, dispatch } = useHotel();
+  const { state } = useHotel();
   const [query, setQuery] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [modalContent, setModalContent] = useState<React.ReactNode>(null);

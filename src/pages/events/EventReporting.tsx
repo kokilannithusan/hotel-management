@@ -9,11 +9,6 @@ import {
   Building2,
   FileText,
   RefreshCw,
-  AlertTriangle,
-  Clock,
-  Star,
-  PieChart,
-  Activity,
 } from "lucide-react";
 import { Card } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
@@ -29,14 +24,6 @@ import {
   EventType,
   EventStatus,
 } from "../../types/entities";
-
-// Define PaymentStatus type
-type PaymentStatus =
-  | "pending"
-  | "paid"
-  | "partially_paid"
-  | "refunded"
-  | "cancelled";
 
 interface ReportFilter {
   startDate: string;
@@ -88,23 +75,6 @@ interface CancellationData {
   refundAmount: number;
   cancellationRate: number;
   lostRevenue: number;
-}
-
-interface CustomerInsightData {
-  segmentName: string;
-  customerCount: number;
-  averageSpend: number;
-  repeatBookingRate: number;
-  preferredEventTypes: EventType[];
-  seasonalTrends: string[];
-}
-
-interface FinancialReportData {
-  category: string;
-  budgeted: number;
-  actual: number;
-  variance: number;
-  variancePercentage: number;
 }
 
 export const EventReporting: React.FC = () => {
@@ -262,71 +232,6 @@ export const EventReporting: React.FC = () => {
     },
   ];
 
-  const mockCustomerInsights: CustomerInsightData[] = [
-    {
-      segmentName: "Corporate Clients",
-      customerCount: 45,
-      averageSpend: 2800,
-      repeatBookingRate: 68,
-      preferredEventTypes: [
-        "corporate" as EventType,
-        "conference" as EventType,
-      ],
-      seasonalTrends: ["Q1 Peak", "Q3 Low"],
-    },
-    {
-      segmentName: "Wedding Couples",
-      customerCount: 23,
-      averageSpend: 5200,
-      repeatBookingRate: 15,
-      preferredEventTypes: ["wedding" as EventType, "anniversary" as EventType],
-      seasonalTrends: ["Summer Peak", "Winter Low"],
-    },
-    {
-      segmentName: "Event Planners",
-      customerCount: 12,
-      averageSpend: 3600,
-      repeatBookingRate: 85,
-      preferredEventTypes: [
-        "gala" as EventType,
-        "birthday" as EventType,
-        "other" as EventType,
-      ],
-      seasonalTrends: ["Holiday Peak", "Steady Year-round"],
-    },
-  ];
-
-  const mockFinancialData: FinancialReportData[] = [
-    {
-      category: "Event Revenue",
-      budgeted: 75000,
-      actual: 70150,
-      variance: -4850,
-      variancePercentage: -6.5,
-    },
-    {
-      category: "Operating Costs",
-      budgeted: 25000,
-      actual: 21045,
-      variance: -3955,
-      variancePercentage: -15.8,
-    },
-    {
-      category: "Marketing Spend",
-      budgeted: 8000,
-      actual: 9200,
-      variance: 1200,
-      variancePercentage: 15.0,
-    },
-    {
-      category: "Staff Costs",
-      budgeted: 15000,
-      actual: 14650,
-      variance: -350,
-      variancePercentage: -2.3,
-    },
-  ];
-
   const mockEvents: Event[] = [
     {
       id: "1",
@@ -344,12 +249,10 @@ export const EventReporting: React.FC = () => {
       packageId: "1",
       totalRevenue: 7500,
       status: "confirmed" as EventStatus,
-      paymentStatus: "paid" as PaymentStatus,
+      paymentStatus: "paid",
       createdAt: "2024-11-01T00:00:00Z",
       updatedAt: "2024-11-01T00:00:00Z",
       createdBy: "user1",
-      actualAttendees: 185,
-      customerSatisfactionRating: 4.7,
     },
     {
       id: "2",
@@ -367,12 +270,10 @@ export const EventReporting: React.FC = () => {
       packageId: "1",
       totalRevenue: 5000,
       status: "confirmed" as EventStatus,
-      paymentStatus: "paid" as PaymentStatus,
+      paymentStatus: "paid",
       createdAt: "2024-10-15T00:00:00Z",
       updatedAt: "2024-10-15T00:00:00Z",
       createdBy: "user2",
-      actualAttendees: 142,
-      customerSatisfactionRating: 4.9,
     },
     {
       id: "3",
@@ -390,12 +291,10 @@ export const EventReporting: React.FC = () => {
       packageId: "2",
       totalRevenue: 2400,
       status: "completed" as EventStatus,
-      paymentStatus: "paid" as PaymentStatus,
+      paymentStatus: "paid",
       createdAt: "2024-10-01T00:00:00Z",
       updatedAt: "2024-11-26T00:00:00Z",
       createdBy: "user3",
-      actualAttendees: 95,
-      customerSatisfactionRating: 4.3,
     },
   ];
 
@@ -406,11 +305,25 @@ export const EventReporting: React.FC = () => {
       capacity: 300,
       location: "Ground Floor",
       facilities: ["Audio System", "Lighting", "Air Conditioning", "Stage"],
+      availableFacilities: {
+        airConditioning: true,
+        projector: false,
+        soundSystem: true,
+        wifi: true,
+        parking: true,
+        catering: true,
+        stage: true,
+        danceFloor: true,
+        bar: true,
+        kitchen: false,
+      },
       pricePerHour: 250,
       pricePerDay: 2000,
       status: "available",
       description: "Elegant ballroom perfect for weddings and galas",
       images: [],
+      setupTime: 2,
+      cleanupTime: 1,
       createdAt: "2024-01-01T00:00:00Z",
       updatedAt: "2024-01-01T00:00:00Z",
     },
@@ -420,11 +333,25 @@ export const EventReporting: React.FC = () => {
       capacity: 50,
       location: "Second Floor",
       facilities: ["Projector", "WiFi", "Whiteboard", "Air Conditioning"],
+      availableFacilities: {
+        airConditioning: true,
+        projector: true,
+        soundSystem: false,
+        wifi: true,
+        parking: false,
+        catering: false,
+        stage: false,
+        danceFloor: false,
+        bar: false,
+        kitchen: false,
+      },
       pricePerHour: 75,
       pricePerDay: 600,
       status: "available",
       description: "Professional conference room for business meetings",
       images: [],
+      setupTime: 1,
+      cleanupTime: 0.5,
       createdAt: "2024-01-01T00:00:00Z",
       updatedAt: "2024-01-01T00:00:00Z",
     },
@@ -434,11 +361,25 @@ export const EventReporting: React.FC = () => {
       capacity: 80,
       location: "Rooftop",
       facilities: ["Outdoor Setting", "City View", "Bar Area"],
+      availableFacilities: {
+        airConditioning: false,
+        projector: false,
+        soundSystem: true,
+        wifi: true,
+        parking: false,
+        catering: true,
+        stage: false,
+        danceFloor: false,
+        bar: true,
+        kitchen: false,
+      },
       pricePerHour: 180,
       pricePerDay: 1440,
       status: "available",
       description: "Beautiful outdoor terrace with city views",
       images: [],
+      setupTime: 1.5,
+      cleanupTime: 1,
       createdAt: "2024-01-01T00:00:00Z",
       updatedAt: "2024-01-01T00:00:00Z",
     },

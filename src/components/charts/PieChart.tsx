@@ -1,5 +1,12 @@
-import React from 'react';
-import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import React from "react";
+import {
+  PieChart as RechartsPieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Legend,
+  Tooltip,
+} from "recharts";
 
 interface PieChartData {
   name: string;
@@ -13,15 +20,22 @@ interface PieChartProps {
 }
 
 const PREMIUM_COLORS = [
-  'url(#gradientBlue)',
-  'url(#gradientGreen)',
-  'url(#gradientPurple)',
-  'url(#gradientOrange)',
-  'url(#gradientPink)',
-  'url(#gradientTeal)',
+  "url(#gradientBlue)",
+  "url(#gradientGreen)",
+  "url(#gradientPurple)",
+  "url(#gradientOrange)",
+  "url(#gradientPink)",
+  "url(#gradientTeal)",
 ];
 
-const FALLBACK_COLORS = ['#0ea5e9', '#10b981', '#8b5cf6', '#f59e0b', '#ec4899', '#14b8a6'];
+const FALLBACK_COLORS = [
+  "#0ea5e9",
+  "#10b981",
+  "#8b5cf6",
+  "#f59e0b",
+  "#ec4899",
+  "#14b8a6",
+];
 
 const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
@@ -29,14 +43,23 @@ const CustomTooltip = ({ active, payload }: any) => {
       <div className="bg-white p-3 rounded-lg shadow-lg border border-slate-200">
         <p className="font-semibold text-slate-900">{payload[0].name}</p>
         <p className="text-blue-600 font-bold text-lg">{payload[0].value}</p>
-        <p className="text-sm text-slate-500">{((payload[0].payload.percent || 0) * 100).toFixed(1)}%</p>
+        <p className="text-sm text-slate-500">
+          {((payload[0].payload.percent || 0) * 100).toFixed(1)}%
+        </p>
       </div>
     );
   }
   return null;
 };
 
-const CustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
+const CustomLabel = ({
+  cx,
+  cy,
+  midAngle,
+  innerRadius,
+  outerRadius,
+  percent,
+}: any) => {
   const RADIAN = Math.PI / 180;
   const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
@@ -49,10 +72,10 @@ const CustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: an
       x={x}
       y={y}
       fill="white"
-      textAnchor={x > cx ? 'start' : 'end'}
+      textAnchor={x > cx ? "start" : "end"}
       dominantBaseline="central"
       className="text-sm font-bold"
-      style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}
+      style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.3))" }}
     >
       {`${(percent * 100).toFixed(0)}%`}
     </text>
@@ -114,21 +137,26 @@ export const PieChart: React.FC<PieChartProps> = ({ data, title }) => {
               {data.map((entry, index) => (
                 <Cell
                   key={`cell-${index}`}
-                  fill={entry.color || PREMIUM_COLORS[index % PREMIUM_COLORS.length]}
-                  stroke={entry.color || FALLBACK_COLORS[index % FALLBACK_COLORS.length]}
+                  fill={
+                    entry.color || PREMIUM_COLORS[index % PREMIUM_COLORS.length]
+                  }
+                  stroke={
+                    entry.color ||
+                    FALLBACK_COLORS[index % FALLBACK_COLORS.length]
+                  }
                   strokeWidth={2}
                   style={{
-                    filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))',
-                    transition: 'all 0.3s ease',
+                    filter: "drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))",
+                    transition: "all 0.3s ease",
                   }}
                 />
               ))}
             </Pie>
             <Tooltip content={<CustomTooltip />} />
             <Legend
-              wrapperStyle={{ paddingTop: '20px' }}
+              wrapperStyle={{ paddingTop: "20px" }}
               iconType="circle"
-              formatter={(value, entry: any) => (
+              formatter={(value) => (
                 <span className="text-slate-700 font-medium">{value}</span>
               )}
             />
