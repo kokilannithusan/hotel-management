@@ -128,7 +128,7 @@ export const PieChart: React.FC<PieChartProps> = ({ data, title }) => {
             <Legend
               wrapperStyle={{ paddingTop: '20px' }}
               iconType="circle"
-              formatter={(value) => (
+              formatter={(value, entry: any) => (
                 <span className="text-slate-700 font-medium">{value}</span>
               )}
             />

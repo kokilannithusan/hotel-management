@@ -206,6 +206,14 @@ export const EventBookingsOverview: React.FC<
     });
   };
 
+  const getEventsForYear = (year: number) => {
+    return filteredEvents.filter((event) => {
+      if (!event.startDateTime) return false;
+      const eventDate = new Date(event.startDateTime);
+      return eventDate.getFullYear() === year;
+    });
+  };
+
   const getSelectedDateEvents = () => {
     return filteredEvents.filter((event) => {
       if (!event.startDateTime) return false;
@@ -261,6 +269,15 @@ export const EventBookingsOverview: React.FC<
       return newDate;
     });
     setCalendarViewMode("month");
+  };
+
+  const selectYear = (year: number) => {
+    setCurrentDate((prev) => {
+      const newDate = new Date(prev);
+      newDate.setFullYear(year);
+      return newDate;
+    });
+    setCalendarViewMode("year");
   };
 
   const getStatusColor = (status: EventStatus) => {

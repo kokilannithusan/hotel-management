@@ -5,22 +5,15 @@ import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { Button } from '../../components/ui/Button';
 import { generateId } from '../../utils/formatters';
-import { ChannelStatus } from '../../types/entities';
 
 export const Registration: React.FC = () => {
-  const { dispatch } = useHotel();
-  const [formData, setFormData] = useState<{
-    name: string;
-    type: string;
-    apiKey: string;
-    contactPerson: string;
-    status: ChannelStatus;
-  }>({
+  const { state, dispatch } = useHotel();
+  const [formData, setFormData] = useState({
     name: '',
     type: 'OTA',
     apiKey: '',
     contactPerson: '',
-    status: 'active',
+    status: 'active' as const,
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -77,7 +70,7 @@ export const Registration: React.FC = () => {
           <Select
             label="Status"
             value={formData.status}
-            onChange={(e) => setFormData({ ...formData, status: e.target.value as ChannelStatus })}
+            onChange={(e) => setFormData({ ...formData, status: e.target.value as 'active' | 'inactive' })}
             options={[
               { value: 'active', label: 'Active' },
               { value: 'inactive', label: 'Inactive' },

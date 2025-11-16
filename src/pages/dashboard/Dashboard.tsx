@@ -6,6 +6,9 @@ import { Modal } from "../../components/ui/Modal";
 import { formatCurrency } from "../../utils/formatters";
 import type { ReservationStatus } from "../../types/entities";
 import RoomCalendar from "../../components/organisms/RoomCalendar";
+import { CheckInDialog } from "../../components/dialogs/CheckInDialog";
+import { CheckOutDialog } from "../../components/dialogs/CheckOutDialog";
+import { CancelReservationDialog } from "../../components/dialogs/CancelReservationDialog";
 
 type ReservationExtended = {
   id: string;
@@ -100,6 +103,12 @@ export function Dashboard() {
   const [query, setQuery] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [modalContent, setModalContent] = useState<React.ReactNode>(null);
+  const [showCheckInDialog, setShowCheckInDialog] = useState(false);
+  const [showCheckOutDialog, setShowCheckOutDialog] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [selectedReservationId, setSelectedReservationId] = useState<
+    string | null
+  >(null);
 
   const openModal = (content: React.ReactNode) => {
     setModalContent(content);
@@ -109,6 +118,21 @@ export function Dashboard() {
   const closeModal = () => {
     setShowModal(false);
     setModalContent(null);
+  };
+
+  const openCheckInDialog = (reservationId: string) => {
+    setSelectedReservationId(reservationId);
+    setShowCheckInDialog(true);
+  };
+
+  const openCheckOutDialog = (reservationId: string) => {
+    setSelectedReservationId(reservationId);
+    setShowCheckOutDialog(true);
+  };
+
+  const openCancelDialog = (reservationId: string) => {
+    setSelectedReservationId(reservationId);
+    setShowCancelDialog(true);
   };
 
   const roomById = useMemo(() => {
@@ -431,29 +455,6 @@ export function Dashboard() {
     ];
   }, [reservations]);
 
-  const updateReservation = (
-    id: string,
-    updater: (record: ReservationExtended) => ReservationExtended
-  ) => {
-    const entity = state.reservations.find(
-      (reservation) => reservation.id === id
-    );
-    if (!entity) return;
-    const current = reservations.find((reservation) => reservation.id === id);
-    if (!current) return;
-    const updated = updater(current);
-
-    const updatedEntity = {
-      ...entity,
-      checkIn: updated.checkIn,
-      checkOut: updated.checkOut,
-      status: reservationStatusValueMap[updated.status] ?? entity.status,
-      totalAmount: updated.amount,
-    };
-
-    dispatch({ type: "UPDATE_RESERVATION", payload: updatedEntity });
-  };
-
   const formatHumanDate = (value: string) => {
     if (!value) return "—";
     const date = new Date(value);
@@ -629,12 +630,7 @@ export function Dashboard() {
                     reservation.status === "Checked out" ||
                     reservation.status === "Cancelled"
                   }
-                  onClick={() =>
-                    updateReservation(reservation.id, (rec) => ({
-                      ...rec,
-                      status: "Checked in",
-                    }))
-                  }
+                  onClick={() => openCheckInDialog(reservation.id)}
                 >
                   Check in
                 </Button>
@@ -643,14 +639,10 @@ export function Dashboard() {
                   variant="secondary"
                   disabled={
                     reservation.status === "Cancelled" ||
-                    reservation.status === "Checked out"
+                    reservation.status === "Checked out" ||
+                    reservation.status !== "Checked in"
                   }
-                  onClick={() =>
-                    updateReservation(reservation.id, (rec) => ({
-                      ...rec,
-                      status: "Checked out",
-                    }))
-                  }
+                  onClick={() => openCheckOutDialog(reservation.id)}
                 >
                   Check out
                 </Button>
@@ -743,42 +735,30 @@ export function Dashboard() {
                         row.status !== "Cancelled" && (
                           <Button
                             size="sm"
-                            onClick={() =>
-                              updateReservation(row.id, (rec) => ({
-                                ...rec,
-                                status: "Checked in",
-                              }))
-                            }
+                            onClick={() => openCheckInDialog(row.id)}
                           >
                             Check in
                           </Button>
                         )}
-                      {row.status !== "Cancelled" && (
+                      {row.status === "Checked in" && (
                         <Button
                           size="sm"
                           variant="secondary"
-                          onClick={() =>
-                            updateReservation(row.id, (rec) => ({
-                              ...rec,
-                              status: "Checked out",
-                            }))
-                          }
+                          onClick={() => openCheckOutDialog(row.id)}
                         >
                           Check out
                         </Button>
                       )}
-                      <Button
-                        size="sm"
-                        variant="danger"
-                        onClick={() =>
-                          updateReservation(row.id, (rec) => ({
-                            ...rec,
-                            status: "Cancelled",
-                          }))
-                        }
-                      >
-                        Cancel
-                      </Button>
+                      {row.status !== "Cancelled" &&
+                        row.status !== "Checked out" && (
+                          <Button
+                            size="sm"
+                            variant="danger"
+                            onClick={() => openCancelDialog(row.id)}
+                          >
+                            Cancel
+                          </Button>
+                        )}
                     </div>
                   </td>
                 </tr>
@@ -931,6 +911,84 @@ export function Dashboard() {
       <Modal isOpen={showModal} onClose={closeModal} title="Modal">
         {modalContent}
       </Modal>
+
+      {/* Check-In Dialog */}
+      {showCheckInDialog &&
+        selectedReservationId &&
+        (() => {
+          const reservation = state.reservations.find(
+            (r) => r.id === selectedReservationId
+          );
+          return reservation ? (
+            <Modal
+              isOpen={showCheckInDialog}
+              onClose={() => setShowCheckInDialog(false)}
+              title=""
+              size="5xl"
+            >
+              <CheckInDialog
+                reservation={reservation}
+                onClose={() => setShowCheckInDialog(false)}
+                onCheckInComplete={() => {
+                  setShowCheckInDialog(false);
+                  setSelectedReservationId(null);
+                }}
+              />
+            </Modal>
+          ) : null;
+        })()}
+
+      {/* Check-Out Dialog */}
+      {showCheckOutDialog &&
+        selectedReservationId &&
+        (() => {
+          const reservation = state.reservations.find(
+            (r) => r.id === selectedReservationId
+          );
+          return reservation ? (
+            <Modal
+              isOpen={showCheckOutDialog}
+              onClose={() => setShowCheckOutDialog(false)}
+              title=""
+              size="5xl"
+            >
+              <CheckOutDialog
+                reservation={reservation}
+                onClose={() => setShowCheckOutDialog(false)}
+                onCheckOutComplete={() => {
+                  setShowCheckOutDialog(false);
+                  setSelectedReservationId(null);
+                }}
+              />
+            </Modal>
+          ) : null;
+        })()}
+
+      {/* Cancel Reservation Dialog */}
+      {showCancelDialog &&
+        selectedReservationId &&
+        (() => {
+          const reservation = state.reservations.find(
+            (r) => r.id === selectedReservationId
+          );
+          return reservation ? (
+            <Modal
+              isOpen={showCancelDialog}
+              onClose={() => setShowCancelDialog(false)}
+              title=""
+              size="5xl"
+            >
+              <CancelReservationDialog
+                reservation={reservation}
+                onClose={() => setShowCancelDialog(false)}
+                onCancelComplete={() => {
+                  setShowCancelDialog(false);
+                  setSelectedReservationId(null);
+                }}
+              />
+            </Modal>
+          ) : null;
+        })()}
     </div>
   );
 }

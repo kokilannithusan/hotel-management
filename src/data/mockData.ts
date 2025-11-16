@@ -1010,6 +1010,13 @@ export const mockCurrencyRates: CurrencyRate[] = [
     rate: 1.34,
     lastUpdated: today,
   },
+  {
+    id: "11",
+    currency: "Sri Lankan Rupee",
+    code: "LKR",
+    rate: 307.5,
+    lastUpdated: today,
+  },
 ];
 
 export const mockChannelPricing: ChannelPricing[] = [

@@ -7,7 +7,17 @@ interface ModalProps {
   title: string;
   children: React.ReactNode;
   footer?: React.ReactNode;
-  size?: "sm" | "md" | "lg" | "xl" | "2xl" | "3xl" | "4xl" | "full";
+  size?:
+    | "sm"
+    | "md"
+    | "lg"
+    | "xl"
+    | "2xl"
+    | "3xl"
+    | "4xl"
+    | "5xl"
+    | "6xl"
+    | "full";
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -55,6 +65,8 @@ export const Modal: React.FC<ModalProps> = ({
     "2xl": "sm:max-w-2xl",
     "3xl": "sm:max-w-3xl",
     "4xl": "sm:max-w-4xl",
+    "5xl": "sm:max-w-5xl",
+    "6xl": "sm:max-w-6xl",
     full: "sm:max-w-full sm:mx-4",
   };
 

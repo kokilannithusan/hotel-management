@@ -103,6 +103,11 @@
   .modal-scrollable {
     scrollbar-width: thin !important;
     scrollbar-color: #3b82f6 #e2e8f0 !important;
+    /* Hardware acceleration for smooth scrolling */
+    -webkit-overflow-scrolling: touch;
+    transform: translateZ(0);
+    will-change: scroll-position;
+    scroll-behavior: smooth;
   }
 
   .modal-scrollable::-webkit-scrollbar {
@@ -123,6 +128,14 @@
 
   .modal-scrollable::-webkit-scrollbar-thumb:hover {
     background: #2563eb;
+  }
+
+  /* Optimize card transitions for better performance */
+  .room-card-transition {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+    will-change: transform, box-shadow, border-color;
   }
 
   /* Glass morphism effect */
