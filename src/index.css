@@ -1,0 +1,490 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gradient-to-br from-slate-50 via-stone-50 to-amber-50/20 text-slate-900 antialiased;
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+      "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans",
+      "Helvetica Neue", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  code {
+    font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
+      monospace;
+  }
+
+  * {
+    @apply transition-colors duration-200;
+  }
+
+  /* Hide scrollbars globally while preserving scroll */
+  html,
+  body,
+  * {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE 10+ */
+  }
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar,
+  *::-webkit-scrollbar {
+    width: 0;
+    height: 0; /* Safari and Chrome */
+  }
+}
+
+@layer components {
+  .premium-card {
+    @apply bg-white rounded-xl shadow-premium border border-gray-100 transition-all duration-300 hover:shadow-premium-lg;
+  }
+
+  .premium-button {
+    @apply font-semibold transition-all duration-300 hover:shadow-lg active:scale-95 transform;
+  }
+
+  .premium-input {
+    @apply transition-all duration-300 focus:ring-2 focus:ring-primary-500 focus:border-primary-500;
+  }
+
+  .gradient-primary {
+    @apply bg-gradient-to-r from-primary-600 to-primary-700;
+  }
+
+  .gradient-accent {
+    @apply bg-gradient-to-r from-accent-500 to-accent-600;
+  }
+
+  /* Smooth fade-in animation */
+  .animate-fade-in {
+    animation: fadeIn 0.6s ease-out;
+  }
+
+  /* Stagger animation for lists */
+  .animate-stagger > * {
+    animation: fadeInUp 0.5s ease-out forwards;
+    opacity: 0;
+  }
+
+  .animate-stagger > *:nth-child(1) {
+    animation-delay: 0.1s;
+  }
+  .animate-stagger > *:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+  .animate-stagger > *:nth-child(3) {
+    animation-delay: 0.3s;
+  }
+  .animate-stagger > *:nth-child(4) {
+    animation-delay: 0.4s;
+  }
+  .animate-stagger > *:nth-child(5) {
+    animation-delay: 0.5s;
+  }
+  .animate-stagger > *:nth-child(6) {
+    animation-delay: 0.6s;
+  }
+
+  /* Hover lift effect */
+  .hover-lift {
+    @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-lg;
+  }
+
+  /* Smooth scale on hover */
+  .hover-scale {
+    @apply transition-transform duration-300 hover:scale-105;
+  }
+
+  /* Glass morphism effect */
+  .glass {
+    @apply bg-white/80 backdrop-blur-md border border-white/20;
+  }
+
+  /* FullCalendar custom styling */
+  .fc-custom {
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+      "Roboto", sans-serif;
+  }
+
+  .fc-custom .fc-header-toolbar {
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: linear-gradient(to right, #f9fafb, #f3f4f6);
+    border-radius: 0.5rem;
+    border: 1px solid #e5e7eb;
+  }
+
+  .fc-custom .fc-button {
+    background-color: #0284c7;
+    border-color: #0284c7;
+    color: white;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    transition: all 0.2s;
+  }
+
+  .fc-custom .fc-button:hover {
+    background-color: #0369a1;
+    border-color: #0369a1;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+
+  .fc-custom .fc-button:active {
+    background-color: #075985;
+  }
+
+  .fc-custom .fc-button-primary:not(:disabled):active,
+  .fc-custom .fc-button-primary:not(:disabled).fc-button-active {
+    background-color: #0369a1;
+    border-color: #0369a1;
+  }
+
+  .fc-custom .fc-button-group > .fc-button {
+    border-radius: 0.5rem;
+  }
+
+  .fc-custom .fc-button-group > .fc-button:first-child {
+    border-top-left-radius: 0.5rem;
+    border-bottom-left-radius: 0.5rem;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  .fc-custom .fc-button-group > .fc-button:last-child {
+    border-top-right-radius: 0.5rem;
+    border-bottom-right-radius: 0.5rem;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+  }
+
+  .fc-custom .fc-today-button {
+    background-color: #0ea5e9;
+    border-color: #0ea5e9;
+  }
+
+  .fc-custom .fc-today-button:hover {
+    background-color: #0284c7;
+    border-color: #0284c7;
+  }
+
+  .fc-custom .fc-daygrid-day {
+    border-color: #e5e7eb;
+  }
+
+  .fc-custom .fc-daygrid-day-top {
+    color: #374151;
+    font-weight: 500;
+  }
+
+  .fc-custom .fc-col-header-cell {
+    background-color: #f9fafb;
+    border-color: #e5e7eb;
+    color: #374151;
+    font-weight: 600;
+    padding: 0.75rem 0;
+  }
+
+  .fc-custom .fc-daygrid-day-number {
+    color: #374151;
+    font-weight: 500;
+    padding: 0.5rem;
+  }
+
+  .fc-custom .fc-day-today {
+    background-color: #f0f9ff;
+  }
+
+  .fc-custom .fc-day-today .fc-daygrid-day-number {
+    color: #0369a1;
+    font-weight: 700;
+  }
+
+  .fc-custom .fc-event {
+    border: none;
+    border-radius: 0.375rem;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .fc-custom .fc-event:hover {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+  }
+
+  .fc-custom .fc-event-title {
+    font-weight: 500;
+  }
+
+  .fc-custom .fc-daygrid-event {
+    border-radius: 0.375rem;
+  }
+
+  .fc-custom .fc-scrollgrid {
+    border-color: #e5e7eb;
+    border-radius: 0.5rem;
+    overflow: hidden;
+  }
+
+  .fc-custom .fc-scrollgrid-section-header > td {
+    border-color: #e5e7eb;
+  }
+
+  .fc-custom .fc-daygrid-body {
+    border-color: #e5e7eb;
+  }
+
+  /* Premium calendar styling */
+  .fc-premium {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.1);
+  }
+
+  .fc-premium .fc-header-toolbar {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border: 1px solid #bae6fd;
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  }
+
+  .fc-premium .fc-button {
+    background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+    border: none;
+    box-shadow: 0 4px 6px -1px rgba(2, 132, 199, 0.3);
+    font-weight: 600;
+    letter-spacing: 0.025em;
+  }
+
+  .fc-premium .fc-button:hover {
+    background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
+    box-shadow: 0 6px 12px -2px rgba(2, 132, 199, 0.4);
+    transform: translateY(-1px);
+  }
+
+  .fc-premium .fc-today-button {
+    background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+    box-shadow: 0 4px 6px -1px rgba(14, 165, 233, 0.3);
+  }
+
+  .fc-premium .fc-today-button:hover {
+    background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+    box-shadow: 0 6px 12px -2px rgba(14, 165, 233, 0.4);
+  }
+
+  .fc-premium .fc-col-header-cell {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-color: #e2e8f0;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 0.75rem;
+  }
+
+  .fc-premium .fc-daygrid-day {
+    background: #ffffff;
+    transition: all 0.2s;
+  }
+
+  .fc-premium .fc-daygrid-day:hover {
+    background: #f8fafc;
+  }
+
+  .fc-premium .fc-day-today {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border: 2px solid #0284c7;
+  }
+
+  .fc-premium .fc-day-today .fc-daygrid-day-number {
+    color: #0284c7;
+    font-weight: 800;
+    font-size: 1.1em;
+  }
+
+  .fc-premium .fc-event {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    font-weight: 600;
+    letter-spacing: 0.025em;
+    border-radius: 0.5rem;
+  }
+
+  .fc-premium .fc-event:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px) scale(1.02);
+  }
+
+  /* Booked date crossed styling */
+  .fc-premium .fc-daygrid-day.booked-date-crossed {
+    position: relative;
+    background-color: #fef2f2 !important;
+  }
+
+  .fc-premium .fc-daygrid-day.booked-date-crossed::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 10%;
+    right: 10%;
+    height: 2px;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      #dc2626 20%,
+      #dc2626 80%,
+      transparent 100%
+    );
+    transform: translateY(-50%);
+    z-index: 2;
+    opacity: 0.7;
+    pointer-events: none;
+  }
+
+  .fc-premium .fc-daygrid-day.booked-date-crossed .fc-daygrid-day-number {
+    opacity: 0.6;
+    text-decoration: line-through;
+    text-decoration-color: #dc2626;
+    text-decoration-thickness: 2px;
+  }
+
+  .fc-premium .fc-daygrid-day.fc-day-past.booked-date-crossed::before {
+    opacity: 0.5;
+  }
+
+  .premium-calendar-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 20px 60px -15px rgba(0, 0, 0, 0.15);
+  }
+
+  /* Premium room card styling */
+  .premium-room-card {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .premium-room-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.5) 50%,
+      transparent 100%
+    );
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .premium-room-card:hover::before {
+    opacity: 1;
+  }
+
+  .premium-room-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Premium room grid card styling */
+  .premium-room-grid-card {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .premium-room-grid-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.6) 50%,
+      transparent 100%
+    );
+    opacity: 0;
+    transition: opacity 0.3s;
+    z-index: 10;
+  }
+
+  .premium-room-grid-card:hover::before {
+    opacity: 1;
+  }
+
+  .premium-room-grid-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.25);
+  }
+
+  .premium-room-grid-card img {
+    filter: brightness(1);
+    transition: filter 0.3s;
+  }
+
+  .premium-room-grid-card:hover img {
+    filter: brightness(1.1);
+  }
+}
+
+@layer utilities {
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slideInRight {
+    from {
+      opacity: 0;
+      transform: translateX(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes pulse-glow {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 rgba(14, 165, 233, 0.4);
+    }
+    50% {
+      box-shadow: 0 0 0 8px rgba(14, 165, 233, 0);
+    }
+  }
+
+  .animate-pulse-glow {
+    animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+}

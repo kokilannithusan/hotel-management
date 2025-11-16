@@ -1,0 +1,410 @@
+import React, { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import {
+  Calendar,
+  Users,
+  FileText,
+  Home,
+  Settings,
+  LogOut,
+  ChevronLeft,
+  ChevronRight,
+  DollarSign,
+  Building,
+  ClipboardList,
+  Globe,
+  TrendingUp,
+  Receipt,
+  Shield,
+  FileCheck,
+  Coins,
+  Clock,
+  PartyPopper,
+  Plus,
+} from "lucide-react";
+import { useAuth } from "../../hooks/useAuth";
+
+interface NavItem {
+  path: string;
+  label: string;
+  icon: React.ReactNode;
+  children?: NavItem[];
+}
+
+const navItems: NavItem[] = [
+  {
+    path: "/dashboard",
+    label: "Welcome",
+    icon: <Home className="w-5 h-5" />,
+  },
+  {
+    path: "/reservations",
+    label: "Reservations",
+    icon: <Calendar className="w-5 h-5" />,
+    children: [
+      {
+        path: "/reservations/overview",
+        label: "Overview",
+        icon: <Home className="w-4 h-4" />,
+      },
+      {
+        path: "/reservations/reserve",
+        label: "Reserve Room",
+        icon: <Calendar className="w-4 h-4" />,
+      },
+      {
+        path: "/reservations/history",
+        label: "History",
+        icon: <FileText className="w-4 h-4" />,
+      },
+    ],
+  },
+  {
+    path: "/customers",
+    label: "Manage Customer",
+    icon: <Users className="w-5 h-5" />,
+  },
+  {
+    path: "/events",
+    label: "Events",
+    icon: <PartyPopper className="w-5 h-5" />,
+    children: [
+      {
+        path: "/events/overview",
+        label: "Bookings Overview",
+        icon: <ClipboardList className="w-4 h-4" />,
+      },
+      {
+        path: "/events/booking",
+        label: "Book Event",
+        icon: <Plus className="w-4 h-4" />,
+      },
+      {
+        path: "/events/create",
+        label: "Create Event",
+        icon: <FileText className="w-4 h-4" />,
+      },
+      {
+        path: "/events/hall-management",
+        label: "Hall Management",
+        icon: <Building className="w-4 h-4" />,
+      },
+      {
+        path: "/events/packages",
+        label: "Event Packages",
+        icon: <FileText className="w-4 h-4" />,
+      },
+      {
+        path: "/events/reporting",
+        label: "Reports & Analytics",
+        icon: <TrendingUp className="w-4 h-4" />,
+      },
+    ],
+  },
+  {
+    path: "/invoicing",
+    label: "Invoicing",
+    icon: <DollarSign className="w-5 h-5" />,
+    children: [
+      {
+        path: "/invoicing/bill",
+        label: "Bill",
+        icon: <FileText className="w-4 h-4" />,
+      },
+      {
+        path: "/invoicing/receipts",
+        label: "Receipts",
+        icon: <Receipt className="w-4 h-4" />,
+      },
+      {
+        path: "/invoicing/refunds",
+        label: "Refunds",
+        icon: <FileCheck className="w-4 h-4" />,
+      },
+      {
+        path: "/invoicing/additional",
+        label: "Additional Billing",
+        icon: <DollarSign className="w-4 h-4" />,
+      },
+    ],
+  },
+  {
+    path: "/rooms",
+    label: "Rooms",
+    icon: <Building className="w-5 h-5" />,
+    children: [
+      {
+        path: "/rooms/overview",
+        label: "Overview",
+        icon: <Home className="w-4 h-4" />,
+      },
+      {
+        path: "/rooms/all",
+        label: "All Rooms",
+        icon: <Building className="w-4 h-4" />,
+      },
+      {
+        path: "/rooms/checklist",
+        label: "Room Checklist",
+        icon: <ClipboardList className="w-4 h-4" />,
+      },
+      {
+        path: "/rooms/view-type",
+        label: "View Type",
+        icon: <Home className="w-4 h-4" />,
+      },
+      {
+        path: "/rooms/amenities",
+        label: "Amenities",
+        icon: <Home className="w-4 h-4" />,
+      },
+      {
+        path: "/rooms/areas",
+        label: "Room Areas",
+        icon: <Home className="w-4 h-4" />,
+      },
+      {
+        path: "/rooms/types",
+        label: "Room Types",
+        icon: <Home className="w-4 h-4" />,
+      },
+      {
+        path: "/rooms/price",
+        label: "Price",
+        icon: <DollarSign className="w-4 h-4" />,
+      },
+      {
+        path: "/rooms/stay-types",
+        label: "Stay Types",
+        icon: <Home className="w-4 h-4" />,
+      },
+      {
+        path: "/rooms/meal-plan",
+        label: "Meal Plan",
+        icon: <Home className="w-4 h-4" />,
+      },
+    ],
+  },
+  {
+    path: "/housekeeping",
+    label: "Housekeeping",
+    icon: <ClipboardList className="w-5 h-5" />,
+    children: [
+      {
+        path: "/housekeeping/manager",
+        label: "Manager",
+        icon: <Users className="w-4 h-4" />,
+      },
+      {
+        path: "/housekeeping/housekeeper",
+        label: "Housekeeper",
+        icon: <ClipboardList className="w-4 h-4" />,
+      },
+    ],
+  },
+  {
+    path: "/channels",
+    label: "Channels",
+    icon: <Globe className="w-5 h-5" />,
+    children: [
+      {
+        path: "/channels/reservation-type",
+        label: "Reservation Type",
+        icon: <FileText className="w-4 h-4" />,
+      },
+      {
+        path: "/channels/seasonal",
+        label: "Seasonal",
+        icon: <Calendar className="w-4 h-4" />,
+      },
+      {
+        path: "/channels/stay-type",
+        label: "Stay Type",
+        icon: <Clock className="w-4 h-4" />,
+      },
+      {
+        path: "/channels/price-grid",
+        label: "Channel Price",
+        icon: <DollarSign className="w-4 h-4" />,
+      },
+    ],
+  },
+  {
+    path: "/pricing",
+    label: "Pricing",
+    icon: <TrendingUp className="w-5 h-5" />,
+    children: [
+      {
+        path: "/pricing/channel",
+        label: "Channel Pricing",
+        icon: <DollarSign className="w-4 h-4" />,
+      },
+      {
+        path: "/pricing/seasonal",
+        label: "Seasonal Pricing",
+        icon: <Calendar className="w-4 h-4" />,
+      },
+    ],
+  },
+  { path: "/tax", label: "Tax", icon: <Receipt className="w-5 h-5" /> },
+  {
+    path: "/policies",
+    label: "Policies",
+    icon: <Shield className="w-5 h-5" />,
+  },
+  {
+    path: "/currency",
+    label: "Currency Rate",
+    icon: <Coins className="w-5 h-5" />,
+  },
+  {
+    path: "/settings",
+    label: "Settings",
+    icon: <Settings className="w-5 h-5" />,
+  },
+];
+
+export const Sidebar: React.FC = () => {
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
+  const location = useLocation();
+  const { logout } = useAuth();
+
+  // keep a CSS variable in sync so layout can react to sidebar width
+  React.useEffect(() => {
+    const width = isCollapsed ? "4rem" : "16rem"; // w-16 vs w-64
+    document.documentElement.style.setProperty("--sidebar-width", width);
+  }, [isCollapsed]);
+
+  const isActive = (path: string) => {
+    return (
+      location.pathname === path || location.pathname.startsWith(path + "/")
+    );
+  };
+
+  const renderNavItem = (item: NavItem) => {
+    const active = isActive(item.path);
+    const hasChildren = item.children && item.children.length > 0;
+    const isOpen = openSections[item.path] ?? active;
+
+    if (hasChildren) {
+      return (
+        <div key={item.path} className="mb-1">
+          <div
+            onClick={() =>
+              setOpenSections((prev) => ({ ...prev, [item.path]: !isOpen }))
+            }
+            className={`flex items-center ${
+              isCollapsed ? "justify-center px-2" : "justify-between px-4"
+            } py-2.5 text-sm font-medium rounded-lg transition-all duration-300 cursor-pointer ${
+              active
+                ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
+                : "text-gray-300 hover:bg-gray-700/70 hover:text-white hover:translate-x-1"
+            }`}
+          >
+            <div
+              className={`flex items-center ${
+                isCollapsed ? "justify-center w-full" : ""
+              }`}
+            >
+              <span className={isCollapsed ? "" : "mr-3"}>{item.icon}</span>
+              {!isCollapsed && <span>{item.label}</span>}
+            </div>
+            {!isCollapsed && (
+              <span
+                className={`transition-transform duration-200 ${
+                  isOpen ? "rotate-90" : ""
+                }`}
+              >
+                <ChevronRight className="w-4 h-4" />
+              </span>
+            )}
+          </div>
+          {!isCollapsed && isOpen && item.children && (
+            <div className="ml-4 mt-1 space-y-1">
+              {item.children.map((child) => (
+                <Link
+                  key={child.path}
+                  to={child.path}
+                  className={`flex items-center px-4 py-2 text-sm rounded-lg transition-all duration-300 ${
+                    isActive(child.path)
+                      ? "bg-blue-600/30 text-blue-300 border-l-2 border-blue-500 font-medium"
+                      : "text-gray-400 hover:bg-gray-700/50 hover:text-white hover:translate-x-1"
+                  }`}
+                >
+                  <span className="mr-2">{child.icon}</span>
+                  {child.label}
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <Link
+        key={item.path}
+        to={item.path}
+        className={`flex items-center ${
+          isCollapsed ? "justify-center px-2" : "px-4"
+        } py-2.5 text-sm font-medium rounded-lg transition-all duration-300 ${
+          active
+            ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
+            : "text-gray-300 hover:bg-gray-700/70 hover:text-white hover:translate-x-1"
+        }`}
+      >
+        <span className={isCollapsed ? "" : "mr-3"}>{item.icon}</span>
+        {!isCollapsed && <span>{item.label}</span>}
+      </Link>
+    );
+  };
+
+  return (
+    <div
+      className={`bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 border-r border-gray-700 h-screen fixed left-0 top-0 transition-all duration-300 shadow-xl z-40 ${
+        isCollapsed ? "w-16" : "w-64"
+      }`}
+    >
+      <div className="flex flex-col h-full">
+        <div
+          className={`flex items-center ${
+            isCollapsed ? "justify-center" : "justify-between"
+          } p-4 border-b border-gray-700/50`}
+        >
+          {!isCollapsed && (
+            <h1 className="text-xl font-bold text-white animate-fade-in">
+              Hotel Management
+            </h1>
+          )}
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="p-2 rounded-lg hover:bg-gray-700/50 text-gray-400 hover:text-white transition-all duration-300 hover:scale-110"
+          >
+            {isCollapsed ? (
+              <ChevronRight className="w-5 h-5" />
+            ) : (
+              <ChevronLeft className="w-5 h-5" />
+            )}
+          </button>
+        </div>
+        <nav className="flex-1 overflow-y-auto p-4">
+          <div className="space-y-1">
+            {navItems.map((item) => renderNavItem(item))}
+          </div>
+        </nav>
+        <div className="p-4 border-t border-gray-700/50">
+          <button
+            onClick={logout}
+            className={`flex items-center w-full ${
+              isCollapsed ? "justify-center px-2" : "px-4"
+            } py-2 text-sm font-medium text-red-400 rounded-lg hover:bg-red-900/20 transition-colors`}
+          >
+            <LogOut className={`w-5 h-5 ${isCollapsed ? "" : "mr-3"}`} />
+            {!isCollapsed && <span>Logout</span>}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
