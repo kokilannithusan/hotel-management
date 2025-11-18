@@ -36,17 +36,24 @@ const navItems: NavItem[] = [
     path: "/dashboard",
     label: "Welcome",
     icon: <Home className="w-5 h-5" />,
+    children: [
+      {
+        path: "/dashboard",
+        label: "Dashboard Overview",
+        icon: <Home className="w-4 h-4" />,
+      },
+      {
+        path: "/dashboard/room-calendar",
+        label: "Room Calendar",
+        icon: <Calendar className="w-4 h-4" />,
+      },
+    ],
   },
   {
     path: "/reservations",
     label: "Reservations",
     icon: <Calendar className="w-5 h-5" />,
     children: [
-      {
-        path: "/reservations/overview",
-        label: "Overview",
-        icon: <Home className="w-4 h-4" />,
-      },
       {
         path: "/reservations/reserve",
         label: "Reserve Room",
@@ -251,6 +258,18 @@ const navItems: NavItem[] = [
     path: "/policies",
     label: "Policies",
     icon: <Shield className="w-5 h-5" />,
+    children: [
+      {
+        path: "/policies/child",
+        label: "Child Policies",
+        icon: <Users className="w-4 h-4" />,
+      },
+      {
+        path: "/policies/cancellation",
+        label: "Cancellation Policies",
+        icon: <FileCheck className="w-4 h-4" />,
+      },
+    ],
   },
   {
     path: "/currency",
@@ -277,6 +296,10 @@ export const Sidebar: React.FC = () => {
   }, [isCollapsed]);
 
   const isActive = (path: string) => {
+    // Exact match for paths to avoid confusion between /dashboard and /dashboard/room-calendar
+    if (path === "/dashboard") {
+      return location.pathname === "/dashboard";
+    }
     return (
       location.pathname === path || location.pathname.startsWith(path + "/")
     );

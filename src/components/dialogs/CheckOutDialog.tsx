@@ -8,6 +8,7 @@ interface CheckOutDialogProps {
   reservation: Reservation;
   onClose: () => void;
   onCheckOutComplete: () => void;
+  initialStep?: DialogStep;
 }
 
 type DialogStep =
@@ -21,9 +22,11 @@ export function CheckOutDialog({
   reservation,
   onClose,
   onCheckOutComplete,
+  initialStep = "summary",
 }: CheckOutDialogProps) {
   const { state, dispatch } = useHotel();
-  const [step, setStep] = useState<DialogStep>("summary");
+  const [step, setStep] = useState<DialogStep>(initialStep);
+  const isExtendOnlyMode = initialStep === "extend-date";
 
   // Extension states
   const [newCheckOutDate, setNewCheckOutDate] = useState(reservation.checkOut);
@@ -167,8 +170,14 @@ export function CheckOutDialog({
       }
     }
 
-    // Go back to summary with updated data
-    setStep("summary");
+    // If opened in extend-only mode, close the dialog
+    // Otherwise, go back to summary for checkout flow
+    if (isExtendOnlyMode) {
+      onCheckOutComplete();
+      onClose();
+    } else {
+      setStep("summary");
+    }
   };
 
   const formatDate = (dateString: string) => {

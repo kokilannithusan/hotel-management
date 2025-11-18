@@ -25,6 +25,7 @@ export interface Customer {
   email: string;
   phone: string;
   nationality: string;
+  identificationNumber?: string; // ID/Passport number
   status?: CustomerStatus; // Optional, calculated dynamically
   createdAt: string;
   hasPremiumCard?: boolean; // Track if customer has premium card

@@ -5,6 +5,7 @@ import { useAuth } from "./hooks/useAuth";
 import { Layout } from "./components/layout/Layout";
 import { Login } from "./pages/auth/Login";
 import { Dashboard } from "./pages/dashboard/Dashboard";
+import { RoomCalenderOverview } from "./pages/dashboard/RoomCalenderOverview";
 
 // Reservations
 import { ReservationsOverview } from "./pages/reservations/Overview";
@@ -58,6 +59,8 @@ import { SeasonalPricing } from "./pages/pricing/SeasonalPricing";
 // Other
 import { Tax } from "./pages/tax/Tax";
 import { Policies } from "./pages/policies/Policies";
+import { ChildPolicies } from "./pages/policies/ChildPolicies";
+import { CancellationPolicies } from "./pages/policies/CancellationPolicies";
 import { CurrencyRate } from "./pages/currency/CurrencyRate";
 import { Settings } from "./pages/settings/Settings";
 
@@ -82,8 +85,8 @@ function App() {
                   <Routes>
                     <Route path="/dashboard" element={<Dashboard />} />
                     <Route
-                      path="/reservations/overview"
-                      element={<ReservationsOverview />}
+                      path="/dashboard/room-calendar"
+                      element={<RoomCalenderOverview />}
                     />
                     <Route
                       path="/reservations/reserve"
@@ -179,6 +182,11 @@ function App() {
                     />
                     <Route path="/tax" element={<Tax />} />
                     <Route path="/policies" element={<Policies />} />
+                    <Route path="/policies/child" element={<ChildPolicies />} />
+                    <Route
+                      path="/policies/cancellation"
+                      element={<CancellationPolicies />}
+                    />
                     <Route path="/currency" element={<CurrencyRate />} />
                     <Route path="/settings" element={<Settings />} />
                     <Route

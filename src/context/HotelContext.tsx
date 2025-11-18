@@ -715,7 +715,11 @@ export const HotelProvider: React.FC<{ children: ReactNode }> = ({
       viewTypes: viewTypes.length > 0 ? viewTypes : mockViewTypes,
       amenities: amenities.length > 0 ? amenities : mockAmenities,
       roomAreas: roomAreas.length > 0 ? roomAreas : mockRoomAreas,
-      reservations: reservations.length > 0 ? reservations : mockReservations,
+      // Force use of new mock reservations if count doesn't match (data was updated)
+      reservations:
+        reservations.length === mockReservations.length
+          ? reservations
+          : mockReservations,
       channels:
         channelsWithPercent.length > 0 ? channelsWithPercent : mockChannels,
       seasons: seasonsWithPercent.length > 0 ? seasonsWithPercent : mockSeasons,

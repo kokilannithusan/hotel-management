@@ -2,7 +2,6 @@ import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useHotel } from "../../context/HotelContext";
 import { Card } from "../../components/ui/Card";
-import { Table } from "../../components/ui/Table";
 import { Input } from "../../components/ui/Input";
 import { Select } from "../../components/ui/Select";
 import { Button } from "../../components/ui/Button";
@@ -32,32 +31,14 @@ const STATUS_FILTERS: Array<{
   description: string;
 }> = [
   {
-    value: "all",
-    label: "All",
-    tone: "bg-slate-100 text-slate-700",
-    description: "Every reservation in the system",
-  },
-  {
-    value: "confirmed",
-    label: "Confirmed",
-    tone: "bg-blue-100 text-blue-700",
-    description: "Upcoming guests with confirmed stays",
-  },
-  {
-    value: "checked-in",
-    label: "Checked-in",
-    tone: "bg-green-100 text-green-700",
-    description: "Guests currently staying with you",
-  },
-  {
     value: "checked-out",
-    label: "Checked-out",
+    label: "Checked out",
     tone: "bg-slate-100 text-slate-700",
     description: "Guests who have completed their stay",
   },
   {
     value: "canceled",
-    label: "Canceled",
+    label: "Cancelled",
     tone: "bg-red-100 text-red-700",
     description: "Reservations that were canceled",
   },
@@ -81,7 +62,7 @@ export const ReservationsHistory: React.FC = () => {
   const { state, dispatch } = useHotel();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<StatusKey>("all");
+  const [statusFilter, setStatusFilter] = useState<StatusKey>("checked-out");
   const [channelFilter, setChannelFilter] = useState<string>("all");
   const [sortOption, setSortOption] = useState<SortOption>("recent");
   const [selectedReservationId, setSelectedReservationId] = useState<
@@ -137,7 +118,10 @@ export const ReservationsHistory: React.FC = () => {
   const filteredReservations = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
 
+    // Only show checked-out and canceled (not checked-in/occupied)
     const filtered = state.reservations.filter((res) => {
+      if (res.status === "checked-in" || res.status === "confirmed")
+        return false;
       const customer = customerById.get(res.customerId);
       const matchesSearch =
         !normalizedSearch ||
@@ -181,12 +165,12 @@ export const ReservationsHistory: React.FC = () => {
 
   const filtersActive =
     searchTerm.trim().length > 0 ||
-    statusFilter !== "all" ||
+    statusFilter !== "checked-out" ||
     channelFilter !== "all";
 
   const handleResetFilters = () => {
     setSearchTerm("");
-    setStatusFilter("all");
+    setStatusFilter("checked-out");
     setChannelFilter("all");
   };
 
@@ -230,7 +214,9 @@ export const ReservationsHistory: React.FC = () => {
     return summary;
   }, [filteredReservations]);
 
-  const totalReservations = state.reservations.length;
+  const totalReservations = state.reservations.filter(
+    (res) => res.status === "checked-out" || res.status === "canceled"
+  ).length;
 
   const getNightCount = (checkIn: string, checkOut: string) => {
     const checkInDate = new Date(checkIn);
@@ -324,24 +310,14 @@ export const ReservationsHistory: React.FC = () => {
       header: "Reservation",
       cellClassName: "whitespace-normal",
       render: (res: Reservation) => {
-        const channel = channelById.get(res.channelId);
         const createdLabel = formatDate(res.createdAt);
 
         return (
-          <div className="space-y-2">
-            <span className="inline-flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-700">
-                #{res.id.slice(0, 8)}
-              </span>
-              <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600">
-                {channel?.name || "Direct booking"}
-              </span>
-            </span>
-            {createdLabel && (
-              <span className="text-xs text-slate-500">
-                Created {createdLabel}
-              </span>
-            )}
+          <div className="space-y-1.5">
+            <div className="font-mono text-sm font-bold text-slate-900">
+              #{res.id.slice(0, 8)}
+            </div>
+            <div className="text-xs text-slate-500">{createdLabel}</div>
           </div>
         );
       },
@@ -356,18 +332,8 @@ export const ReservationsHistory: React.FC = () => {
           return <span className="text-sm text-slate-500">Unknown guest</span>;
         }
         return (
-          <div className="space-y-1">
-            <span className="text-sm font-medium text-slate-900">
-              {customer.name}
-            </span>
-            <span className="text-xs text-slate-500 break-words">
-              {customer.email}
-            </span>
-            {customer.phone && (
-              <span className="text-xs text-slate-500">
-                {formatPhoneNumber(customer.phone)}
-              </span>
-            )}
+          <div className="text-sm font-semibold text-slate-900">
+            {customer.name}
           </div>
         );
       },
@@ -379,26 +345,15 @@ export const ReservationsHistory: React.FC = () => {
       render: (res: Reservation) => {
         const nights = getNightCount(res.checkIn, res.checkOut);
         return (
-          <div className="space-y-1">
-            <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-slate-900">
-              <span>{formatDate(res.checkIn)}</span>
-              <span className="text-xs font-normal uppercase tracking-wide text-slate-400">
-                to
-              </span>
-              <span>{formatDate(res.checkOut)}</span>
+          <div className="space-y-1.5">
+            <div className="text-sm font-medium text-slate-900">
+              {formatDate(res.checkIn)}
             </div>
-            <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
-              <span>
-                {nights} night{nights !== 1 ? "s" : ""}
-              </span>
-              <span>
-                {res.adults} adult{res.adults !== 1 ? "s" : ""}
-              </span>
-              {res.children > 0 && (
-                <span>
-                  {res.children} child{res.children !== 1 ? "ren" : ""}
-                </span>
-              )}
+            <div className="text-xs text-slate-500">
+              {nights} nights • {res.adults} guest{res.adults > 1 ? "s" : ""}
+              {res.children > 0
+                ? ` • ${res.children} child${res.children > 1 ? "ren" : ""}`
+                : ""}
             </div>
           </div>
         );
@@ -413,26 +368,29 @@ export const ReservationsHistory: React.FC = () => {
         const roomType = room?.roomTypeId
           ? roomTypeById.get(room.roomTypeId)
           : undefined;
-        const roomStatusLabel = room
-          ? room.status.charAt(0).toUpperCase() +
-            room.status.slice(1).replace("-", " ")
-          : undefined;
         return room ? (
-          <div className="space-y-1">
-            <span className="text-sm font-medium text-slate-900">
-              Room {room.roomNumber}
-            </span>
-            <span className="text-xs text-slate-500">
-              {roomType?.name || "Unknown type"}
-            </span>
-            {roomStatusLabel && (
-              <span className="text-xs text-slate-500">
-                Status: {roomStatusLabel}
-              </span>
-            )}
+          <div>
+            <div className="text-sm font-bold text-slate-900">
+              {room.roomNumber}
+            </div>
+            <div className="text-xs text-slate-500">
+              {roomType?.name || "Unknown"}
+            </div>
           </div>
         ) : (
-          <span className="text-sm text-slate-500">Unknown room</span>
+          <span className="text-sm text-slate-500">—</span>
+        );
+      },
+    },
+    {
+      key: "channel",
+      header: "Channel",
+      render: (res: Reservation) => {
+        const channel = channelById.get(res.channelId);
+        return (
+          <div className="text-sm text-slate-700">
+            {channel?.name || "Direct"}
+          </div>
         );
       },
     },
@@ -440,14 +398,36 @@ export const ReservationsHistory: React.FC = () => {
       key: "status",
       header: "Status",
       render: (res: Reservation) => {
-        const badgeClass =
-          STATUS_BADGE_CLASS[res.status] || "bg-slate-100 text-slate-800";
+        const statusText =
+          res.status.charAt(0).toUpperCase() +
+          res.status.slice(1).replace("-", " ");
+        const statusConfig: Record<
+          ReservationStatus,
+          { bg: string; text: string }
+        > = {
+          confirmed: {
+            bg: "bg-blue-100",
+            text: "text-blue-800",
+          },
+          "checked-in": {
+            bg: "bg-green-100",
+            text: "text-green-800",
+          },
+          "checked-out": {
+            bg: "bg-slate-100",
+            text: "text-slate-800",
+          },
+          canceled: {
+            bg: "bg-red-100",
+            text: "text-red-800",
+          },
+        };
+        const config = statusConfig[res.status];
         return (
           <span
-            className={`px-2 py-1 text-xs font-semibold rounded-full ${badgeClass}`}
+            className={`inline-block px-3 py-1 text-xs font-semibold rounded-full ${config.bg} ${config.text}`}
           >
-            {res.status.charAt(0).toUpperCase() +
-              res.status.slice(1).replace("-", " ")}
+            {statusText}
           </span>
         );
       },
@@ -456,10 +436,12 @@ export const ReservationsHistory: React.FC = () => {
       key: "totalAmount",
       header: "Amount",
       headerClassName: "text-right",
-      cellClassName:
-        "whitespace-nowrap text-right text-slate-900 font-semibold",
-      render: (res: Reservation) =>
-        formatCurrency(res.totalAmount, currencyCode),
+      cellClassName: "whitespace-nowrap text-right",
+      render: (res: Reservation) => (
+        <div className="text-sm font-bold text-slate-900">
+          {formatCurrency(res.totalAmount, currencyCode)}
+        </div>
+      ),
     },
     {
       key: "actions",
@@ -535,13 +517,11 @@ export const ReservationsHistory: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="mb-6 pb-4 border-b border-slate-200">
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
+      <div className="mb-8">
+        <h1 className="text-4xl font-bold text-slate-900 mb-2">
           Reservation History
         </h1>
-        <p className="text-slate-600 mt-1 font-medium">
-          View all past and current reservations
-        </p>
+        <p className="text-slate-600">View and manage all past reservations</p>
       </div>
       <Card>
         <div className="flex flex-col gap-6">
@@ -562,8 +542,8 @@ export const ReservationsHistory: React.FC = () => {
             )}
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            {STATUS_FILTERS.map(({ value, label, tone, description }) => {
+          <div className="flex flex-wrap gap-3">
+            {STATUS_FILTERS.map(({ value, label, description }) => {
               const isActive = statusFilter === value;
               const count = statusCounts[value] ?? 0;
               return (
@@ -575,15 +555,21 @@ export const ReservationsHistory: React.FC = () => {
                       value === statusFilter && value !== "all" ? "all" : value
                     )
                   }
-                  className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 ${
+                  className={`flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
                     isActive
-                      ? "border border-blue-300 bg-blue-50 text-blue-700 shadow-sm"
-                      : `border border-slate-200 ${tone} hover:brightness-95`
+                      ? "bg-blue-600 text-white shadow-lg scale-105"
+                      : "bg-white border-2 border-slate-200 text-slate-700 hover:border-blue-300 hover:shadow-md"
                   }`}
                   title={description}
                 >
                   <span>{label}</span>
-                  <span className="rounded-full bg-white/70 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-600">
+                  <span
+                    className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
+                      isActive
+                        ? "bg-blue-500 text-white"
+                        : "bg-slate-100 text-slate-600"
+                    }`}
+                  >
                     {count}
                   </span>
                 </button>
@@ -591,89 +577,22 @@ export const ReservationsHistory: React.FC = () => {
             })}
           </div>
 
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-slate-100 px-5 py-5 hover:shadow-lg hover:border-slate-300 transition-all duration-200 cursor-default shadow-sm">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-widest text-slate-600">
-                    Visible Results
-                  </p>
-                  <p className="text-3xl font-bold text-slate-900 mt-3">
-                    {reservationStats.total}
-                  </p>
-                  <p className="text-xs text-slate-500 mt-2 font-medium">
-                    of {totalReservations} total | {reservationStats.canceled}{" "}
-                    canceled
-                  </p>
-                </div>
-                <div className="text-4xl">📋</div>
-              </div>
-            </div>
-            <div className="rounded-2xl border border-green-200 bg-gradient-to-br from-green-50 to-green-100 px-5 py-5 hover:shadow-lg hover:border-green-300 transition-all duration-200 cursor-default shadow-sm">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-widest text-green-600">
-                    In House Today
-                  </p>
-                  <p className="text-3xl font-bold text-green-900 mt-3">
-                    {reservationStats.inHouse}
-                  </p>
-                  <p className="text-xs text-green-600 mt-2 font-medium">
-                    Guests currently staying
-                  </p>
-                </div>
-                <div className="text-4xl">🏨</div>
-              </div>
-            </div>
-            <div className="rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100 px-5 py-5 hover:shadow-lg hover:border-blue-300 transition-all duration-200 cursor-default shadow-sm">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-widest text-blue-600">
-                    Upcoming Arrivals
-                  </p>
-                  <p className="text-3xl font-bold text-blue-900 mt-3">
-                    {reservationStats.upcoming}
-                  </p>
-                  <p className="text-xs text-blue-600 mt-2 font-medium">
-                    Future check-ins
-                  </p>
-                </div>
-                <div className="text-4xl">📅</div>
-              </div>
-            </div>
-            <div className="col-span-2 md:col-span-2 rounded-2xl border border-purple-200 bg-gradient-to-br from-purple-50 via-purple-50 to-purple-100 px-5 py-5 hover:shadow-lg hover:border-purple-300 transition-all duration-200 cursor-default shadow-sm">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-widest text-purple-600">
-                    Projected Revenue
-                  </p>
-                  <p className="text-3xl font-bold text-purple-900 mt-3">
-                    {formatCurrency(reservationStats.revenue, currencyCode)}
-                  </p>
-                  <p className="text-xs text-purple-600 mt-2 font-medium">
-                    Excludes canceled reservations
-                  </p>
-                </div>
-                <div className="text-4xl">💰</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
             <div className="flex flex-col gap-2">
-              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <label className="text-sm font-semibold text-slate-700">
                 Search
-              </span>
+              </label>
               <Input
-                placeholder="Search by reservation ID, guest, or email"
+                placeholder="Search by ID, guest, or email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                className="border-2 border-slate-200 focus:border-blue-500 rounded-lg"
               />
             </div>
             <div className="flex flex-col gap-2">
-              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <label className="text-sm font-semibold text-slate-700">
                 Channel
-              </span>
+              </label>
               <Select
                 value={channelFilter}
                 onChange={(e) => setChannelFilter(e.target.value)}
@@ -684,12 +603,13 @@ export const ReservationsHistory: React.FC = () => {
                     label: c.name,
                   })),
                 ]}
+                className="border-2 border-slate-200 focus:border-blue-500 rounded-lg"
               />
             </div>
             <div className="flex flex-col gap-2">
-              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Sort results
-              </span>
+              <label className="text-sm font-semibold text-slate-700">
+                Sort By
+              </label>
               <Select
                 value={sortOption}
                 onChange={(e) => setSortOption(e.target.value as SortOption)}
@@ -697,16 +617,78 @@ export const ReservationsHistory: React.FC = () => {
                   value: option.value,
                   label: option.label,
                 }))}
+                className="border-2 border-slate-200 focus:border-blue-500 rounded-lg"
               />
             </div>
           </div>
 
-          <Table
-            columns={columns}
-            data={filteredReservations}
-            emptyMessage="No reservations match your current filters."
-            onRowClick={handleOpenReservation}
-          />
+          <div className="overflow-hidden rounded-2xl border-2 border-slate-200 mt-8 bg-white shadow-xl">
+            <div className="overflow-x-auto">
+              <table className="min-w-full">
+                <thead>
+                  <tr className="bg-slate-50 border-b-2 border-slate-200">
+                    {columns.map((col) => (
+                      <th
+                        key={col.key}
+                        className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-600"
+                      >
+                        {col.header}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="bg-white">
+                  {filteredReservations.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={columns.length}
+                        className="text-center py-16 text-slate-400"
+                      >
+                        <div className="flex flex-col items-center gap-3">
+                          <svg
+                            className="w-16 h-16 text-slate-300"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={1.5}
+                              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                            />
+                          </svg>
+                          <p className="text-lg font-medium">
+                            No reservations found
+                          </p>
+                          <p className="text-sm">Try adjusting your filters</p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredReservations.map((res) => (
+                      <tr
+                        key={res.id}
+                        className="border-b border-slate-100 hover:bg-blue-50/50 transition-all duration-150 cursor-pointer group"
+                        onClick={() => handleOpenReservation(res)}
+                      >
+                        {columns.map((col) => (
+                          <td
+                            key={col.key}
+                            className={`px-6 py-5 ${
+                              col.cellClassName || "align-top"
+                            }`}
+                          >
+                            {col.render(res)}
+                          </td>
+                        ))}
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </Card>
       {selectedReservation && (

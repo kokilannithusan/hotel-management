@@ -50,6 +50,10 @@ export const ChannelPricingGrid: React.FC = () => {
   const [editRoomTypeName, setEditRoomTypeName] = useState<string>("");
   const [editRoomTypeBasePrice, setEditRoomTypeBasePrice] =
     useState<string>("");
+  const [selectedMealPlans, setSelectedMealPlans] = useState<string[]>([]);
+  const [editSelectedMealPlans, setEditSelectedMealPlans] = useState<string[]>(
+    []
+  );
   const [tabButtons, setTabButtons] = useState<
     Array<{ key: ChannelTab; label: string }>
   >([
@@ -1518,6 +1522,10 @@ export const ChannelPricingGrid: React.FC = () => {
                                       setEditRoomTypeBasePrice(
                                         roomType.basePrice?.toString() || "0"
                                       );
+                                      // Set all meal plans as selected by default for editing
+                                      setEditSelectedMealPlans(
+                                        mealPlans.map((mp) => mp.id)
+                                      );
                                       setShowEditRoomTypeModal(true);
                                     }
                                   }}
@@ -1871,6 +1879,7 @@ export const ChannelPricingGrid: React.FC = () => {
           setShowAddRoomTypeModal(false);
           setNewRoomTypeName("");
           setNewRoomTypeBasePrice("");
+          setSelectedMealPlans([]);
         }}
         title="Add New Stay Type"
       >
@@ -1900,6 +1909,49 @@ export const ChannelPricingGrid: React.FC = () => {
               className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-sm"
             />
           </div>
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-2">
+              Meal Plans
+            </label>
+            <div className="space-y-2 max-h-48 overflow-y-auto border border-slate-300 rounded-lg p-3">
+              {mealPlans.map((mealPlan) => (
+                <label
+                  key={mealPlan.id}
+                  className="flex items-center gap-3 p-2 hover:bg-slate-50 rounded-lg cursor-pointer transition-colors"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedMealPlans.includes(mealPlan.id)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedMealPlans([
+                          ...selectedMealPlans,
+                          mealPlan.id,
+                        ]);
+                      } else {
+                        setSelectedMealPlans(
+                          selectedMealPlans.filter((id) => id !== mealPlan.id)
+                        );
+                      }
+                    }}
+                    className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-2 focus:ring-blue-200"
+                  />
+                  <div className="flex items-center gap-2 flex-1">
+                    <span className="inline-flex items-center rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 px-2.5 py-0.5 text-xs font-bold text-white">
+                      {mealPlan.code}
+                    </span>
+                    <span className="text-sm font-medium text-slate-700">
+                      {mealPlan.name}
+                    </span>
+                  </div>
+                </label>
+              ))}
+            </div>
+            <p className="text-xs text-slate-500 mt-1">
+              Select meal plans to create pricing combinations for this stay
+              type
+            </p>
+          </div>
         </div>
 
         <div className="flex justify-end gap-2 mt-5 pt-4 border-t">
@@ -1909,6 +1961,7 @@ export const ChannelPricingGrid: React.FC = () => {
               setShowAddRoomTypeModal(false);
               setNewRoomTypeName("");
               setNewRoomTypeBasePrice("");
+              setSelectedMealPlans([]);
             }}
             className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-all text-sm font-medium"
           >
@@ -1942,6 +1995,7 @@ export const ChannelPricingGrid: React.FC = () => {
               setShowAddRoomTypeModal(false);
               setNewRoomTypeName("");
               setNewRoomTypeBasePrice("");
+              setSelectedMealPlans([]);
             }}
             className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all text-sm font-semibold"
           >
@@ -1958,6 +2012,7 @@ export const ChannelPricingGrid: React.FC = () => {
           setEditRoomTypeName("");
           setEditRoomTypeBasePrice("");
           setEditingRoomTypeId("");
+          setEditSelectedMealPlans([]);
         }}
         title="Edit Stay Type"
       >
@@ -1987,6 +2042,51 @@ export const ChannelPricingGrid: React.FC = () => {
               className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-sm"
             />
           </div>
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-2">
+              Meal Plans
+            </label>
+            <div className="space-y-2 max-h-48 overflow-y-auto border border-slate-300 rounded-lg p-3">
+              {mealPlans.map((mealPlan) => (
+                <label
+                  key={mealPlan.id}
+                  className="flex items-center gap-3 p-2 hover:bg-slate-50 rounded-lg cursor-pointer transition-colors"
+                >
+                  <input
+                    type="checkbox"
+                    checked={editSelectedMealPlans.includes(mealPlan.id)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setEditSelectedMealPlans([
+                          ...editSelectedMealPlans,
+                          mealPlan.id,
+                        ]);
+                      } else {
+                        setEditSelectedMealPlans(
+                          editSelectedMealPlans.filter(
+                            (id) => id !== mealPlan.id
+                          )
+                        );
+                      }
+                    }}
+                    className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-2 focus:ring-blue-200"
+                  />
+                  <div className="flex items-center gap-2 flex-1">
+                    <span className="inline-flex items-center rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 px-2.5 py-0.5 text-xs font-bold text-white">
+                      {mealPlan.code}
+                    </span>
+                    <span className="text-sm font-medium text-slate-700">
+                      {mealPlan.name}
+                    </span>
+                  </div>
+                </label>
+              ))}
+            </div>
+            <p className="text-xs text-slate-500 mt-1">
+              Select meal plans to create pricing combinations for this stay
+              type
+            </p>
+          </div>
         </div>
 
         <div className="flex justify-end gap-2 mt-5 pt-4 border-t">
@@ -1997,6 +2097,7 @@ export const ChannelPricingGrid: React.FC = () => {
               setEditRoomTypeName("");
               setEditRoomTypeBasePrice("");
               setEditingRoomTypeId("");
+              setEditSelectedMealPlans([]);
             }}
             className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-all text-sm font-medium"
           >
@@ -2041,6 +2142,7 @@ export const ChannelPricingGrid: React.FC = () => {
               setEditRoomTypeName("");
               setEditRoomTypeBasePrice("");
               setEditingRoomTypeId("");
+              setEditSelectedMealPlans([]);
             }}
             className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all text-sm font-semibold"
           >

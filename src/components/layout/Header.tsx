@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import {
   Calendar,
   Clock,
   Bell,
-  Search,
+  Plus,
   LogOut,
   User,
   ChevronDown,
 } from "lucide-react";
 
 export const Header: React.FC = () => {
+  const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -82,12 +84,14 @@ export const Header: React.FC = () => {
 
       {/* Right: Actions and User Profile */}
       <div className="flex items-center space-x-3">
-        {/* Search */}
+        {/* Add Reservation Button */}
         <button
-          className="p-2 rounded-lg hover:bg-slate-100 transition-colors"
-          title="Search (Ctrl+K)"
+          onClick={() => navigate("/reservations/reserve")}
+          className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm hover:shadow-md"
+          title="Add New Reservation"
         >
-          <Search className="w-5 h-5 text-slate-600" />
+          <Plus className="w-4 h-4" />
+          <span className="text-sm font-medium">Add Reservation</span>
         </button>
 
         {/* Notifications */}
