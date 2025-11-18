@@ -93,6 +93,8 @@ export interface Channel {
   contactPerson?: string;
   status: ChannelStatus;
   priceModifierPercent?: number; // Percentage modifier for this channel
+  reservationType?: "DIRECT" | "WEB" | "OTA" | "TA"; // Parent reservation type for main channels
+  parentChannelId?: string; // Parent channel ID for sub-channels
 }
 
 export interface Season {

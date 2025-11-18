@@ -16,7 +16,6 @@ import { Customer, CustomerStatus } from "../../types/entities";
 import { Edit, Trash2, Plus, X, Check, Eye } from "lucide-react";
 
 type StatusFilter = CustomerStatus | "all";
-type PremiumFilter = "all" | "with-card" | "without-card";
 type SortOption =
   | "recent"
   | "name-az"
@@ -31,33 +30,26 @@ interface CustomerMetrics {
   upcomingCount: number;
   lastVisit: string | null;
   totalSpent: number;
-  hasPremiumEvidence: boolean;
   firstSeen: string | null;
 }
 
 interface EnhancedCustomer extends Customer {
-  calculatedStatus: CustomerStatus;
   visitCount: number;
   upcomingCount: number;
   lastVisit: string | null;
   totalSpent: number;
-  hasPremium: boolean;
   firstSeen: string | null;
 }
 
 interface SummarySnapshot {
   total: number;
-  vip: number;
-  premiumHolders: number;
   avgVisits: number;
   upcoming: number;
   topGuest: { name: string; visits: number } | null;
 }
 
 const STATUS_BADGE_CLASS: Record<CustomerStatus, string> = {
-  VIP: "bg-purple-100 text-purple-800",
-  "regular customer": "bg-blue-100 text-blue-800",
-  "new customer": "bg-green-100 text-green-800",
+  customer: "bg-blue-100 text-blue-800",
 };
 
 const STATUS_FILTERS: Array<{
@@ -70,33 +62,12 @@ const STATUS_FILTERS: Array<{
     label: "All customers",
     description: "Show every guest in your directory",
   },
-  {
-    value: "VIP",
-    label: "VIP",
-    description: "Premium guests with special privileges",
-  },
-  {
-    value: "regular customer",
-    label: "Regular",
-    description: "Returning guests with multiple visits",
-  },
-  {
-    value: "new customer",
-    label: "New",
-    description: "First-time or infrequent guests",
-  },
-];
-
-const PREMIUM_FILTERS: Array<{ value: PremiumFilter; label: string }> = [
-  { value: "all", label: "Any card status" },
-  { value: "with-card", label: "Has premium card" },
-  { value: "without-card", label: "No premium card" },
 ];
 
 const SORT_OPTIONS: Array<{ value: SortOption; label: string }> = [
   { value: "recent", label: "Recently added" },
-  { value: "name-az", label: "Name A → Z" },
-  { value: "name-za", label: "Name Z → A" },
+  { value: "name-az", label: "Name A - Z" },
+  { value: "name-za", label: "Name Z - A" },
   { value: "visits-high", label: "Most visits" },
   { value: "visits-low", label: "Fewest visits" },
   { value: "spend-high", label: "Highest spend" },
@@ -108,19 +79,12 @@ const createEmptyCustomerForm = () => ({
   email: "",
   phone: "",
   nationality: "",
-  hasPremiumCard: false,
 });
 
 type CustomerFormState = ReturnType<typeof createEmptyCustomerForm>;
 
 const formatStatusLabel = (status: CustomerStatus) => {
-  if (status === "regular customer") {
-    return "Regular customer";
-  }
-  if (status === "new customer") {
-    return "New customer";
-  }
-  return status;
+  return "Customer";
 };
 
 export const ManageCustomer: React.FC = () => {
@@ -129,7 +93,6 @@ export const ManageCustomer: React.FC = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [premiumFilter, setPremiumFilter] = useState<PremiumFilter>("all");
   const [sortOption, setSortOption] = useState<SortOption>("recent");
   const [showModal, setShowModal] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
@@ -150,7 +113,6 @@ export const ManageCustomer: React.FC = () => {
         upcomingCount: 0,
         lastVisit: null,
         totalSpent: 0,
-        hasPremiumEvidence: false,
         firstSeen: customer.createdAt ?? null,
       });
     });
@@ -208,27 +170,6 @@ export const ManageCustomer: React.FC = () => {
         return;
       }
       metrics.totalSpent += receipt.amount;
-      const notes = receipt.notes?.toLowerCase() ?? "";
-      const paymentType = receipt.paymentType?.toLowerCase() ?? "";
-      if (notes.includes("premium") || paymentType.includes("premium")) {
-        metrics.hasPremiumEvidence = true;
-      }
-    });
-
-    state.bills.forEach((bill) => {
-      const reservation = reservationById.get(bill.reservationId);
-      if (!reservation) {
-        return;
-      }
-      const metrics = metricsMap.get(reservation.customerId);
-      if (!metrics) {
-        return;
-      }
-      bill.lineItems.forEach((item) => {
-        if (item.description.toLowerCase().includes("premium")) {
-          metrics.hasPremiumEvidence = true;
-        }
-      });
     });
 
     return metricsMap;
@@ -241,16 +182,10 @@ export const ManageCustomer: React.FC = () => {
         upcomingCount: 0,
         lastVisit: null,
         totalSpent: 0,
-        hasPremiumEvidence: false,
         firstSeen: customer.createdAt ?? null,
       };
 
-      const hasPremium = customer.hasPremiumCard || metrics.hasPremiumEvidence;
-      const calculatedStatus: CustomerStatus = hasPremium
-        ? "VIP"
-        : metrics.visitCount > 2
-        ? "regular customer"
-        : "new customer";
+      const calculatedStatus: CustomerStatus = "customer";
 
       return {
         ...customer,
@@ -259,7 +194,6 @@ export const ManageCustomer: React.FC = () => {
         upcomingCount: metrics.upcomingCount,
         lastVisit: metrics.lastVisit,
         totalSpent: metrics.totalSpent,
-        hasPremium,
         firstSeen: metrics.firstSeen,
       };
     });
@@ -268,14 +202,8 @@ export const ManageCustomer: React.FC = () => {
   const statusCounts = useMemo(() => {
     const counts: Record<StatusFilter, number> = {
       all: customersWithStatus.length,
-      VIP: 0,
-      "regular customer": 0,
-      "new customer": 0,
+      customer: customersWithStatus.length,
     };
-
-    customersWithStatus.forEach((customer) => {
-      counts[customer.calculatedStatus] += 1;
-    });
 
     return counts;
   }, [customersWithStatus]);
@@ -283,8 +211,6 @@ export const ManageCustomer: React.FC = () => {
   const summarySnapshot: SummarySnapshot = useMemo(() => {
     const summary: SummarySnapshot = {
       total: customersWithStatus.length,
-      vip: statusCounts["VIP"],
-      premiumHolders: 0,
       avgVisits: 0,
       upcoming: 0,
       topGuest: null,
@@ -299,9 +225,6 @@ export const ManageCustomer: React.FC = () => {
     customersWithStatus.forEach((customer) => {
       totalVisits += customer.visitCount;
       summary.upcoming += customer.upcomingCount;
-      if (customer.hasPremium) {
-        summary.premiumHolders += 1;
-      }
       if (!summary.topGuest || customer.visitCount > summary.topGuest.visits) {
         summary.topGuest = {
           name: customer.name,
@@ -313,7 +236,7 @@ export const ManageCustomer: React.FC = () => {
     summary.avgVisits = totalVisits / customersWithStatus.length;
 
     return summary;
-  }, [customersWithStatus, statusCounts]);
+  }, [customersWithStatus]);
 
   const filteredCustomers = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
@@ -328,13 +251,7 @@ export const ManageCustomer: React.FC = () => {
       const matchesStatus =
         statusFilter === "all" || customer.calculatedStatus === statusFilter;
 
-      const matchesPremium =
-        premiumFilter === "all" ||
-        (premiumFilter === "with-card"
-          ? customer.hasPremium
-          : !customer.hasPremium);
-
-      return matchesSearch && matchesStatus && matchesPremium;
+      return matchesSearch && matchesStatus;
     });
 
     return filtered.sort((a, b) => {
@@ -359,18 +276,11 @@ export const ManageCustomer: React.FC = () => {
         }
       }
     });
-  }, [
-    customersWithStatus,
-    searchTerm,
-    statusFilter,
-    premiumFilter,
-    sortOption,
-  ]);
+  }, [customersWithStatus, searchTerm, statusFilter, sortOption]);
 
   const filtersActive =
     searchTerm.trim().length > 0 ||
     statusFilter !== "all" ||
-    premiumFilter !== "all" ||
     sortOption !== "recent";
 
   const selectedCustomer = useMemo(() => {
@@ -387,7 +297,6 @@ export const ManageCustomer: React.FC = () => {
   const handleResetFilters = () => {
     setSearchTerm("");
     setStatusFilter("all");
-    setPremiumFilter("all");
     setSortOption("recent");
   };
 
@@ -405,7 +314,6 @@ export const ManageCustomer: React.FC = () => {
       email: customer.email,
       phone: customer.phone,
       nationality: customer.nationality,
-      hasPremiumCard: customer.hasPremiumCard ?? false,
     });
     setShowModal(true);
     setIsDetailsOpen(false);
@@ -431,7 +339,6 @@ export const ManageCustomer: React.FC = () => {
           email: trimmedEmail,
           phone: trimmedPhone,
           nationality: trimmedNationality,
-          hasPremiumCard: formData.hasPremiumCard,
         },
       });
     } else {
@@ -443,7 +350,6 @@ export const ManageCustomer: React.FC = () => {
           email: trimmedEmail,
           phone: trimmedPhone,
           nationality: trimmedNationality,
-          hasPremiumCard: formData.hasPremiumCard,
           createdAt: new Date().toISOString(),
         },
       });
@@ -499,18 +405,13 @@ export const ManageCustomer: React.FC = () => {
       header: "Loyalty",
       cellClassName: "whitespace-normal",
       render: (customer: EnhancedCustomer) => (
-        <div className="space-y-1">
-          <span
-            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-              STATUS_BADGE_CLASS[customer.calculatedStatus]
-            }`}
-          >
-            {formatStatusLabel(customer.calculatedStatus)}
-          </span>
-          <span className="text-xs text-slate-500">
-            {customer.hasPremium ? "Premium card on file" : "Standard guest"}
-          </span>
-        </div>
+        <span
+          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+            STATUS_BADGE_CLASS[customer.calculatedStatus]
+          }`}
+        >
+          {formatStatusLabel(customer.calculatedStatus)}
+        </span>
       ),
     },
     {
@@ -535,20 +436,6 @@ export const ManageCustomer: React.FC = () => {
               ? formatDate(customer.lastVisit)
               : "No stay yet"}
           </span>
-        </div>
-      ),
-    },
-    {
-      key: "value",
-      header: "Value",
-      headerClassName: "text-right",
-      cellClassName: "whitespace-nowrap text-right",
-      render: (customer: EnhancedCustomer) => (
-        <div className="space-y-1">
-          <span className="text-sm font-semibold text-slate-900">
-            {formatCurrency(customer.totalSpent, currencyCode)}
-          </span>
-          <span className="text-xs text-slate-500">Lifetime spend</span>
         </div>
       ),
     },
@@ -625,25 +512,14 @@ export const ManageCustomer: React.FC = () => {
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <Card>
           <div className="space-y-1">
-            <p className="text-sm font-medium text-slate-500">Total customers</p>
+            <p className="text-sm font-medium text-slate-500">
+              Total customers
+            </p>
             <p className="text-2xl font-bold text-slate-900">
               {summarySnapshot.total}
             </p>
             <p className="text-xs text-slate-500">
-              {summarySnapshot.vip} VIP guests in total
-            </p>
-          </div>
-        </Card>
-        <Card>
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-slate-500">Premium cards</p>
-            <p className="text-2xl font-bold text-slate-900">
-              {summarySnapshot.premiumHolders}
-            </p>
-            <p className="text-xs text-slate-500">
-              {summarySnapshot.premiumHolders > 0
-                ? "Guests with premium card or spend history"
-                : "No premium cards on file"}
+              All guests are treated equally.
             </p>
           </div>
         </Card>
@@ -701,19 +577,11 @@ export const ManageCustomer: React.FC = () => {
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4 mb-6">
           <div className="md:col-span-2 xl:col-span-2">
             <Input
-              placeholder="Search by name, email, or phone…"
+              placeholder="Search by name, email, or phone..."
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
             />
           </div>
-          <Select
-            label="Premium card"
-            value={premiumFilter}
-            onChange={(event) =>
-              setPremiumFilter(event.target.value as PremiumFilter)
-            }
-            options={PREMIUM_FILTERS}
-          />
           <Select
             label="Sort by"
             value={sortOption}
@@ -821,31 +689,6 @@ export const ManageCustomer: React.FC = () => {
             }
             required
           />
-          <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-slate-200 p-3 transition-colors hover:bg-slate-50">
-            <input
-              type="checkbox"
-              checked={formData.hasPremiumCard}
-              onChange={(event) =>
-                setFormData({
-                  ...formData,
-                  hasPremiumCard: event.target.checked,
-                })
-              }
-              className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-            />
-            <div>
-              <p className="text-sm font-semibold text-slate-900">
-                Premium card holder
-              </p>
-              <p className="text-xs text-slate-500">
-                Enables VIP benefits and loyalty perks.
-              </p>
-            </div>
-          </label>
-          <p className="text-xs text-slate-500">
-            Status is automatically calculated from visits and premium card
-            activity.
-          </p>
         </div>
       </Modal>
 
@@ -891,13 +734,17 @@ export const ManageCustomer: React.FC = () => {
                 </p>
               </Card>
               <Card>
-                <p className="text-xs font-medium text-slate-500">Nationality</p>
+                <p className="text-xs font-medium text-slate-500">
+                  Nationality
+                </p>
                 <p className="text-sm font-semibold text-slate-900">
                   {selectedCustomer.nationality || "Not provided"}
                 </p>
               </Card>
               <Card>
-                <p className="text-xs font-medium text-slate-500">Total spend</p>
+                <p className="text-xs font-medium text-slate-500">
+                  Total spend
+                </p>
                 <p className="text-sm font-semibold text-slate-900">
                   {formatCurrency(selectedCustomer.totalSpent, currencyCode)}
                 </p>
@@ -912,11 +759,6 @@ export const ManageCustomer: React.FC = () => {
                 >
                   {formatStatusLabel(selectedCustomer.calculatedStatus)}
                 </span>
-                {selectedCustomer.hasPremium && (
-                  <span className="inline-flex items-center rounded-full bg-yellow-100 px-3 py-1 text-xs font-semibold text-yellow-800">
-                    Premium card holder
-                  </span>
-                )}
               </div>
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 <div>
@@ -946,7 +788,9 @@ export const ManageCustomer: React.FC = () => {
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs font-medium text-slate-500">Last stay</p>
+                  <p className="text-xs font-medium text-slate-500">
+                    Last stay
+                  </p>
                   <p className="text-sm font-semibold text-slate-900">
                     {selectedCustomer.lastVisit
                       ? formatDate(selectedCustomer.lastVisit)

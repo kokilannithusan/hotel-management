@@ -7,9 +7,15 @@ import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { Select } from "../../components/ui/Select";
 import { generateId } from "../../utils/formatters";
-import { Trash2, Plus } from "lucide-react";
+import { Trash2, Edit2 } from "lucide-react";
 
 const STORAGE_KEY = "hotel-stay-type-combinations";
+
+// Guest type definitions matching ChannelPricingGrid
+const guestTypes = [
+  { code: "AO", name: "Adult Only", adults: 1, children: 0 },
+  { code: "AC", name: "Adult + Child", adults: 1, children: 1 },
+];
 
 export const StayTypes: React.FC = () => {
   const { state } = useHotel();
@@ -23,7 +29,6 @@ export const StayTypes: React.FC = () => {
     adults: number;
     children: number;
     mealPlanId: string;
-    viewTypeId: string;
   };
 
   // Load from localStorage on mount
@@ -42,14 +47,182 @@ export const StayTypes: React.FC = () => {
     children: 0,
   });
 
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  // Define function outside effects so it can be used by button
+  const handleGenerateAllCombinations = (skipConfirm: boolean = false) => {
+    console.log(
+      "handleGenerateAllCombinations called with skipConfirm:",
+      skipConfirm
+    );
+    console.log("  state.roomTypes.length:", state.roomTypes.length);
+    console.log("  state.mealPlans.length:", state.mealPlans.length);
+
+    if (state.roomTypes.length === 0) {
+      if (!skipConfirm) {
+        alert("Please add room types first");
+      }
+      return;
+    }
+
+    // Use mealPlans from state, filtered to only BB, RO, HB, FB
+    const availableMealPlans =
+      state.mealPlans && state.mealPlans.length > 0
+        ? state.mealPlans.filter((mp) =>
+            ["BB", "RO", "HB", "FB"].includes(mp.code)
+          )
+        : [
+            {
+              id: "mp-bb",
+              name: "Bed & Breakfast",
+              code: "BB",
+              description: "Breakfast included",
+              perPersonRate: 0,
+              isActive: true,
+            },
+            {
+              id: "mp-ro",
+              name: "Room Only",
+              code: "RO",
+              description: "No meals",
+              perPersonRate: 0,
+              isActive: true,
+            },
+            {
+              id: "mp-hb",
+              name: "Half Board",
+              code: "HB",
+              description: "Breakfast & Dinner",
+              perPersonRate: 0,
+              isActive: true,
+            },
+            {
+              id: "mp-fb",
+              name: "Full Board",
+              code: "FB",
+              description: "All meals",
+              perPersonRate: 0,
+              isActive: true,
+            },
+          ];
+
+    // Use setCombinations callback to get current state
+    setCombinations((currentCombinations) => {
+      console.log("  currentCombinations.length:", currentCombinations.length);
+
+      const newCombinations: Combination[] = [];
+      const totalPossible =
+        state.roomTypes.length * guestTypes.length * availableMealPlans.length;
+
+      // Generate all combinations: Room Type x Guest Type x Meal Plan
+      state.roomTypes.forEach((roomType) => {
+        guestTypes.forEach((guestType) => {
+          availableMealPlans.forEach((mealPlan) => {
+            // Check if combination already exists
+            const exists = currentCombinations.some(
+              (c) =>
+                c.roomTypeId === roomType.id &&
+                c.adults === guestType.adults &&
+                c.children === guestType.children &&
+                c.mealPlanId === mealPlan.id
+            );
+
+            if (!exists) {
+              newCombinations.push({
+                id: generateId(),
+                roomTypeId: roomType.id,
+                adults: guestType.adults,
+                children: guestType.children,
+                mealPlanId: mealPlan.id,
+              });
+            }
+          });
+        });
+      });
+
+      console.log("  newCombinations.length:", newCombinations.length);
+
+      if (newCombinations.length === 0) {
+        if (!skipConfirm) {
+          alert(
+            "✓ All combinations already exist!\n\nTotal combinations: " +
+              totalPossible
+          );
+        }
+        return currentCombinations;
+      }
+
+      // Skip confirmation if called on mount (skipConfirm = true)
+      if (skipConfirm) {
+        console.log(
+          "StayTypes: Generated and saved",
+          newCombinations.length,
+          "combinations"
+        );
+        return [...newCombinations, ...currentCombinations];
+      }
+
+      const proceed = window.confirm(
+        `Generate ${newCombinations.length} new stay type combinations?\n\n` +
+          `Room Types: ${state.roomTypes.length}\n` +
+          `Guest Types: ${guestTypes.length}\n` +
+          `Meal Plans: ${availableMealPlans.length}\n\n` +
+          `Total combinations will be: ${
+            currentCombinations.length + newCombinations.length
+          }`
+      );
+
+      if (proceed) {
+        alert(
+          `✓ Successfully added ${newCombinations.length} stay type combinations!`
+        );
+        return [...newCombinations, ...currentCombinations];
+      }
+
+      return currentCombinations;
+    });
+  };
+
   // Save to localStorage whenever combinations change
   useEffect(() => {
     try {
+      console.log(
+        "StayTypes: Saving combinations to localStorage:",
+        combinations.length,
+        "items"
+      );
       localStorage.setItem(STORAGE_KEY, JSON.stringify(combinations));
     } catch (error) {
       console.error("Error saving combinations to localStorage:", error);
     }
   }, [combinations]);
+
+  // Auto-populate combinations on first load if empty
+  useEffect(() => {
+    console.log("===== StayTypes Auto-generation Effect =====");
+    console.log("  combinations.length:", combinations.length);
+    console.log("  state.roomTypes.length:", state.roomTypes.length);
+    console.log(
+      "  state.roomTypes:",
+      state.roomTypes.map((rt) => ({ id: rt.id, name: rt.name }))
+    );
+    console.log("  state.mealPlans.length:", state.mealPlans.length);
+    console.log(
+      "  state.mealPlans:",
+      state.mealPlans.map((mp) => ({ id: mp.id, code: mp.code }))
+    );
+
+    // FORCE generation on mount regardless
+    if (state.roomTypes.length > 0 && state.mealPlans.length > 0) {
+      console.log("===== Conditions MET - Generating combinations =====");
+      handleGenerateAllCombinations(true);
+    } else {
+      console.log("===== Conditions NOT met ===== ");
+      console.log("  roomTypes?", state.roomTypes.length > 0);
+      console.log("  mealPlans?", state.mealPlans.length > 0);
+    }
+  }, []); // Run ONLY once on mount
 
   const handleAddCombination = () => {
     if (!comboForm.roomTypeId) {
@@ -60,27 +233,63 @@ export const StayTypes: React.FC = () => {
       alert("Please select a Meal Plan");
       return;
     }
-    if (!comboForm.viewTypeId) {
-      alert("Please select a View Type");
-      return;
+
+    if (isEditing && editingId) {
+      // Update existing combination
+      setCombinations((s) =>
+        s.map((c) =>
+          c.id === editingId
+            ? {
+                ...c,
+                roomTypeId: comboForm.roomTypeId as string,
+                adults: comboForm.adults ?? 1,
+                children: comboForm.children ?? 0,
+                mealPlanId: comboForm.mealPlanId as string,
+              }
+            : c
+        )
+      );
+      setIsEditing(false);
+      setEditingId(null);
+    } else {
+      // Add new combination
+      const newCombo: Combination = {
+        id: generateId(),
+        roomTypeId: comboForm.roomTypeId as string,
+        adults: comboForm.adults ?? 1,
+        children: comboForm.children ?? 0,
+        mealPlanId: comboForm.mealPlanId as string,
+      };
+      setCombinations((s) => [newCombo, ...s]);
     }
 
-    const newCombo: Combination = {
-      id: generateId(),
-      roomTypeId: comboForm.roomTypeId as string,
-      adults: comboForm.adults ?? 1,
-      children: comboForm.children ?? 0,
-      mealPlanId: comboForm.mealPlanId as string,
-      viewTypeId: comboForm.viewTypeId as string,
-    };
-
-    setCombinations((s) => [newCombo, ...s]);
     setComboForm({
       adults: 1,
       children: 0,
       roomTypeId: "",
       mealPlanId: "",
-      viewTypeId: "",
+    });
+  };
+
+  const handleEditCombination = (combo: Combination) => {
+    setComboForm({
+      roomTypeId: combo.roomTypeId,
+      adults: combo.adults,
+      children: combo.children,
+      mealPlanId: combo.mealPlanId,
+    });
+    setIsEditing(true);
+    setEditingId(combo.id);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditingId(null);
+    setComboForm({
+      adults: 1,
+      children: 0,
+      roomTypeId: "",
+      mealPlanId: "",
     });
   };
 
@@ -89,7 +298,39 @@ export const StayTypes: React.FC = () => {
     setCombinations((s) => s.filter((c) => c.id !== id));
   };
 
+  const handleClearAllCombinations = () => {
+    if (!window.confirm("Delete all combinations? This cannot be undone."))
+      return;
+    setCombinations([]);
+  };
+
   const comboColumns = [
+    {
+      key: "stayTypeName",
+      header: "Stay Type Name",
+      render: (c: Combination) => {
+        const roomType = state.roomTypes.find((rt) => rt.id === c.roomTypeId);
+        const mealPlan = state.mealPlans.find((m) => m.id === c.mealPlanId);
+        const guestType =
+          c.adults > 0 && c.children > 0
+            ? "Adult + Child"
+            : c.adults > 0
+            ? "Adult Only"
+            : "Unknown";
+
+        return (
+          <div className="flex flex-col">
+            <span className="font-bold text-slate-900">
+              {roomType?.name || "Unknown"}
+            </span>
+            <span className="text-xs text-slate-600">{guestType}</span>
+            <span className="text-xs text-emerald-700 font-semibold">
+              {mealPlan?.code || "Unknown"}
+            </span>
+          </div>
+        );
+      },
+    },
     {
       key: "roomType",
       header: "Room Type",
@@ -109,16 +350,17 @@ export const StayTypes: React.FC = () => {
         state.mealPlans.find((m) => m.id === c.mealPlanId)?.name || "Unknown",
     },
     {
-      key: "viewType",
-      header: "View Type",
-      render: (c: Combination) =>
-        state.viewTypes.find((v) => v.id === c.viewTypeId)?.name || "Unknown",
-    },
-    {
       key: "actions",
       header: "Actions",
       render: (c: Combination) => (
         <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant="primary"
+            onClick={() => handleEditCombination(c)}
+          >
+            <Edit2 className="w-4 h-4" />
+          </Button>
           <Button
             size="sm"
             variant="danger"
@@ -133,13 +375,33 @@ export const StayTypes: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="mb-6 pb-4 border-b border-gray-200">
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-primary-600 to-primary-700 bg-clip-text text-transparent">
-          Stay Type Combinations
-        </h1>
-        <p className="text-gray-600 mt-1">
-          Create and save stay-type + room configuration combinations
-        </p>
+      <div className="mb-6 pb-4 border-b border-gray-200 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary-600 to-primary-700 bg-clip-text text-transparent">
+            Stay Type Combinations
+          </h1>
+          <p className="text-gray-600 mt-1">
+            Create and save stay-type + room configuration combinations
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            onClick={() => handleGenerateAllCombinations(false)}
+            variant="primary"
+            size="sm"
+          >
+            Generate All Types
+          </Button>
+          {combinations.length > 0 && (
+            <Button
+              onClick={handleClearAllCombinations}
+              variant="danger"
+              size="sm"
+            >
+              Clear All
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Form Card */}
@@ -194,25 +456,20 @@ export const StayTypes: React.FC = () => {
             }
             options={[
               { value: "", label: "Select Meal Plan" },
-              ...state.mealPlans.map((m) => ({ value: m.id, label: m.name })),
+              ...state.mealPlans
+                .filter((m) => ["BB", "RO", "HB", "FB"].includes(m.code))
+                .map((m) => ({ value: m.id, label: m.name })),
             ]}
           />
 
-          <Select
-            label="View Type"
-            value={comboForm.viewTypeId || ""}
-            onChange={(e) =>
-              setComboForm({ ...comboForm, viewTypeId: e.target.value })
-            }
-            options={[
-              { value: "", label: "Select View Type" },
-              ...state.viewTypes.map((v) => ({ value: v.id, label: v.name })),
-            ]}
-          />
-
-          <div className="md:col-span-3">
-            <Button onClick={handleAddCombination} className="w-full">
-              <Plus className="w-4 h-4 mr-2" /> Add Combination
+          <div className="md:col-span-3 flex justify-end gap-2">
+            {isEditing && (
+              <Button onClick={handleCancelEdit} size="sm" variant="secondary">
+                Cancel
+              </Button>
+            )}
+            <Button onClick={handleAddCombination} size="sm">
+              {isEditing ? "Update Combination" : "Add Combination"}
             </Button>
           </div>
         </div>

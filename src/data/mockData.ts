@@ -1334,18 +1334,18 @@ export const mockStayTypes: StayType[] = [
 export const mockMealPlans: MealPlan[] = [
   {
     id: "1",
-    name: "Room Only",
-    code: "RO",
-    description: "No meals included",
-    perPersonRate: 0,
-    isActive: true,
-  },
-  {
-    id: "2",
     name: "Bed & Breakfast",
     code: "BB",
     description: "Breakfast included",
     perPersonRate: 15,
+    isActive: true,
+  },
+  {
+    id: "2",
+    name: "Room Only",
+    code: "RO",
+    description: "No meals included",
+    perPersonRate: 0,
     isActive: true,
   },
   {
@@ -1362,30 +1362,6 @@ export const mockMealPlans: MealPlan[] = [
     code: "FB",
     description: "All meals included",
     perPersonRate: 50,
-    isActive: true,
-  },
-  {
-    id: "5",
-    name: "All Inclusive",
-    code: "AI",
-    description: "All meals and drinks included",
-    perPersonRate: 75,
-    isActive: true,
-  },
-  {
-    id: "6",
-    name: "Breakfast Only",
-    code: "BO",
-    description: "Continental breakfast",
-    perPersonRate: 12,
-    isActive: true,
-  },
-  {
-    id: "7",
-    name: "Dinner Only",
-    code: "DO",
-    description: "Dinner included",
-    perPersonRate: 25,
     isActive: true,
   },
 ];

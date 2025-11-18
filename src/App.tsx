@@ -8,7 +8,7 @@ import { Dashboard } from "./pages/dashboard/Dashboard";
 import { RoomCalenderOverview } from "./pages/dashboard/RoomCalenderOverview";
 
 // Reservations
-import { ReservationsOverview } from "./pages/reservations/Overview";
+
 import { ReserveRoom } from "./pages/reservations/ReserveRoom";
 import { ReservationsHistory } from "./pages/reservations/History";
 

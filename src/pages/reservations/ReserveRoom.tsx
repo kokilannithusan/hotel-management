@@ -452,11 +452,11 @@ export const ReserveRoom: React.FC = () => {
 
   return (
     <>
-      <div className="flex h-screen overflow-hidden">
+      <div className="flex h-screen bg-white overflow-hidden">
         {/* Two Column Layout: Form (Center) + Invoice (Right) - Sidebar shows naturally from Layout */}
         {/* Center - Form Content (Takes remaining space between sidebar and invoice) */}
-        <div className="flex-1 overflow-y-auto bg-gradient-to-br from-slate-50 via-white to-blue-50 scroll-smooth">
-          <div className="max-w-7xl mx-auto px-8 py-8 pb-16">
+        <div className="flex-1 overflow-y-auto bg-gradient-to-br from-slate-50 via-white to-blue-50">
+          <div className="max-w-7xl mx-auto px-8 py-8">
             {/* Header */}
             <div className="mb-8 pb-6 border-b border-slate-200">
               <div className="flex items-center justify-between mb-6">

@@ -1,7 +1,8 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useHotel } from "../../context/HotelContext";
 import { formatCurrency, generateId } from "../../utils/formatters";
 import { Modal } from "../../components/ui/Modal";
+import { DateRangePicker } from "../../components/forms/DateRangePicker";
 import {
   DollarSign,
   Info,
@@ -13,33 +14,10 @@ import {
   Check,
   Lock,
   Unlock,
-  Plus,
-  X,
 } from "lucide-react";
-
-type ChannelTab = "DIRECT" | "WEB" | "OTA" | "TA";
-type PricingCurrency = "LKR" | "USD";
-
-// Guest type definitions
-const guestTypes = [
-  { code: "AO", name: "Adult Only", icon: "👤" },
-  { code: "AC", name: "Adult + Child", icon: "👨‍👧" },
-];
 
 export const ChannelPricingGrid: React.FC = () => {
   const { state, dispatch } = useHotel();
-  const [activeTab, setActiveTab] = useState<ChannelTab>("DIRECT");
-  const [selectedChannelId, setSelectedChannelId] = useState<string>("");
-  const [showAddChannelModal, setShowAddChannelModal] =
-    useState<boolean>(false);
-  const [newChannelName, setNewChannelName] = useState<string>("");
-  const [showAddChannelTypeModal, setShowAddChannelTypeModal] =
-    useState<boolean>(false);
-  const [newChannelTypeName, setNewChannelTypeName] = useState<string>("");
-  const [showEditChannelModal, setShowEditChannelModal] =
-    useState<boolean>(false);
-  const [editingChannelId, setEditingChannelId] = useState<string>("");
-  const [editChannelName, setEditChannelName] = useState<string>("");
   const [showAddRoomTypeModal, setShowAddRoomTypeModal] =
     useState<boolean>(false);
   const [showEditRoomTypeModal, setShowEditRoomTypeModal] =
@@ -54,27 +32,26 @@ export const ChannelPricingGrid: React.FC = () => {
   const [editSelectedMealPlans, setEditSelectedMealPlans] = useState<string[]>(
     []
   );
-  const [tabButtons, setTabButtons] = useState<
-    Array<{ key: ChannelTab; label: string }>
-  >([
-    { key: "DIRECT", label: "DIRECT" },
-    { key: "WEB", label: "WEB" },
-    { key: "OTA", label: "OTA" },
-    { key: "TA", label: "TA" },
-  ]);
-  const [selectedDate, setSelectedDate] = useState<string>("");
-  const [endDate, setEndDate] = useState<string>("");
   const [isLocked, setIsLocked] = useState<boolean>(false);
-  const [showComparison, setShowComparison] = useState<boolean>(false);
+  // Only use the 4 specific meal plans: BB, RO, HB, FB
+  const allowedMealPlanCodes = ["BB", "RO", "HB", "FB"];
   const mealPlans =
     state.mealPlans && state.mealPlans.length > 0
-      ? state.mealPlans
+      ? state.mealPlans.filter((mp) => allowedMealPlanCodes.includes(mp.code))
       : [
           {
             id: "mp-bb",
             name: "Bed & Breakfast",
             code: "BB",
             description: "Breakfast included",
+            perPersonRate: 0,
+            isActive: true,
+          },
+          {
+            id: "mp-ro",
+            name: "Room Only",
+            code: "RO",
+            description: "No meals",
             perPersonRate: 0,
             isActive: true,
           },
@@ -94,30 +71,7 @@ export const ChannelPricingGrid: React.FC = () => {
             perPersonRate: 0,
             isActive: true,
           },
-          {
-            id: "mp-ro",
-            name: "Room Only",
-            code: "RO",
-            description: "No meals",
-            perPersonRate: 0,
-            isActive: true,
-          },
         ];
-  // Top currency selection (radio). Renamed UI label to Currency.
-  const [campingCurrency, setCampingCurrency] =
-    useState<PricingCurrency>("LKR");
-  const [percentage, setPercentage] = useState<string>("");
-  const [typeValue, setTypeValue] = useState<string>("Percentage");
-  const [amount, setAmount] = useState<string>("");
-  const [hikeColumn, setHikeColumn] = useState<string>("");
-  const [bottomCurrency, setBottomCurrency] = useState<PricingCurrency>("LKR");
-  const [enterPercentage, setEnterPercentage] = useState<string>("");
-  const [hoveredCell, setHoveredCell] = useState<string | null>(null);
-  const [feedback, setFeedback] = useState<null | {
-    type: "error" | "success";
-    message: string;
-  }>(null);
-
   // Multi-level adjustment states
   const [adjustmentScope, setAdjustmentScope] = useState<
     | "all-channels"
@@ -136,38 +90,133 @@ export const ChannelPricingGrid: React.FC = () => {
   const [adjustmentOperation, setAdjustmentOperation] = useState<
     "increase" | "decrease" | "reset"
   >("increase");
+  const [feedback, setFeedback] = useState<null | {
+    type: "error" | "success";
+    message: string;
+  }>(null);
 
-  const currencyCode = bottomCurrency === "LKR" ? "LKR" : "USD";
+  // Advanced Adjustments state
+  const [advancedDateStart, setAdvancedDateStart] = useState<string>("");
+  const [advancedDateEnd, setAdvancedDateEnd] = useState<string>("");
+  const [advancedStayTypes, setAdvancedStayTypes] = useState<string[]>([]);
+  const [advancedSeasonalOption, setAdvancedSeasonalOption] = useState<
+    "seasonal" | "normal"
+  >("normal");
+  const [advancedCurrency, setAdvancedCurrency] = useState<string>("LKR");
+  const [advancedAdjustmentType, setAdvancedAdjustmentType] = useState<
+    "percentage" | "amount"
+  >("percentage");
+  const [advancedOperation, setAdvancedOperation] = useState<
+    "hike" | "decrease"
+  >("hike");
+  const [advancedInputValue, setAdvancedInputValue] = useState<string>("");
+  const [showAdvancedTable, setShowAdvancedTable] = useState<boolean>(false);
 
-  // Generate columns 1-8
-  const columns = Array.from({ length: 8 }, (_, i) => i + 1);
+  // Price editing state
+  const [showEditPriceModal, setShowEditPriceModal] = useState<boolean>(false);
+  const [editingPrice, setEditingPrice] = useState<string>("");
+  const [editingPriceData, setEditingPriceData] = useState<any>(null);
 
-  // Build pricing grid data from room types combined with meal plans and guest types
+  // Generate dynamic columns based on date range
+  const columns = useMemo(() => {
+    if (advancedDateStart && advancedDateEnd) {
+      // Create date range columns
+      const startDate = new Date(advancedDateStart);
+      const endDate = new Date(advancedDateEnd);
+      const dateColumns: Date[] = [];
+
+      for (
+        let d = new Date(startDate);
+        d <= endDate;
+        d.setDate(d.getDate() + 1)
+      ) {
+        dateColumns.push(new Date(d));
+      }
+
+      return dateColumns;
+    }
+
+    // Fallback to numeric columns 1-8 if no date range selected
+    return Array.from({ length: 8 }, (_, i) => i + 1) as any[];
+  }, [advancedDateStart, advancedDateEnd]);
+
+  // Load stay type combinations from localStorage (same as StayTypes.tsx)
+  const [stayTypeCombinations, setStayTypeCombinations] = useState<any[]>([]);
+
+  useEffect(() => {
+    const loadCombinations = () => {
+      try {
+        // Load stay type combinations from localStorage
+        const saved = localStorage.getItem("hotel-stay-type-combinations");
+        const combinations = saved ? JSON.parse(saved) : [];
+
+        console.log(
+          "ChannelPricingGrid: Loaded combinations from localStorage:",
+          combinations.length,
+          "items"
+        );
+        setStayTypeCombinations(combinations);
+      } catch (error) {
+        console.error("Error loading combinations from localStorage:", error);
+        setStayTypeCombinations([]);
+      }
+    };
+
+    // Load on mount
+    loadCombinations();
+
+    // Listen for storage changes (when StayTypes.tsx updates)
+    window.addEventListener("storage", loadCombinations);
+
+    // Also poll for changes every second to catch same-tab updates
+    const interval = setInterval(loadCombinations, 1000);
+
+    return () => {
+      window.removeEventListener("storage", loadCombinations);
+      clearInterval(interval);
+    };
+  }, []);
+
+  // Build pricing grid data from stay type combinations in localStorage
   const pricingGridData = useMemo(() => {
-    // Show all room type + meal plan + guest type combinations
-    return state.roomTypes.flatMap((roomType) =>
-      mealPlans.flatMap((mealPlan) =>
-        guestTypes.map((guestType) => {
-          const basePrice = roomType.basePrice || 0;
-          const basePrices = columns.map((col) => {
-            const variation = basePrice * (col * 0.02);
-            return basePrice + variation;
-          });
+    // If no combinations exist, return empty array
+    if (stayTypeCombinations.length === 0) {
+      return [];
+    }
 
-          return {
-            roomTypeId: roomType.id,
-            roomTypeName: roomType.name,
-            mealPlanCode: mealPlan.code,
-            mealPlanName: mealPlan.name,
-            guestTypeCode: guestType.code,
-            guestTypeName: guestType.name,
-            guestTypeIcon: guestType.icon,
-            basePrices,
-          };
-        })
-      )
-    );
-  }, [state.roomTypes, mealPlans, columns]);
+    // Build pricing data from localStorage combinations
+    return stayTypeCombinations.map((combo: any) => {
+      const roomType = state.roomTypes.find((rt) => rt.id === combo.roomTypeId);
+      const mealPlan = mealPlans.find((mp) => mp.id === combo.mealPlanId);
+
+      // Determine guest type based on adults/children
+      const guestType =
+        combo.adults > 0 && combo.children > 0
+          ? { code: "AC", name: "Adult + Child", icon: "👨‍👧" }
+          : { code: "AO", name: "Adult Only", icon: "👤" };
+
+      const basePrice = roomType?.basePrice || 0;
+      const basePrices = columns.map((col, index) => {
+        // Check if col is a Date object or number
+        const isDateColumn = col instanceof Date;
+        const columnIndex = isDateColumn ? index + 1 : col;
+        const variation = basePrice * (columnIndex * 0.02);
+        return basePrice + variation;
+      });
+
+      return {
+        roomTypeId: combo.roomTypeId,
+        roomTypeName: roomType?.name || "Unknown",
+        mealPlanCode: mealPlan?.code || "Unknown",
+        mealPlanName: mealPlan?.name || "Unknown",
+        guestTypeCode: guestType.code,
+        guestTypeName: guestType.name,
+        guestTypeIcon: guestType.icon,
+        basePrices,
+        combinationId: combo.id,
+      };
+    });
+  }, [stayTypeCombinations, state.roomTypes, mealPlans, columns]);
 
   // Calculate final prices with meal plan adjustment and channel modifier
   const calculatePrice = (basePrice: number, mealPlanCode: string): number => {
@@ -180,124 +229,7 @@ export const ChannelPricingGrid: React.FC = () => {
       working += mealAddon;
     }
 
-    // Apply user-entered percentage or fixed amount adjustments (preview only)
-    if (enterPercentage) {
-      const pct = parseFloat(enterPercentage);
-      if (!isNaN(pct)) {
-        working = working * (1 + pct / 100);
-      }
-    } else if (percentage) {
-      const pctPreset = parseFloat(percentage);
-      if (!isNaN(pctPreset)) {
-        working = working * (1 + pctPreset / 100);
-      }
-    }
-
-    if (typeValue === "Amount" && amount) {
-      const amt = parseFloat(amount);
-      if (!isNaN(amt)) working += amt;
-    }
-
-    // Highlighted column hike could conceptually add a small premium (example: +2%)
-    // This is illustrative; adjust logic if hike represents something else.
-    if (hikeColumn) {
-      // For demonstration, do not alter working yet; could integrate if required.
-    }
-
-    // Apply channel modifier last
-    const channelData = selectedChannelId
-      ? state.channels.find((ch) => ch.id === selectedChannelId)
-      : state.channels.find((ch) => ch.name.toUpperCase().includes(activeTab));
-    if (channelData && channelData.priceModifierPercent) {
-      working = working * (1 + channelData.priceModifierPercent / 100);
-    }
-
     return working;
-  };
-
-  const handleApply = () => {
-    // Determine if there is any actionable change
-    const hasChange = !!(enterPercentage || percentage || amount || hikeColumn);
-    if (!hasChange) {
-      setFeedback({
-        type: "error",
-        message: "Please select at least one pricing adjustment to apply.",
-      });
-      return;
-    }
-
-    // Simple validation of numeric custom percentage
-    if (enterPercentage) {
-      const valueNum = parseFloat(enterPercentage);
-      if (isNaN(valueNum)) {
-        setFeedback({
-          type: "error",
-          message: "Custom percentage must be a valid number.",
-        });
-        return;
-      }
-      if (valueNum < -100 || valueNum > 100) {
-        setFeedback({
-          type: "error",
-          message: "Custom percentage must be between -100% and 100%.",
-        });
-        return;
-      }
-    }
-
-    // Calculate preview impact
-    let affectedCombos = displayedPricingGridData.length;
-    let affectedColumns = hikeColumn ? 1 : columns.length;
-    let totalCells = affectedCombos * affectedColumns;
-
-    setFeedback({
-      type: "success",
-      message: `✓ Applied to ${totalCells} price ${
-        totalCells === 1 ? "cell" : "cells"
-      } across ${affectedCombos} ${
-        affectedCombos === 1 ? "combination" : "combinations"
-      } for ${activeTab} channel.`,
-    });
-    // TODO: Integrate persistence logic (context update / API call) here.
-  };
-
-  const handleCancel = () => {
-    setPercentage("");
-    setAmount("");
-    setHikeColumn("");
-    setEnterPercentage("");
-    setSelectedDate("");
-    setFeedback(null);
-  };
-
-  // Handle sub-channel selection toggle
-  const toggleSubChannelSelection = (channelId: string) => {
-    setSelectedSubChannels((prev) =>
-      prev.includes(channelId)
-        ? prev.filter((id) => id !== channelId)
-        : [...prev, channelId]
-    );
-  };
-
-  // Handle select all sub-channels
-  const handleSelectAllSubChannels = () => {
-    const allChannelIds = availableChannels.map((ch) => ch.id);
-    setSelectedSubChannels(allChannelIds);
-  };
-
-  // Handle deselect all sub-channels
-  const handleDeselectAllSubChannels = () => {
-    setSelectedSubChannels([]);
-  };
-
-  // Open adjustment modal
-  const openAdjustmentModal = (scope: typeof adjustmentScope) => {
-    setAdjustmentScope(scope);
-    setShowAdjustmentModal(true);
-    setAdjustmentPercentage("");
-    setAdjustmentAmount("");
-    setAdjustmentType("percentage");
-    setAdjustmentOperation("increase");
   };
 
   // Apply multi-level adjustment
@@ -333,35 +265,34 @@ export const ChannelPricingGrid: React.FC = () => {
         scopeDescription = "all channels across all types";
         break;
       case "all-subchannels":
-        affectedChannels = availableChannels.map((ch) => ch.id);
-        scopeDescription = `all ${activeTab} sub-channels`;
+        affectedChannels = state.channels.map((ch) => ch.id);
+        scopeDescription = "all channels";
         break;
       case "selected-subchannels":
         if (selectedSubChannels.length === 0) {
           setFeedback({
             type: "error",
-            message: "Please select at least one sub-channel.",
+            message: "Please select at least one channel.",
           });
           return;
         }
         affectedChannels = selectedSubChannels;
-        scopeDescription = `${selectedSubChannels.length} selected sub-channel${
+        scopeDescription = `${selectedSubChannels.length} selected channel${
           selectedSubChannels.length > 1 ? "s" : ""
         }`;
         break;
       case "single-subchannel":
-        if (!selectedChannelId) {
+        if (selectedSubChannels.length === 0) {
           setFeedback({
             type: "error",
-            message: "Please select a sub-channel first.",
+            message: "Please select a channel first.",
           });
           return;
         }
-        affectedChannels = [selectedChannelId];
-        const channelName = state.channels.find(
-          (ch) => ch.id === selectedChannelId
-        )?.name;
-        scopeDescription = `${channelName}`;
+        affectedChannels = selectedSubChannels;
+        scopeDescription = `${selectedSubChannels.length} selected channel${
+          selectedSubChannels.length > 1 ? "s" : ""
+        }`;
         break;
     }
 
@@ -418,7 +349,7 @@ export const ChannelPricingGrid: React.FC = () => {
       const valueText =
         adjustmentType === "percentage"
           ? `${value}%`
-          : formatCurrency(value, currencyCode);
+          : formatCurrency(value, "LKR");
       const operationType =
         adjustmentOperation === "increase" ? "increased" : "decreased";
       message = `✓ Successfully ${operationType} prices by ${valueText} for ${scopeDescription} (${
@@ -436,91 +367,6 @@ export const ChannelPricingGrid: React.FC = () => {
     setAdjustmentPercentage("");
     setAdjustmentAmount("");
     setSelectedSubChannels([]);
-  };
-
-  const disableApply =
-    !enterPercentage && !percentage && !amount && !hikeColumn;
-
-  // Filter channels based on active tab
-  const getChannelsForTab = (tab: ChannelTab) => {
-    // First check if channel has tabKey property (for newly created channels)
-    const channelsWithTabKey = state.channels.filter(
-      (ch) => (ch as any).tabKey === tab
-    );
-    if (channelsWithTabKey.length > 0) {
-      return channelsWithTabKey;
-    }
-
-    // Fallback to legacy type-based filtering for old data
-    switch (tab) {
-      case "DIRECT":
-        return state.channels.filter(
-          (ch) => ch.type === "Direct" || ch.type === "Walk-in"
-        );
-      case "WEB":
-        return state.channels.filter((ch) => ch.type === "Direct");
-      case "OTA":
-        return state.channels.filter((ch) => ch.type === "OTA");
-      case "TA":
-        return state.channels.filter(
-          (ch) => ch.type === "Agent" || ch.type === "Travel Agent"
-        );
-      default:
-        // For custom tabs, filter by tabKey
-        return state.channels.filter((ch) => (ch as any).tabKey === tab);
-    }
-  };
-
-  const availableChannels = getChannelsForTab(activeTab);
-
-  // Auto-select first channel when tab changes
-  React.useEffect(() => {
-    if (availableChannels.length > 0 && !selectedChannelId) {
-      setSelectedChannelId(availableChannels[0].id);
-    }
-  }, [activeTab, availableChannels]);
-
-  // Handler to add new channel
-  const handleAddChannel = () => {
-    if (!newChannelName.trim()) {
-      alert("Please enter a channel name");
-      return;
-    }
-
-    // Determine channel type based on active tab
-    let channelType = "";
-    switch (activeTab) {
-      case "DIRECT":
-        channelType = "Direct";
-        break;
-      case "WEB":
-        channelType = "Direct";
-        break;
-      case "OTA":
-        channelType = "OTA";
-        break;
-      case "TA":
-        channelType = "Agent";
-        break;
-    }
-
-    // Create new channel
-    const newChannel = {
-      id: generateId(),
-      name: newChannelName,
-      type: channelType,
-      tabKey: activeTab,
-      status: "active" as const,
-      priceModifierPercent: 0,
-    };
-
-    // Dispatch to add channel
-    dispatch({ type: "ADD_CHANNEL", payload: newChannel });
-
-    // Reset and close modal
-    setNewChannelName("");
-    setShowAddChannelModal(false);
-    setSelectedChannelId(newChannel.id);
   };
 
   // Use the full pricing grid data (no additional filtering needed)
@@ -566,880 +412,363 @@ export const ChannelPricingGrid: React.FC = () => {
             </button>
           </div>
         </div>
-
-        {/* Channel Tabs */}
-        <div className="mt-6 flex items-center gap-4 border-t border-slate-600 pt-6">
-          <div className="text-sm font-semibold text-slate-300 text-slate-700">
-            Select Channel:
-          </div>
-          <div className="flex gap-3 flex-wrap items-center">
-            {tabButtons.map((tab, index) => (
-              <div key={tab.key} className="relative group">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveTab(tab.key);
-                    setSelectedChannelId(""); // Reset channel selection when tab changes
-                  }}
-                  className={`relative px-8 py-2.5 text-sm font-bold rounded-xl transition-all duration-200 ${
-                    activeTab === tab.key
-                      ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/50"
-                      : "bg-white text-slate-700 hover: border border-slate-600"
-                  }`}
-                >
-                  {tab.label}
-                </button>
-
-                {/* Edit/Delete buttons for custom tabs (not default ones) */}
-                {index >= 4 && (
-                  <div className="absolute -top-2 -right-2 hidden group-hover:flex gap-1">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const newName = prompt(
-                          `Edit channel type name:`,
-                          tab.label
-                        );
-                        if (newName && newName.trim()) {
-                          const newKey = newName
-                            .trim()
-                            .toUpperCase()
-                            .replace(/\s+/g, "_");
-                          setTabButtons((prev) =>
-                            prev.map((t) =>
-                              t.key === tab.key
-                                ? { key: newKey as ChannelTab, label: newKey }
-                                : t
-                            )
-                          );
-                          if (activeTab === tab.key) {
-                            setActiveTab(newKey as ChannelTab);
-                          }
-                          setFeedback({
-                            type: "success",
-                            message: `✓ Channel type renamed to "${newKey}"`,
-                          });
-                        }
-                      }}
-                      className="w-6 h-6 bg-blue-600 hover:bg-blue-700 text-white rounded-full flex items-center justify-center shadow-lg transition-all"
-                      title="Edit channel type"
-                    >
-                      <User className="h-3 w-3" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (
-                          confirm(
-                            `Delete "${tab.label}" channel type? All channels in this category will remain but need to be reassigned.`
-                          )
-                        ) {
-                          setTabButtons((prev) =>
-                            prev.filter((t) => t.key !== tab.key)
-                          );
-                          if (activeTab === tab.key) {
-                            setActiveTab("DIRECT");
-                          }
-                          setFeedback({
-                            type: "success",
-                            message: `✓ Channel type "${tab.label}" deleted`,
-                          });
-                        }
-                      }}
-                      className="w-6 h-6 bg-red-600 hover:bg-red-700 text-white rounded-full flex items-center justify-center shadow-lg transition-all"
-                      title="Delete channel type"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))}
-
-            {/* Add New Channel Type Button */}
-            <button
-              type="button"
-              onClick={() => setShowAddChannelTypeModal(true)}
-              className="flex items-center gap-2 px-6 py-2.5 text-sm font-bold rounded-xl transition-all duration-200 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:scale-105"
-              title="Add a new channel type category"
-            >
-              <Plus className="h-4 w-4" />
-              <span>Add Type</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Channel Dropdown - Show available channels for selected tab */}
-        <div className="mt-4 flex items-center gap-4">
-          <div className="text-sm font-semibold text-slate-700">
-            Select {activeTab} Channel:
-          </div>
-          <select
-            value={selectedChannelId}
-            onChange={(e) => setSelectedChannelId(e.target.value)}
-            className="px-4 py-2.5 text-sm font-semibold rounded-xl bg-white text-slate-700 border border-slate-600 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 hover: transition-all min-w-[250px]"
-          >
-            <option value="">All {activeTab} Channels</option>
-            {availableChannels.map((channel) => (
-              <option key={channel.id} value={channel.id}>
-                {channel.name}
-                {channel.priceModifierPercent
-                  ? ` (${channel.priceModifierPercent > 0 ? "+" : ""}${
-                      channel.priceModifierPercent
-                    }%)`
-                  : ""}
-              </option>
-            ))}
-          </select>
-
-          {/* Add New Channel Button */}
-          <button
-            type="button"
-            onClick={() => setShowAddChannelModal(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl font-semibold text-sm transition-all shadow-lg"
-            title={`Add new ${activeTab} channel`}
-          >
-            <Plus className="h-4 w-4" />
-            Add Channel
-          </button>
-
-          {/* Edit Channel Button */}
-          {selectedChannelId && (
-            <button
-              type="button"
-              onClick={() => {
-                const channel = availableChannels.find(
-                  (ch) => ch.id === selectedChannelId
-                );
-                if (channel) {
-                  setEditingChannelId(channel.id);
-                  setEditChannelName(channel.name);
-                  setShowEditChannelModal(true);
-                }
-              }}
-              className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl font-semibold text-sm transition-all shadow-lg"
-              title="Edit selected channel"
-            >
-              <User className="h-4 w-4" />
-              Edit
-            </button>
-          )}
-
-          {/* Delete Channel Button */}
-          {selectedChannelId && (
-            <button
-              type="button"
-              onClick={() => {
-                const channel = availableChannels.find(
-                  (ch) => ch.id === selectedChannelId
-                );
-                if (
-                  channel &&
-                  confirm(
-                    `Are you sure you want to delete "${channel.name}"? This action cannot be undone.`
-                  )
-                ) {
-                  dispatch({ type: "DELETE_CHANNEL", payload: channel.id });
-                  setSelectedChannelId("");
-                  setFeedback({
-                    type: "success",
-                    message: `✓ Channel "${channel.name}" deleted successfully!`,
-                  });
-                }
-              }}
-              className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-xl font-semibold text-sm transition-all shadow-lg"
-              title="Delete selected channel"
-            >
-              <X className="h-4 w-4" />
-              Delete
-            </button>
-          )}
-
-          {selectedChannelId && (
-            <div className="text-xs text-slate-400 bg-white text-slate-700 px-3 py-2 rounded-lg border border-slate-600">
-              <span className="font-semibold">
-                {
-                  availableChannels.find((ch) => ch.id === selectedChannelId)
-                    ?.name
-                }
-              </span>{" "}
-              pricing active
-            </div>
-          )}
-        </div>
-
-        {/* Multi-Level Price Adjustment Controls */}
-        <div className="mt-6 border-t border-slate-600 pt-6">
-          <div className="mb-4">
-            <h3 className="text-sm font-bold bg-white text-slate-700 mb-3 flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-emerald-400 " />
-              Price Adjustment Options
-            </h3>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              {/* All Channels */}
-              <button
-                type="button"
-                onClick={() => openAdjustmentModal("all-channels")}
-                disabled={isLocked}
-                className="flex flex-col items-center gap-2 p-4 bg-white border border-purple-800 hover:from-white-700 hover:border border-purple-800 text-slate=700 rounded-xl font-semibold text-sm transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105"
-              >
-                <DollarSign className="h-5 w-5 text-purple-800" />
-                <span className="text-center text-purple-800">
-                  Adjust All Channels
-                </span>
-                <span className="text-xs opacity-80 text-purple-800">
-                  {state.channels.length} channels
-                </span>
-              </button>
-
-              {/* All Sub-channels in Current Type */}
-              <button
-                type="button"
-                onClick={() => openAdjustmentModal("all-subchannels")}
-                disabled={isLocked}
-                className="flex flex-col items-center gap-2 p-4 bg-white border border-blue-800 hover:from-white-700 hover:border border-blue-800 text-slate=700 rounded-xl font-semibold text-sm transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105"
-              >
-                <TrendingUp className="h-5 w-5 text-blue-800" />
-                <span className="text-center text-blue-800">
-                  Adjust All {activeTab}
-                </span>
-                <span className="text-xs opacity-80 text-blue-800">
-                  {availableChannels.length} sub-channels
-                </span>
-              </button>
-
-              {/* Selected Sub-channels */}
-              <button
-                type="button"
-                onClick={() => openAdjustmentModal("selected-subchannels")}
-                disabled={isLocked}
-                className="flex flex-col items-center gap-2 p-4 bg-white border border-amber-800 hover:from-white-700 hover:border border-blue-800 text-slate=700 rounded-xl font-semibold text-sm transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105"
-              >
-                <Check className="h-5 w-5 text-amber-800" />
-                <span className="text-center text-amber-800">
-                  Adjust Selected
-                </span>
-                <span className="text-xs opacity-80 text-amber-800">
-                  {selectedSubChannels.length > 0
-                    ? `${selectedSubChannels.length} selected`
-                    : "None selected"}
-                </span>
-              </button>
-
-              {/* Single Sub-channel */}
-              <button
-                type="button"
-                onClick={() => openAdjustmentModal("single-subchannel")}
-                disabled={isLocked || !selectedChannelId}
-                className="flex flex-col items-center gap-2 p-4 bg-white border border-emerald-800 hover:from-white-700 hover:border border-blue-800 text-slate=700 rounded-xl font-semibold text-sm transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105"
-              >
-                <User className="h-5 w-5 text-emerald-800" />
-                <span className="text-center  text-emerald-800">
-                  Adjust Single
-                </span>
-                <span className="text-xs opacity-80">
-                  {selectedChannelId ? "Channel selected" : "Select channel"}
-                </span>
-              </button>
-            </div>
-          </div>
-
-          {/* Sub-channel Selection Panel (for multi-select) */}
-          {availableChannels.length > 0 && (
-            <div className="mt-4  rounded-xl p-4 border border-slate-600">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="text-sm font-bold text-slate-300bg-white text-slate-700">
-                  Select Sub-Channels for Batch Adjustment
-                </h4>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={handleSelectAllSubChannels}
-                    className="text-xs px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-all"
-                  >
-                    Select All
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleDeselectAllSubChannels}
-                    className="text-xs px-3 py-1.5 bg-slate-600 hover:bg-slate-700 text-white rounded-lg font-semibold transition-all"
-                  >
-                    Clear
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (selectedSubChannels.length === 0) {
-                        setFeedback({
-                          type: "error",
-                          message:
-                            "Please select at least one sub-channel to reset.",
-                        });
-                        return;
-                      }
-                      selectedSubChannels.forEach((channelId) => {
-                        const channel = state.channels.find(
-                          (ch) => ch.id === channelId
-                        );
-                        if (channel) {
-                          dispatch({
-                            type: "UPDATE_CHANNEL",
-                            payload: {
-                              ...channel,
-                              priceModifierPercent: 0,
-                            },
-                          });
-                        }
-                      });
-                      setFeedback({
-                        type: "success",
-                        message: `✓ Successfully reset ${
-                          selectedSubChannels.length
-                        } selected channel${
-                          selectedSubChannels.length > 1 ? "s" : ""
-                        } to 0%`,
-                      });
-                      setSelectedSubChannels([]);
-                    }}
-                    className="text-xs px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-semibold transition-all flex items-center gap-1"
-                  >
-                    <RefreshCw className="h-3 w-3" />
-                    Reset
-                  </button>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                {availableChannels.map((channel) => (
-                  <label
-                    key={channel.id}
-                    className={`flex items-center gap-2 p-3 rounded-lg cursor-pointer transition-all text-slate-700  border-2 ${
-                      selectedSubChannels.includes(channel.id)
-                        ? "bg-blue-600/20 border-blue-500 text-white"
-                        : "bg-white border-slate-600 text-slate-700 hover:bg-white"
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedSubChannels.includes(channel.id)}
-                      onChange={() => toggleSubChannelSelection(channel.id)}
-                      className="h-4 w-4 rounded text-blue-600 focus:ring-blue-500 cursor-pointer"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-bold truncate">
-                        {channel.name}
-                      </div>
-                      {channel.priceModifierPercent !== undefined &&
-                        channel.priceModifierPercent !== 0 && (
-                          <div className="text-[10px] opacity-75">
-                            {channel.priceModifierPercent > 0 ? "+" : ""}
-                            {channel.priceModifierPercent}%
-                          </div>
-                        )}
-                    </div>
-                  </label>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
       </div>
 
       {/* Main Content Card */}
       <div className="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-full overflow-hidden">
-        {/* Reservation Type Section */}
-        <div className="border-b border-slate-200 px-6 py-5 bg-gradient-to-r from-slate-50 to-stone-50">
-          <div className="flex items-center gap-2 text-slate-700">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-md">
-              <Calendar className="h-4 w-4 text-white" />
-            </div>
-            <span className="font-semibold text-base">Reservation Type</span>
-          </div>
-        </div>
+        {/* New Advanced Adjustments Section */}
+        <div className="p-6 border-b border-slate-200 bg-gradient-to-br from-purple-50 to-indigo-50">
+          <div className="bg-white rounded-2xl shadow-lg border-2 border-purple-200 p-6">
+            <h3 className="text-lg font-bold text-black mb-4 flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-purple-600" />
+              Advanced Pricing Adjustments
+            </h3>
 
-        {/* Filter & Controls Panel */}
-        <div className="p-6 bg-gradient-to-br from-slate-50/50 to-stone-50/50 border-b border-slate-200">
-          <div className="space-y-4">
-            {/* Header with Feedback */}
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
-              <h3 className="text-sm font-bold text-slate-800 tracking-wide flex items-center gap-2">
-                <DollarSign className="h-4 w-4 text-blue-600" />
-                <span>Pricing Controls & Filters</span>
-              </h3>
-              {feedback && (
-                <div
-                  className={`text-xs px-3 py-2 rounded-lg flex items-center gap-2 shadow-sm ${
-                    feedback.type === "error"
-                      ? "bg-red-50 text-red-700 border-2 border-red-200"
-                      : "bg-emerald-50 text-emerald-700 border-2 border-emerald-200"
-                  }`}
-                >
-                  <Info className="h-4 w-4" />
-                  <span className="font-medium">{feedback.message}</span>
-                  <button
-                    type="button"
-                    onClick={() => setFeedback(null)}
-                    className="ml-2 text-sm font-bold hover:scale-110 transition-transform"
-                  >
-                    ×
-                  </button>
+            {/* First Row - Selection Fields */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              {/* Channel Type - REMOVED */}
+
+              {/* Date Range */}
+              <DateRangePicker
+                label="Date Range"
+                startDate={advancedDateStart}
+                endDate={advancedDateEnd}
+                onStartDateChange={setAdvancedDateStart}
+                onEndDateChange={setAdvancedDateEnd}
+              />
+
+              {/* Stay Type - Multiple Selection */}
+              <div className="space-y-1.5">
+                <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
+                  <User className="h-3.5 w-3.5 text-green-600" />
+                  Stay Type (Multiple)
+                </label>
+                <div className="w-full rounded-lg border-2 border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-200 max-h-48 overflow-y-auto">
+                  {pricingGridData.map((row) => {
+                    const stayTypeKey = `${row.roomTypeId}-${row.guestTypeCode}-${row.mealPlanCode}`;
+                    const displayName = `${row.roomTypeName} (${
+                      row.guestTypeCode === "AO" ? "1A/0C" : "1A/1C"
+                    }) - ${row.mealPlanCode}`;
+                    const isSelected = advancedStayTypes.includes(stayTypeKey);
+                    return (
+                      <label
+                        key={stayTypeKey}
+                        className="flex items-center gap-2 p-2 hover:bg-blue-50 cursor-pointer rounded"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setAdvancedStayTypes([
+                                ...advancedStayTypes,
+                                stayTypeKey,
+                              ]);
+                            } else {
+                              setAdvancedStayTypes(
+                                advancedStayTypes.filter(
+                                  (id) => id !== stayTypeKey
+                                )
+                              );
+                            }
+                          }}
+                          className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                        />
+                        <span className="text-sm text-slate-700">
+                          {displayName}
+                        </span>
+                      </label>
+                    );
+                  })}
                 </div>
-              )}
+                <p className="text-xs text-slate-500">
+                  {advancedStayTypes.length > 0
+                    ? `${advancedStayTypes.length} selected`
+                    : "Select one or more stay types"}
+                </p>
+              </div>
+
+              {/* Seasonal or Normal */}
+              <div className="space-y-1.5">
+                <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
+                  <Calendar className="h-3.5 w-3.5 text-orange-600" />
+                  Season Option
+                </label>
+                <select
+                  value={advancedSeasonalOption}
+                  onChange={(e) =>
+                    setAdvancedSeasonalOption(
+                      e.target.value as "seasonal" | "normal"
+                    )
+                  }
+                  className="w-full rounded-lg border-2 border-slate-300 bg-white px-3 py-2 text-sm shadow-sm transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                >
+                  <option value="normal">Normal</option>
+                  <option value="seasonal">Seasonal</option>
+                </select>
+              </div>
             </div>
 
-            {/* First Row - Main Filters */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {/* Date Range - Start */}
-              <div className="space-y-1.5">
-                <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
-                  <Calendar className="h-3.5 w-3.5 text-blue-600" />
-                  From Date
-                </label>
-                <input
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  className="w-full rounded-lg border-2 border-slate-300 bg-white px-3 py-2 text-sm shadow-sm transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                  placeholder="Start date"
-                />
-              </div>
-
-              {/* Date Range - End */}
-              <div className="space-y-1.5">
-                <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
-                  <Calendar className="h-3.5 w-3.5 text-blue-600" />
-                  To Date
-                </label>
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full rounded-lg border-2 border-slate-300 bg-white px-3 py-2 text-sm shadow-sm transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                  placeholder="End date"
-                />
-              </div>
-
-              {/* Currency */}
+            {/* Second Row - Adjustment Fields */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+              {/* Currency Type */}
               <div className="space-y-1.5">
                 <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
                   <DollarSign className="h-3.5 w-3.5 text-green-600" />
-                  Display Currency
+                  Currency
                 </label>
-                <div className="flex items-center gap-4 rounded-lg border-2 border-slate-300 bg-white px-4 py-2 shadow-sm">
-                  <label className="flex cursor-pointer items-center gap-2 hover:opacity-80 transition-opacity">
-                    <input
-                      type="radio"
-                      name="camping"
-                      checked={campingCurrency === "LKR"}
-                      onChange={() => setCampingCurrency("LKR")}
-                      className="h-4 w-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
-                    />
-                    <span className="text-sm font-medium text-slate-700">
-                      LKR
-                    </span>
-                  </label>
-                  <label className="flex cursor-pointer items-center gap-2 hover:opacity-80 transition-opacity">
-                    <input
-                      type="radio"
-                      name="camping"
-                      checked={campingCurrency === "USD"}
-                      onChange={() => setCampingCurrency("USD")}
-                      className="h-4 w-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
-                    />
-                    <span className="text-sm font-medium text-slate-700">
-                      USD
-                    </span>
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            {/* Second Row - View Options & Quick Actions */}
-            <div className="flex items-center justify-between gap-4 py-3 border-t border-blue-100">
-              {/* Comparison Toggle */}
-              <div className="flex items-center gap-3">
-                <label className="text-xs font-semibold text-slate-700">
-                  View Options:
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={showComparison}
-                    onChange={(e) => setShowComparison(e.target.checked)}
-                    className="h-4 w-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-slate-700">
-                    Show Base Price Comparison
-                  </span>
-                </label>
+                <select
+                  value={advancedCurrency}
+                  onChange={(e) => setAdvancedCurrency(e.target.value)}
+                  className="w-full rounded-lg border-2 border-slate-300 bg-white px-3 py-2 text-sm shadow-sm transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                >
+                  <option value="LKR">🇱🇰 LKR</option>
+                  {state.currencyRates.map((currency) => (
+                    <option key={currency.id} value={currency.code}>
+                      {currency.code}
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              {/* Quick Actions */}
-              <div className="flex items-center gap-2">
-                <label className="text-xs font-semibold text-slate-700">
-                  Quick Actions:
+              {/* Percentage or Amount */}
+              <div className="space-y-1.5">
+                <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
+                  <Percent className="h-3.5 w-3.5 text-blue-600" />
+                  Adjustment Type
                 </label>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPercentage("10");
-                      setTypeValue("Percentage");
-                    }}
-                    className="px-3 py-1 text-xs font-medium rounded-md bg-green-100 text-green-700 hover:bg-green-200 transition-colors"
-                  >
-                    +10% Increase
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPercentage("-10");
-                      setTypeValue("Percentage");
-                    }}
-                    className="px-3 py-1 text-xs font-medium rounded-md bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
-                  >
-                    -10% Decrease
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPercentage("20");
-                      setTypeValue("Percentage");
-                    }}
-                    className="px-3 py-1 text-xs font-medium rounded-md bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors"
-                  >
-                    +20% Peak
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAmount("500");
-                      setTypeValue("Amount");
-                    }}
-                    className="px-3 py-1 text-xs font-medium rounded-md bg-purple-100 text-purple-700 hover:bg-purple-200 transition-colors"
-                  >
-                    +500 Fixed
-                  </button>
-                </div>
+                <select
+                  value={advancedAdjustmentType}
+                  onChange={(e) => {
+                    setAdvancedAdjustmentType(
+                      e.target.value as "percentage" | "amount"
+                    );
+                    setAdvancedInputValue(""); // Reset input when type changes
+                  }}
+                  className="w-full rounded-lg border-2 border-slate-300 bg-white px-3 py-2 text-sm shadow-sm transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                >
+                  <option value="percentage">Percentage</option>
+                  <option value="amount">Amount</option>
+                </select>
               </div>
-            </div>
 
-            {/* Third Row - Detailed Controls */}
-            <div className="space-y-3 pt-3 border-t border-blue-100">
-              <label className="text-xs font-semibold text-slate-700">
-                Advanced Adjustments:
-              </label>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                {/* Percentage */}
-                <div className="space-y-1.5">
-                  <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
-                    <Percent className="h-3.5 w-3.5 text-purple-600" />
-                    Preset %
-                  </label>
-                  <select
-                    value={percentage}
-                    onChange={(e) => setPercentage(e.target.value)}
-                    className="w-full rounded-lg border-2 border-slate-300 bg-white px-3 py-2 text-sm shadow-sm transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                  >
-                    <option value="">Select %</option>
-                    <option value="5">+5%</option>
-                    <option value="10">+10%</option>
-                    <option value="15">+15%</option>
-                    <option value="20">+20%</option>
-                    <option value="-5">-5%</option>
-                    <option value="-10">-10%</option>
-                  </select>
-                </div>
+              {/* Hike or Decrease */}
+              <div className="space-y-1.5">
+                <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
+                  <TrendingUp className="h-3.5 w-3.5 text-red-600" />
+                  Operation
+                </label>
+                <select
+                  value={advancedOperation}
+                  onChange={(e) =>
+                    setAdvancedOperation(e.target.value as "hike" | "decrease")
+                  }
+                  className="w-full rounded-lg border-2 border-slate-300 bg-white px-3 py-2 text-sm shadow-sm transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                >
+                  <option value="hike">Hike</option>
+                  <option value="decrease">Decrease</option>
+                </select>
+              </div>
 
-                {/* Type */}
-                <div className="space-y-1.5">
-                  <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
-                    <TrendingUp className="h-3.5 w-3.5 text-blue-700" />
-                    Adjustment Type
-                  </label>
-                  <select
-                    value={typeValue}
-                    onChange={(e) => setTypeValue(e.target.value)}
-                    className="w-full rounded-lg border-2 border-slate-300 bg-white px-3 py-2 text-sm shadow-sm transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                  >
-                    <option value="Percentage">Percentage</option>
-                    <option value="Amount">Fixed Amount</option>
-                  </select>
-                </div>
-
-                {/* Amount */}
-                <div className="space-y-1.5">
-                  <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
-                    <DollarSign className="h-3.5 w-3.5 text-green-600" />
-                    Fixed Amount
-                  </label>
-                  <select
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    className="w-full rounded-lg border-2 border-slate-300 bg-white px-3 py-2 text-sm shadow-sm transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                  >
-                    <option value="">Select Amount</option>
-                    <option value="100">+100</option>
-                    <option value="500">+500</option>
-                    <option value="1000">+1000</option>
-                    <option value="2000">+2000</option>
-                  </select>
-                </div>
-
-                {/* Hike */}
-                <div className="space-y-1.5">
-                  <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
-                    <TrendingUp className="h-3.5 w-3.5 text-red-600" />
-                    Target Column
-                  </label>
-                  <select
-                    value={hikeColumn}
-                    onChange={(e) => setHikeColumn(e.target.value)}
-                    className="w-full rounded-lg border-2 border-slate-300 bg-white px-3 py-2 text-sm shadow-sm transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                  >
-                    <option value="">All Columns</option>
-                    {columns.map((col) => (
-                      <option key={col} value={col.toString()}>
-                        Column {col}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Enter Percentage */}
-                <div className="space-y-1.5">
-                  <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
-                    <Percent className="h-3.5 w-3.5 text-indigo-600" />
-                    Custom %
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={enterPercentage}
-                    onChange={(e) => setEnterPercentage(e.target.value)}
-                    placeholder="Enter custom %"
-                    className="w-full rounded-lg border-2 border-slate-300 bg-white px-3 py-2 text-sm shadow-sm transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                  />
-                </div>
+              {/* Dynamic Input Field */}
+              <div className="space-y-1.5">
+                <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
+                  {advancedAdjustmentType === "percentage" ? (
+                    <>
+                      <Percent className="h-3.5 w-3.5 text-indigo-600" />
+                      Percentage Value
+                    </>
+                  ) : (
+                    <>
+                      <DollarSign className="h-3.5 w-3.5 text-green-600" />
+                      Amount Value
+                    </>
+                  )}
+                </label>
+                <input
+                  type="number"
+                  step={advancedAdjustmentType === "percentage" ? "0.01" : "1"}
+                  value={advancedInputValue}
+                  onChange={(e) => setAdvancedInputValue(e.target.value)}
+                  placeholder={
+                    advancedAdjustmentType === "percentage"
+                      ? "Enter %"
+                      : "Enter amount"
+                  }
+                  className="w-full rounded-lg border-2 border-slate-300 bg-white px-3 py-2 text-sm shadow-sm transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                />
               </div>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex items-center justify-between pt-2 border-t border-blue-100">
-              {/* Summary Info */}
-              <div className="flex items-center gap-4 text-xs text-slate-600">
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                  <span>
-                    <strong>{displayedPricingGridData.length}</strong>{" "}
-                    combinations
+            <div className="flex items-center justify-between pt-4 border-t border-purple-200">
+              <div className="text-xs text-slate-600">
+                {advancedDateStart && advancedDateEnd && advancedInputValue && (
+                  <span className="flex items-center gap-2">
+                    <Check className="h-3.5 w-3.5 text-green-600" />
+                    <strong>Ready to apply:</strong>{" "}
+                    {advancedOperation === "hike" ? "+" : "-"}
+                    {advancedInputValue}
+                    {advancedAdjustmentType === "percentage"
+                      ? "%"
+                      : ` ${advancedCurrency}`}
                   </span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                  <span>
-                    <strong>{columns.length}</strong> columns
-                  </span>
-                </div>
-                {hikeColumn && (
-                  <div className="flex items-center gap-1.5">
-                    <TrendingUp className="h-3.5 w-3.5 text-blue-600" />
-                    <span>
-                      Targeting <strong>Column {hikeColumn}</strong>
-                    </span>
-                  </div>
                 )}
               </div>
-
-              {/* Action Buttons */}
               <div className="flex items-center gap-3">
                 <button
                   type="button"
-                  onClick={handleCancel}
+                  onClick={() => {
+                    setAdvancedDateStart("");
+                    setAdvancedDateEnd("");
+                    setAdvancedStayTypes([]);
+                    setAdvancedSeasonalOption("normal");
+                    setAdvancedCurrency("LKR");
+                    setAdvancedAdjustmentType("percentage");
+                    setAdvancedOperation("hike");
+                    setAdvancedInputValue("");
+                    setShowAdvancedTable(false);
+                  }}
                   className="flex items-center gap-2 rounded-lg border-2 border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 hover:border-gray-400 transition-all"
                 >
                   <RefreshCw className="h-4 w-4" />
-                  Reset All
+                  Reset
                 </button>
                 <button
                   type="button"
-                  onClick={handleApply}
-                  disabled={disableApply}
+                  onClick={() => {
+                    if (
+                      !advancedDateStart ||
+                      !advancedDateEnd ||
+                      !advancedInputValue
+                    ) {
+                      alert("Please select date range and enter a value");
+                      return;
+                    }
+                    setShowAdvancedTable(true);
+                  }}
+                  disabled={
+                    !advancedDateStart ||
+                    !advancedDateEnd ||
+                    !advancedInputValue
+                  }
                   className={`flex items-center gap-2 rounded-lg px-6 py-2.5 text-sm font-semibold shadow-md transition-all ${
-                    disableApply
+                    !advancedDateStart ||
+                    !advancedDateEnd ||
+                    !advancedInputValue
                       ? "bg-gray-300 text-slate-500 cursor-not-allowed"
                       : "bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 hover:shadow-lg hover:scale-105"
                   }`}
-                  title={
-                    disableApply
-                      ? "Select at least one pricing adjustment"
-                      : "Apply pricing changes"
-                  }
                 >
                   <Check className="h-4 w-4" />
-                  Apply Changes
+                  Apply Advanced Adjustments
                 </button>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Channel Statistics Cards */}
-        <div className="p-6 border-b border-slate-200">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
-            <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-2xl p-5 border border-slate-300 shadow-sm hover:shadow-lg transition-shadow">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-bold text-slate-700 uppercase tracking-wide">
-                  Total Combinations
-                </span>
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-md">
-                  <User className="h-5 w-5 text-white" />
-                </div>
-              </div>
-              <div className="text-4xl font-bold text-slate-900 mb-1">
-                {displayedPricingGridData.length}
-              </div>
-              <div className="text-xs font-medium text-slate-600">
-                Room + Meal + Guest combos
-              </div>
-            </div>
+            {/* Advanced Adjustments Table */}
+            {showAdvancedTable && (
+              <div className="mt-6 pt-6 border-t border-blue-200">
+                <h4 className="text-md font-bold text-blue-900 mb-3 flex items-center gap-2">
+                  <Info className="h-4 w-4 text-blue-600" />
+                  Adjusted Pricing Preview
+                </h4>
+                <div className="overflow-x-auto rounded-lg border-2 border-blue-200 shadow-md">
+                  <table className="w-full border-collapse bg-white">
+                    <thead>
+                      <tr className="bg-gradient-to-r from-blue-600 to-blue-700">
+                        <th className="border-b-2 border-blue-500 px-4 py-3 text-left text-xs font-bold text-white uppercase">
+                          Room Type
+                        </th>
+                        <th className="border-b-2 border-blue-500 px-4 py-3 text-left text-xs font-bold text-white uppercase">
+                          Original Price
+                        </th>
+                        <th className="border-b-2 border-blue-500 px-4 py-3 text-left text-xs font-bold text-white uppercase">
+                          Adjustment
+                        </th>
+                        <th className="border-b-2 border-blue-500 px-4 py-3 text-left text-xs font-bold text-white uppercase">
+                          New Price
+                        </th>
+                        <th className="border-b-2 border-blue-500 px-4 py-3 text-left text-xs font-bold text-white uppercase">
+                          Currency
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {displayedPricingGridData.slice(0, 5).map((row, idx) => {
+                        const originalPrice = row.basePrices[0];
+                        const adjustmentValue =
+                          parseFloat(advancedInputValue) || 0;
+                        let newPrice = originalPrice;
 
-            <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-2xl p-5 border border-emerald-300 shadow-sm hover:shadow-lg transition-shadow">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-bold text-emerald-700 uppercase tracking-wide">
-                  Price Points
-                </span>
-                <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-md">
-                  <DollarSign className="h-5 w-5 text-white" />
-                </div>
-              </div>
-              <div className="text-4xl font-bold text-emerald-900 mb-1">
-                {displayedPricingGridData.length * columns.length}
-              </div>
-              <div className="text-xs font-medium text-emerald-600">
-                Total cells in grid
-              </div>
-            </div>
+                        if (advancedAdjustmentType === "percentage") {
+                          const multiplier =
+                            advancedOperation === "hike"
+                              ? 1 + adjustmentValue / 100
+                              : 1 - adjustmentValue / 100;
+                          newPrice = originalPrice * multiplier;
+                        } else {
+                          newPrice =
+                            advancedOperation === "hike"
+                              ? originalPrice + adjustmentValue
+                              : originalPrice - adjustmentValue;
+                        }
 
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-5 border border-blue-300 shadow-sm hover:shadow-lg transition-shadow">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-bold text-blue-700 uppercase tracking-wide">
-                  Avg Markup
-                </span>
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-md">
-                  <Percent className="h-5 w-5 text-white" />
+                        return (
+                          <tr
+                            key={idx}
+                            className={
+                              idx % 2 === 0 ? "bg-blue-50/30" : "bg-white"
+                            }
+                          >
+                            <td className="border-b border-blue-200 px-4 py-3 text-sm font-semibold text-slate-900">
+                              {row.roomTypeName}
+                            </td>
+                            <td className="border-b border-blue-200 px-4 py-3 text-sm text-slate-700">
+                              {formatCurrency(originalPrice, advancedCurrency)}
+                            </td>
+                            <td className="border-b border-blue-200 px-4 py-3 text-sm font-semibold">
+                              <span
+                                className={
+                                  advancedOperation === "hike"
+                                    ? "text-green-600"
+                                    : "text-red-600"
+                                }
+                              >
+                                {advancedOperation === "hike" ? "+" : "-"}
+                                {advancedAdjustmentType === "percentage"
+                                  ? `${adjustmentValue}%`
+                                  : formatCurrency(
+                                      adjustmentValue,
+                                      advancedCurrency
+                                    )}
+                              </span>
+                            </td>
+                            <td className="border-b border-blue-200 px-4 py-3 text-sm font-bold text-blue-900">
+                              {formatCurrency(newPrice, advancedCurrency)}
+                            </td>
+                            <td className="border-b border-blue-200 px-4 py-3 text-sm text-slate-600">
+                              {advancedCurrency}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
+                {displayedPricingGridData.length > 5 && (
+                  <p className="text-xs text-slate-500 mt-2 text-center">
+                    Showing 5 of {displayedPricingGridData.length} total
+                    combinations
+                  </p>
+                )}
               </div>
-              <div className="text-4xl font-bold text-blue-900 mb-1">
-                {(() => {
-                  const channelData = selectedChannelId
-                    ? state.channels.find((ch) => ch.id === selectedChannelId)
-                    : state.channels.find((ch) =>
-                        ch.name.toUpperCase().includes(activeTab)
-                      );
-                  return channelData?.priceModifierPercent || 0;
-                })()}
-                %
-              </div>
-              <div className="text-xs font-medium text-blue-600">
-                For{" "}
-                {selectedChannelId
-                  ? availableChannels.find((ch) => ch.id === selectedChannelId)
-                      ?.name
-                  : activeTab}{" "}
-                channel
-              </div>
-            </div>
-
-            <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-2xl p-5 border border-indigo-300 shadow-sm hover:shadow-lg transition-shadow">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-bold text-indigo-700 uppercase tracking-wide">
-                  Date Range
-                </span>
-                <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-md">
-                  <Calendar className="h-5 w-5 text-white" />
-                </div>
-              </div>
-              <div className="text-2xl font-bold text-indigo-900 mb-1">
-                {selectedDate
-                  ? new Date(selectedDate).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                    })
-                  : "Not set"}
-              </div>
-              <div className="text-xs text-indigo-600 mt-1">
-                {endDate
-                  ? `to ${new Date(endDate).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                    })}`
-                  : "Single date"}
-              </div>
-            </div>
+            )}
           </div>
         </div>
 
         {/* Pricing Grid Section */}
         <div className="p-6 overflow-hidden">
-          {/* Channel Price Heading & Controls */}
-          <div className="mb-5 flex items-center justify-between bg-gradient-to-r from-slate-50 to-stone-50 px-6 py-4 rounded-xl border border-slate-300 shadow-sm flex-wrap gap-3">
-            <div className="flex items-center gap-3">
-              <h2 className="text-xl font-bold text-slate-900 flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-md">
-                  <DollarSign className="h-5 w-5 text-white" />
-                </div>
-                <span>Pricing Grid</span>
-              </h2>
-              {isLocked && (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-red-100 px-4 py-1.5 text-xs font-bold text-red-700 border-2 border-red-200">
-                  <Lock className="h-3.5 w-3.5" />
-                  Locked
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 bg-white rounded-xl px-4 py-2.5 border border-slate-300 shadow-sm">
-                <label className="text-xs font-bold text-slate-700">
-                  Currency:
-                </label>
-                <select
-                  value={bottomCurrency}
-                  onChange={(e) =>
-                    setBottomCurrency(e.target.value as PricingCurrency)
-                  }
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-bold focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-amber-200"
-                >
-                  <option value="LKR">🇱🇰 LKR</option>
-                  <option value="USD">🇺🇸 USD</option>
-                </select>
-              </div>
-              <div className="flex items-center gap-2 bg-gradient-to-r from-slate-700 to-slate-800 text-white rounded-xl px-5 py-2.5 shadow-lg">
-                <Calendar className="h-4 w-4" />
-                <span className="text-sm font-bold">November 2025</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Pricing Grid Table */}
-          <div className="mb-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-semibold text-slate-700">
-                Manage Stay Types:
-              </span>
-              <button
-                type="button"
-                onClick={() => setShowAddRoomTypeModal(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-semibold text-sm transition-all shadow-md"
-                title="Add new stay type"
-              >
-                <Plus className="h-4 w-4" />
-                Add Stay Type
-              </button>
-            </div>
-          </div>
-
           <div className="overflow-x-auto overflow-y-visible rounded-xl border-2 border-slate-300 shadow-xl bg-white max-w-full">
             <table className="w-full border-collapse">
               <thead>
@@ -1450,23 +779,36 @@ export const ChannelPricingGrid: React.FC = () => {
                       <span>Stay Type Name</span>
                     </div>
                   </th>
-                  {columns.map((col) => (
-                    <th
-                      key={col}
-                      className={`border-b-2 border-r border-slate-600 px-5 py-4 text-center text-xs font-bold text-white uppercase transition-all min-w-[120px] ${
-                        hikeColumn && parseInt(hikeColumn) === col
-                          ? "bg-blue-600 scale-105 shadow-lg"
-                          : ""
-                      }`}
-                    >
-                      <div className="flex flex-col items-center gap-1">
-                        <span>Day {col}</span>
-                        {hikeColumn && parseInt(hikeColumn) === col && (
-                          <TrendingUp className="h-3 w-3" />
-                        )}
-                      </div>
-                    </th>
-                  ))}
+                  {columns.map((col) => {
+                    // Check if col is a Date object or number
+                    const isDateColumn = col instanceof Date;
+                    const columnKey = isDateColumn ? col.toISOString() : col;
+                    const displayText = isDateColumn
+                      ? col.toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                        })
+                      : `Day ${col}`;
+                    const dayOfWeek = isDateColumn
+                      ? col.toLocaleDateString("en-US", { weekday: "short" })
+                      : "";
+
+                    return (
+                      <th
+                        key={columnKey}
+                        className="border-b-2 border-r border-slate-600 px-5 py-4 text-center text-xs font-bold text-white uppercase transition-all min-w-[120px] bg-slate-600"
+                      >
+                        <div className="flex flex-col items-center gap-1">
+                          <span>{displayText}</span>
+                          {dayOfWeek && (
+                            <span className="text-xs opacity-80">
+                              {dayOfWeek}
+                            </span>
+                          )}
+                        </div>
+                      </th>
+                    );
+                  })}
                 </tr>
               </thead>
               <tbody>
@@ -1479,90 +821,36 @@ export const ChannelPricingGrid: React.FC = () => {
                   return (
                     <tr
                       key={`${row.roomTypeId}-${row.mealPlanCode}-${row.guestTypeCode}`}
-                      className={`transition-all hover:bg-blue-50/30 ${
-                        rowIndex % 2 === 0 ? "bg-slate-50/30" : "bg-white"
+                      className={`transition-all border-b border-slate-200 hover:bg-slate-100/50 ${
+                        rowIndex % 2 === 0 ? "bg-white" : "bg-slate-50"
                       }`}
                     >
-                      <td className="sticky left-0 z-10 border-b-2 border-r-2 border-slate-300 bg-gradient-to-r from-slate-100 via-stone-50 to-slate-50 px-5 py-4 text-sm font-bold text-slate-900 shadow-md min-w-[280px] max-w-[280px]">
-                        <div className="flex items-center gap-3 group">
-                          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm">
-                            <span className="text-base">
-                              {row.guestTypeIcon}
-                            </span>
+                      <td className="sticky left-0 z-10 border-r-4 border-slate-300 bg-white px-6 py-5 text-sm font-semibold text-slate-900 shadow-sm min-w-[320px] max-w-[320px]">
+                        <div className="flex items-center gap-4 w-full">
+                          {/* Icon Box - Blue background like in image */}
+                          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center flex-shrink-0 shadow-md">
+                            <span className="text-xl">{row.guestTypeIcon}</span>
                           </div>
-                          <div className="flex flex-col flex-1">
-                            <span className="font-bold text-slate-900">
+
+                          {/* Text Content */}
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-bold text-slate-900 text-sm">
                               {row.roomTypeName}
-                            </span>
-                            <span className="text-xs text-slate-600">
+                            </h3>
+                            <p className="text-xs text-slate-600 mt-0.5">
                               {row.guestTypeName}
-                            </span>
+                            </p>
                           </div>
+
+                          {/* Meal Plan Badge - Green like in image */}
                           {rowMealPlan && (
                             <span
-                              className="ml-auto inline-flex items-center rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 px-3 py-1 text-xs font-bold text-white shadow-md"
+                              className="inline-flex items-center rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 px-3.5 py-1.5 text-xs font-bold text-white shadow-md flex-shrink-0 whitespace-nowrap"
                               title={`${rowMealPlan.name}: ${rowMealPlan.description}`}
                             >
                               {rowMealPlan.code}
                             </span>
                           )}
-                          {/* Edit/Delete buttons - only show for first guest type of each room type */}
-                          {row.guestTypeCode === "AO" &&
-                            row.mealPlanCode === mealPlans[0]?.code && (
-                              <div className="hidden group-hover:flex gap-1 ml-2">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const roomType = state.roomTypes.find(
-                                      (rt) => rt.id === row.roomTypeId
-                                    );
-                                    if (roomType) {
-                                      setEditingRoomTypeId(roomType.id);
-                                      setEditRoomTypeName(roomType.name);
-                                      setEditRoomTypeBasePrice(
-                                        roomType.basePrice?.toString() || "0"
-                                      );
-                                      // Set all meal plans as selected by default for editing
-                                      setEditSelectedMealPlans(
-                                        mealPlans.map((mp) => mp.id)
-                                      );
-                                      setShowEditRoomTypeModal(true);
-                                    }
-                                  }}
-                                  className="w-6 h-6 bg-blue-600 hover:bg-blue-700 text-white rounded-full flex items-center justify-center shadow-md transition-all"
-                                  title="Edit stay type"
-                                >
-                                  <User className="h-3 w-3" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const roomType = state.roomTypes.find(
-                                      (rt) => rt.id === row.roomTypeId
-                                    );
-                                    if (
-                                      roomType &&
-                                      confirm(
-                                        `Delete "${roomType.name}"? This will remove all pricing data for this stay type.`
-                                      )
-                                    ) {
-                                      dispatch({
-                                        type: "DELETE_ROOM_TYPE",
-                                        payload: roomType.id,
-                                      });
-                                      setFeedback({
-                                        type: "success",
-                                        message: `✓ Stay type "${roomType.name}" deleted successfully!`,
-                                      });
-                                    }
-                                  }}
-                                  className="w-6 h-6 bg-red-600 hover:bg-red-700 text-white rounded-full flex items-center justify-center shadow-md transition-all"
-                                  title="Delete stay type"
-                                >
-                                  <X className="h-3 w-3" />
-                                </button>
-                              </div>
-                            )}
                         </div>
                       </td>
                       {row.basePrices.map((basePrice, colIndex) => {
@@ -1570,52 +858,35 @@ export const ChannelPricingGrid: React.FC = () => {
                           basePrice,
                           row.mealPlanCode
                         );
-                        const cellKey = `${row.roomTypeId}-${row.guestTypeCode}-${colIndex}`;
-                        const isHovered = hoveredCell === cellKey;
-                        const isSelectedColumn =
-                          hikeColumn && parseInt(hikeColumn) === colIndex + 1;
 
                         return (
                           <td
                             key={colIndex}
-                            onMouseEnter={() => setHoveredCell(cellKey)}
-                            onMouseLeave={() => setHoveredCell(null)}
-                            className={`border-b border-r border-slate-200 px-4 py-3 text-center text-sm font-semibold transition-all cursor-pointer relative group min-w-[120px] ${
-                              isSelectedColumn
-                                ? "bg-blue-200 ring-2 ring-inset ring-blue-500 text-blue-900 shadow-inner"
-                                : isHovered
-                                ? "bg-blue-100 text-blue-800 scale-105 shadow-md z-10"
-                                : "text-slate-700 hover:shadow-sm"
-                            }`}
+                            onClick={() => {
+                              setEditingPrice(basePrice.toString());
+                              setEditingPriceData({
+                                ...row,
+                                columnIndex: colIndex,
+                                originalPrice: basePrice,
+                              });
+                              setShowEditPriceModal(true);
+                            }}
+                            className="border-b border-r border-slate-200 px-4 py-3 text-center text-sm font-semibold transition-all cursor-pointer min-w-[120px] text-slate-700 hover:bg-slate-100"
                             title={`Base: ${formatCurrency(
                               basePrice,
-                              currencyCode
-                            )} → Final: ${formatCurrency(
-                              finalPrice,
-                              currencyCode
-                            )}`}
+                              "LKR"
+                            )} → Final: ${formatCurrency(finalPrice, "LKR")}`}
                           >
                             <div className="flex flex-col items-center gap-0.5">
-                              <span
-                                className={`${
-                                  isSelectedColumn || isHovered
-                                    ? "font-bold text-base"
-                                    : ""
-                                }`}
-                              >
-                                {formatCurrency(finalPrice, currencyCode)}
-                              </span>
-                              {(isSelectedColumn || isHovered) &&
-                                basePrice !== finalPrice && (
-                                  <span className="text-[10px] text-slate-500 line-through">
-                                    {formatCurrency(basePrice, currencyCode)}
-                                  </span>
-                                )}
-                              {isHovered && (
-                                <span className="absolute bottom-1 left-1/2 transform -translate-x-1/2 text-[9px] text-blue-600 font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
-                                  Click to edit
+                              <span>{formatCurrency(finalPrice, "LKR")}</span>
+                              {basePrice !== finalPrice && (
+                                <span className="text-[10px] text-slate-500 line-through">
+                                  {formatCurrency(basePrice, "LKR")}
                                 </span>
                               )}
+                              <span className="text-[9px] text-slate-500">
+                                Click to edit
+                              </span>
                             </div>
                           </td>
                         );
@@ -1640,237 +911,6 @@ export const ChannelPricingGrid: React.FC = () => {
           )}
         </div>
       </div>
-
-      {/* Add Channel Type Modal */}
-      <Modal
-        isOpen={showAddChannelTypeModal}
-        onClose={() => {
-          setShowAddChannelTypeModal(false);
-          setNewChannelTypeName("");
-        }}
-        title="Add Channel Type"
-      >
-        <div className="space-y-4">
-          {/* Compact Info */}
-          <div className="flex items-center gap-3 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-lg p-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
-              <Plus className="h-4 w-4 text-white" />
-            </div>
-            <p className="text-xs text-purple-800">
-              Create a new category tab (e.g., CORPORATE, WHOLESALE)
-            </p>
-          </div>
-
-          {/* Input with Preview */}
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-2">
-              Type Name
-            </label>
-            <input
-              type="text"
-              value={newChannelTypeName}
-              onChange={(e) => setNewChannelTypeName(e.target.value)}
-              placeholder="e.g., Corporate or Wholesale"
-              className="w-full px-4 py-2.5 border-2 border-purple-300 rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-200 text-sm"
-              autoFocus
-              onKeyPress={(e) => {
-                if (e.key === "Enter") {
-                  document.getElementById("add-type-btn")?.click();
-                }
-              }}
-            />
-            {newChannelTypeName.trim() && (
-              <div className="mt-2 flex items-center gap-2">
-                <span className="text-xs text-slate-600">Will create:</span>
-                <span className="inline-flex px-3 py-1 bg-purple-600 text-white rounded-md text-xs font-bold">
-                  {newChannelTypeName.trim().toUpperCase().replace(/\s+/g, "_")}
-                </span>
-              </div>
-            )}
-          </div>
-
-          {/* Quick Options */}
-          <div>
-            <p className="text-xs font-semibold text-slate-600 mb-2">
-              Quick Select:
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {["CORPORATE", "WHOLESALE", "GDS", "AFFILIATE"].map((type) => (
-                <button
-                  key={type}
-                  type="button"
-                  onClick={() => setNewChannelTypeName(type)}
-                  className="px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-md text-slate-700 hover:border-purple-400 hover:bg-purple-50 transition-all font-medium"
-                >
-                  {type}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div className="flex justify-end gap-2 mt-5 pt-4 border-t">
-          <button
-            type="button"
-            onClick={() => {
-              setShowAddChannelTypeModal(false);
-              setNewChannelTypeName("");
-            }}
-            className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-all text-sm font-medium"
-          >
-            Cancel
-          </button>
-          <button
-            id="add-type-btn"
-            type="button"
-            onClick={() => {
-              if (!newChannelTypeName.trim()) {
-                setFeedback({
-                  type: "error",
-                  message: "Please enter a channel type name",
-                });
-                return;
-              }
-
-              const typeKey = newChannelTypeName
-                .trim()
-                .toUpperCase()
-                .replace(/\s+/g, "_");
-
-              // Check if type already exists
-              if (tabButtons.find((t) => t.key === typeKey)) {
-                setFeedback({
-                  type: "error",
-                  message: `Channel type "${typeKey}" already exists!`,
-                });
-                return;
-              }
-
-              // Add new tab button
-              setTabButtons((prev) => [
-                ...prev,
-                {
-                  key: typeKey as ChannelTab,
-                  label: typeKey,
-                },
-              ]);
-              setActiveTab(typeKey as ChannelTab);
-              setFeedback({
-                type: "success",
-                message: `✓ Channel type "${typeKey}" added successfully!`,
-              });
-              setShowAddChannelTypeModal(false);
-              setNewChannelTypeName("");
-            }}
-            className="px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all text-sm font-semibold"
-          >
-            Add Type
-          </button>
-        </div>
-      </Modal>
-
-      {/* Edit Channel Modal */}
-      <Modal
-        isOpen={showEditChannelModal}
-        onClose={() => {
-          setShowEditChannelModal(false);
-          setEditChannelName("");
-          setEditingChannelId("");
-        }}
-        title="Edit Channel"
-      >
-        <div className="space-y-4">
-          {/* Compact Info */}
-          <div className="flex items-center gap-3 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
-              <User className="h-4 w-4 text-white" />
-            </div>
-            <p className="text-xs text-blue-800">
-              Update the channel name for better organization
-            </p>
-          </div>
-
-          {/* Input */}
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-2">
-              Channel Name
-            </label>
-            <input
-              type="text"
-              value={editChannelName}
-              onChange={(e) => setEditChannelName(e.target.value)}
-              placeholder="Enter channel name"
-              className="w-full px-4 py-2.5 border-2 border-blue-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-sm"
-              autoFocus
-              onKeyPress={(e) => {
-                if (e.key === "Enter") {
-                  document.getElementById("save-edit-btn")?.click();
-                }
-              }}
-            />
-          </div>
-        </div>
-
-        <div className="flex justify-end gap-2 mt-5 pt-4 border-t">
-          <button
-            type="button"
-            onClick={() => {
-              setShowEditChannelModal(false);
-              setEditChannelName("");
-              setEditingChannelId("");
-            }}
-            className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-all text-sm font-medium"
-          >
-            Cancel
-          </button>
-          <button
-            id="save-edit-btn"
-            type="button"
-            onClick={() => {
-              if (!editChannelName.trim()) {
-                setFeedback({
-                  type: "error",
-                  message: "Please enter a channel name",
-                });
-                return;
-              }
-
-              const oldChannel = availableChannels.find(
-                (ch) => ch.id === editingChannelId
-              );
-
-              if (!oldChannel) {
-                setFeedback({
-                  type: "error",
-                  message: "Channel not found",
-                });
-                return;
-              }
-
-              dispatch({
-                type: "UPDATE_CHANNEL",
-                payload: {
-                  ...oldChannel,
-                  name: editChannelName.trim(),
-                },
-              });
-
-              setFeedback({
-                type: "success",
-                message: `✓ Channel renamed from "${
-                  oldChannel.name
-                }" to "${editChannelName.trim()}"`,
-              });
-              setShowEditChannelModal(false);
-              setEditChannelName("");
-              setEditingChannelId("");
-            }}
-            className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all text-sm font-semibold"
-          >
-            Save Changes
-          </button>
-        </div>
-      </Modal>
 
       {/* Add Room Type (Stay Type) Modal */}
       <Modal
@@ -1899,7 +939,7 @@ export const ChannelPricingGrid: React.FC = () => {
           </div>
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-2">
-              Base Price ({currencyCode})
+              Base Price (LKR)
             </label>
             <input
               type="number"
@@ -2032,7 +1072,7 @@ export const ChannelPricingGrid: React.FC = () => {
           </div>
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-2">
-              Base Price ({currencyCode})
+              Base Price (LKR)
             </label>
             <input
               type="number"
@@ -2151,146 +1191,140 @@ export const ChannelPricingGrid: React.FC = () => {
         </div>
       </Modal>
 
-      {/* Add Channel Modal */}
+      {/* Edit Price Modal */}
       <Modal
-        isOpen={showAddChannelModal}
+        isOpen={showEditPriceModal}
         onClose={() => {
-          setShowAddChannelModal(false);
-          setNewChannelName("");
+          setShowEditPriceModal(false);
+          setEditingPrice("");
+          setEditingPriceData(null);
         }}
-        title="Add New Channel"
+        title="Edit Price"
       >
-        <div className="space-y-5">
-          {/* Channel Type Badge */}
-          <div className="flex items-center justify-center">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-full shadow-lg">
-              <DollarSign className="h-5 w-5" />
-              <span className="font-bold text-sm">{activeTab} Channel</span>
-            </div>
-          </div>
-
-          {/* Info Card */}
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-4">
-            <div className="flex items-start space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center flex-shrink-0 shadow-md">
-                <Info className="h-5 w-5 text-white" />
+        {editingPriceData && (
+          <div className="space-y-4">
+            {/* Room/Stay Type Info */}
+            <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <span className="text-lg">
+                    {editingPriceData.guestTypeIcon}
+                  </span>
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-bold text-slate-900">
+                    {editingPriceData.roomTypeName}
+                  </h4>
+                  <p className="text-xs text-slate-600">
+                    {editingPriceData.guestTypeName} -{" "}
+                    {editingPriceData.mealPlanCode}
+                  </p>
+                </div>
               </div>
-              <div className="flex-1">
-                <p className="font-bold text-blue-900 text-sm mb-1">
-                  {activeTab === "OTA"
-                    ? "Online Travel Agency"
-                    : activeTab === "TA"
-                    ? "Travel Agent Channel"
-                    : activeTab === "WEB"
-                    ? "Web Direct Channel"
-                    : "Direct Booking Channel"}
-                </p>
-                <p className="text-xs text-blue-800 leading-relaxed">
-                  Create a new {activeTab.toLowerCase()} channel to manage
-                  pricing and availability separately.
-                </p>
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div>
+                  <p className="text-slate-600 font-medium">Original Price</p>
+                  <p className="text-slate-900 font-bold text-sm">
+                    {formatCurrency(editingPriceData.originalPrice, "LKR")}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-slate-600 font-medium">Column</p>
+                  <p className="text-slate-900 font-bold text-sm">
+                    {editingPriceData.columnIndex + 1}
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Input Field */}
-          <div>
-            <label className="block text-sm font-bold text-slate-700 mb-2">
-              Channel Name
-            </label>
-            <div className="relative">
-              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
+            {/* Price Input */}
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">
+                New Price (LKR)
+              </label>
               <input
-                type="text"
-                value={newChannelName}
-                onChange={(e) => setNewChannelName(e.target.value)}
-                placeholder={`e.g., ${
-                  activeTab === "OTA"
-                    ? "Booking.com, Expedia, Airbnb"
-                    : activeTab === "TA"
-                    ? "ABC Travel Agency"
-                    : activeTab === "WEB"
-                    ? "Company Website"
-                    : "Walk-in, Phone Booking"
-                }`}
-                className="w-full pl-10 pr-4 py-3 border-2 border-slate-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-base"
+                type="number"
+                step="0.01"
+                value={editingPrice}
+                onChange={(e) => setEditingPrice(e.target.value)}
+                placeholder="Enter new price"
+                className="w-full px-4 py-3 border-2 border-blue-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-base font-semibold"
                 autoFocus
               />
+              <p className="text-xs text-slate-500 mt-2">
+                Enter the new price for this cell
+              </p>
             </div>
-            <p className="text-xs text-slate-500 mt-2">
-              Enter a unique, descriptive name for this channel
-            </p>
-          </div>
 
-          {/* Quick Examples */}
-          <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-            <p className="text-xs font-semibold text-slate-700 mb-2">
-              💡 Example Names:
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {activeTab === "OTA" ? (
-                <>
-                  <span className="text-xs bg-white px-2 py-1 rounded border border-slate-300 text-slate-600">
-                    Booking.com
+            {/* Price Difference Preview */}
+            {editingPrice && (
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+                <p className="text-xs font-medium text-slate-700 mb-2">
+                  Price Change
+                </p>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-600">
+                    {formatCurrency(editingPriceData.originalPrice, "LKR")} →
                   </span>
-                  <span className="text-xs bg-white px-2 py-1 rounded border border-slate-300 text-slate-600">
-                    Expedia
+                  <span className="text-lg font-bold text-blue-600">
+                    {formatCurrency(parseFloat(editingPrice) || 0, "LKR")}
                   </span>
-                  <span className="text-xs bg-white px-2 py-1 rounded border border-slate-300 text-slate-600">
-                    Airbnb
+                  <span className="text-sm font-semibold">
+                    {editingPrice
+                      ? `${
+                          parseFloat(editingPrice) >
+                          editingPriceData.originalPrice
+                            ? "+"
+                            : ""
+                        }${formatCurrency(
+                          parseFloat(editingPrice) -
+                            editingPriceData.originalPrice,
+                          "LKR"
+                        )}`
+                      : "No change"}
                   </span>
-                </>
-              ) : activeTab === "TA" ? (
-                <>
-                  <span className="text-xs bg-white px-2 py-1 rounded border border-slate-300 text-slate-600">
-                    Travel Corp Ltd
-                  </span>
-                  <span className="text-xs bg-white px-2 py-1 rounded border border-slate-300 text-slate-600">
-                    Agent Network
-                  </span>
-                </>
-              ) : activeTab === "WEB" ? (
-                <>
-                  <span className="text-xs bg-white px-2 py-1 rounded border border-slate-300 text-slate-600">
-                    Main Website
-                  </span>
-                  <span className="text-xs bg-white px-2 py-1 rounded border border-slate-300 text-slate-600">
-                    Mobile App
-                  </span>
-                </>
-              ) : (
-                <>
-                  <span className="text-xs bg-white px-2 py-1 rounded border border-slate-300 text-slate-600">
-                    Walk-in
-                  </span>
-                  <span className="text-xs bg-white px-2 py-1 rounded border border-slate-300 text-slate-600">
-                    Phone Reservations
-                  </span>
-                </>
-              )}
-            </div>
+                </div>
+              </div>
+            )}
           </div>
-        </div>
+        )}
 
-        <div className="flex justify-end space-x-3 mt-6 pt-4 border-t border-slate-200">
+        <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-200">
           <button
             type="button"
             onClick={() => {
-              setShowAddChannelModal(false);
-              setNewChannelName("");
+              setShowEditPriceModal(false);
+              setEditingPrice("");
+              setEditingPriceData(null);
             }}
-            className="flex items-center gap-2 px-5 py-2.5 border-2 border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-all font-semibold text-sm"
+            className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-all text-sm font-medium"
           >
-            <X className="h-4 w-4" />
             Cancel
           </button>
           <button
             type="button"
-            onClick={handleAddChannel}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all shadow-md font-semibold"
+            onClick={() => {
+              if (!editingPrice || parseFloat(editingPrice) < 0) {
+                alert("Please enter a valid price");
+                return;
+              }
+
+              // Save the edited price
+              setFeedback({
+                type: "success",
+                message: `✓ Price updated to ${formatCurrency(
+                  parseFloat(editingPrice),
+                  "LKR"
+                )} successfully!`,
+              });
+
+              setShowEditPriceModal(false);
+              setEditingPrice("");
+              setEditingPriceData(null);
+            }}
+            className="px-5 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all text-sm font-semibold"
           >
-            <Check className="h-4 w-4" />
-            Add Channel
+            Save Price
           </button>
         </div>
       </Modal>
@@ -2312,26 +1346,16 @@ export const ChannelPricingGrid: React.FC = () => {
                 {adjustmentScope === "all-channels" && (
                   <>{state.channels.length} channels</>
                 )}
-                {adjustmentScope === "all-subchannels" && (
-                  <>
-                    {availableChannels.length} {activeTab} channels
-                  </>
-                )}
+                {adjustmentScope === "all-subchannels" && <>All channels</>}
                 {adjustmentScope === "selected-subchannels" && (
                   <>
                     {selectedSubChannels.length} selected channel
                     {selectedSubChannels.length !== 1 ? "s" : ""}
                   </>
                 )}
-                {adjustmentScope === "single-subchannel" &&
-                  selectedChannelId && (
-                    <>
-                      {
-                        state.channels.find((ch) => ch.id === selectedChannelId)
-                          ?.name
-                      }
-                    </>
-                  )}
+                {adjustmentScope === "single-subchannel" && (
+                  <>Selected channel</>
+                )}
               </span>
             </p>
           </div>
@@ -2437,7 +1461,7 @@ export const ChannelPricingGrid: React.FC = () => {
             ) : (
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Amount ({currencyCode})
+                  Amount (LKR)
                 </label>
                 <div className="relative">
                   <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
