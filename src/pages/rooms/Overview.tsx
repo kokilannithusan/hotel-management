@@ -2,15 +2,39 @@ import React, { useState } from "react";
 import { useHotel } from "../../context/HotelContext";
 import { Card } from "../../components/ui/Card";
 import { Select } from "../../components/ui/Select";
+import { Input } from "../../components/ui/Input";
 import { Modal } from "../../components/ui/Modal";
 import { Button } from "../../components/ui/Button";
 import { formatDate, formatCurrency } from "../../utils/formatters";
 import { Reservation, Room } from "../../types/entities";
-import { Calendar as CalendarIcon } from "lucide-react";
+import {
+  Calendar as CalendarIcon,
+  Wifi,
+  Wind,
+  Tv,
+  Coffee,
+  Shield,
+  Home,
+  Waves,
+  ChefHat,
+  Briefcase,
+  Droplets,
+  Scissors,
+  Image as ImageIcon,
+  CheckCircle,
+  AlertCircle,
+  Wrench,
+  Clock,
+} from "lucide-react";
 
 export const RoomsOverview: React.FC = () => {
   const { state } = useHotel();
-  const [selectedRoomType, setSelectedRoomType] = useState<string>("all");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [roomTypeFilter, setRoomTypeFilter] = useState<string>("all");
+  const [viewTypeFilter, setViewTypeFilter] = useState<string>("all");
+  const [floorFilter, setFloorFilter] = useState<string>("all");
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedReservation, setSelectedReservation] =
     useState<Reservation | null>(null);
@@ -28,10 +52,41 @@ export const RoomsOverview: React.FC = () => {
   const closeRoomCalendar = () => setCalendarRoom(null);
   const currentMonth = new Date();
 
-  const filteredRooms =
-    selectedRoomType === "all"
-      ? state.rooms
-      : state.rooms.filter((r) => r.roomTypeId === selectedRoomType);
+  // Normalize room status for display (hoisted for filters and rendering)
+  const getDisplayStatus = (roomStatus: string): string => {
+    if (roomStatus === "cleaned" || roomStatus === "to-clean") {
+      return "available";
+    }
+    return roomStatus;
+  };
+
+  const filteredRooms = state.rooms.filter((room) => {
+    const matchesSearch =
+      !searchTerm ||
+      room.roomNumber.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const displayStatus = getDisplayStatus(room.status);
+    const matchesStatus =
+      statusFilter === "all" || displayStatus === statusFilter;
+
+    const roomType = state.roomTypes.find((rt) => rt.id === room.roomTypeId);
+    const matchesRoomType =
+      roomTypeFilter === "all" || room.roomTypeId === roomTypeFilter;
+    const matchesViewType =
+      viewTypeFilter === "all" || roomType?.viewTypeId === viewTypeFilter;
+
+    const matchesFloor =
+      floorFilter === "all" ||
+      (room.floor !== undefined && String(room.floor) === floorFilter);
+
+    return (
+      matchesSearch &&
+      matchesStatus &&
+      matchesRoomType &&
+      matchesViewType &&
+      matchesFloor
+    );
+  });
 
   // Get days in current month
   const getDaysInMonth = (date: Date) => {
@@ -69,6 +124,62 @@ export const RoomsOverview: React.FC = () => {
     "December",
   ];
 
+  // Amenity icon mapping shared with All Rooms
+  const getAmenityIcon = (amenityName: string) => {
+    const key = (amenityName || "").toLowerCase();
+    const iconMap: Record<string, React.ReactNode> = {
+      wifi: <Wifi className="w-4 h-4" />,
+      ac: <Wind className="w-4 h-4" />,
+      tv: <Tv className="w-4 h-4" />,
+      minibar: <Coffee className="w-4 h-4" />,
+      safe: <Shield className="w-4 h-4" />,
+      balcony: <Home className="w-4 h-4" />,
+      jacuzzi: <Waves className="w-4 h-4" />,
+      kitchenette: <ChefHat className="w-4 h-4" />,
+      "work desk": <Briefcase className="w-4 h-4" />,
+      "coffee maker": <Coffee className="w-4 h-4" />,
+      "hair dryer": <Droplets className="w-4 h-4" />,
+      "iron & board": <Scissors className="w-4 h-4" />,
+    };
+    return iconMap[key] || <ImageIcon className="w-4 h-4" />;
+  };
+
+  // Get room image URL (fallback per room type)
+  const getRoomImage = (room: Room) => {
+    const roomType = state.roomTypes.find((rt) => rt.id === room.roomTypeId);
+    const imageMap: Record<string, string> = {
+      Standard:
+        "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=400&h=300&fit=crop",
+      Deluxe:
+        "https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=400&h=300&fit=crop",
+      Suite:
+        "https://images.unsplash.com/photo-1590490360182-c33d57733427?w=400&h=300&fit=crop",
+      Presidential:
+        "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=400&h=300&fit=crop",
+      Family:
+        "https://images.unsplash.com/photo-1566665797739-1674de7a421a?w=400&h=300&fit=crop",
+    };
+    return (
+      imageMap[roomType?.name || "Standard"] ||
+      "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=400&h=300&fit=crop"
+    );
+  };
+
+  // Map view type name to a Tailwind color / gradient class for a small badge
+  const getViewTypeColor = (viewTypeName?: string) => {
+    const name = (viewTypeName || "").toLowerCase();
+    if (!name) return "bg-slate-400";
+    if (name.includes("sea") || name.includes("ocean"))
+      return "bg-gradient-to-r from-sky-500 to-teal-400";
+    if (name.includes("pool"))
+      return "bg-gradient-to-r from-cyan-400 to-blue-500";
+    if (name.includes("garden"))
+      return "bg-gradient-to-r from-emerald-400 to-green-600";
+    if (name.includes("mountain") || name.includes("hill"))
+      return "bg-gradient-to-r from-indigo-500 to-purple-500";
+    return "bg-slate-500";
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between mb-6">
@@ -80,14 +191,55 @@ export const RoomsOverview: React.FC = () => {
             Visualize room availability and bookings
           </p>
         </div>
+        <div className="flex items-center bg-white rounded-md shadow-sm border border-slate-200">
+          <button
+            type="button"
+            onClick={() => setViewMode("grid")}
+            className={`px-3 py-1 rounded-l ${
+              viewMode === "grid" ? "bg-slate-800 text-white" : "text-slate-600"
+            }`}
+          >
+            Grid
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode("list")}
+            className={`px-3 py-1 ${
+              viewMode === "list" ? "bg-slate-800 text-white" : "text-slate-600"
+            }`}
+          >
+            List
+          </button>
+        </div>
       </div>
 
       <Card className="hover-lift">
-        <div className="mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Search
+            </label>
+            <Input
+              placeholder="Search by room number..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
           <Select
-            label="Filter by Room Type"
-            value={selectedRoomType}
-            onChange={(e) => setSelectedRoomType(e.target.value)}
+            label="Status"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            options={[
+              { value: "all", label: "All Statuses" },
+              { value: "available", label: "Available" },
+              { value: "occupied", label: "Occupied" },
+              { value: "maintenance", label: "Maintenance" },
+            ]}
+          />
+          <Select
+            label="Room Type"
+            value={roomTypeFilter}
+            onChange={(e) => setRoomTypeFilter(e.target.value)}
             options={[
               { value: "all", label: "All Room Types" },
               ...state.roomTypes.map((rt) => ({
@@ -95,7 +247,34 @@ export const RoomsOverview: React.FC = () => {
                 label: rt.name,
               })),
             ]}
-            className="w-full md:w-64"
+          />
+          <Select
+            label="View Type"
+            value={viewTypeFilter}
+            onChange={(e) => setViewTypeFilter(e.target.value)}
+            options={[
+              { value: "all", label: "All View Types" },
+              ...state.viewTypes.map((vt) => ({
+                value: vt.id,
+                label: vt.name,
+              })),
+            ]}
+          />
+          <Select
+            label="Floor"
+            value={floorFilter}
+            onChange={(e) => setFloorFilter(e.target.value)}
+            options={[
+              { value: "all", label: "All Floors" },
+              ...Array.from(
+                new Set(
+                  state.rooms.map((r) => r.floor).filter((f) => f !== undefined)
+                )
+              ).map((f) => ({
+                value: String(f),
+                label: `Floor ${f}`,
+              })),
+            ]}
           />
         </div>
       </Card>
@@ -103,134 +282,371 @@ export const RoomsOverview: React.FC = () => {
       {/* Legend removed per user request */}
 
       <Card className="hover-lift premium-calendar-card">
-        <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center">
-          <span className="w-1 h-6 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full mr-3"></span>
-          All Rooms
-        </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {filteredRooms.map((room) => {
-            const roomType = state.roomTypes.find(
-              (rt) => rt.id === room.roomTypeId
-            );
-            const currentReservation = state.reservations.find(
-              (res) => res.roomId === room.id && res.status === "checked-in"
-            );
-            const customer = currentReservation
-              ? state.customers.find(
-                  (c) => c.id === currentReservation.customerId
-                )
-              : null;
-
-            // Normalize status for display (cleaned/to-clean -> available)
-            const displayStatus =
-              room.status === "cleaned" || room.status === "to-clean"
-                ? "available"
-                : room.status;
-
-            const statusConfig: Record<
-              string,
-              {
-                bg: string;
-                border: string;
-                text: string;
-                badge: string;
-                label: string;
-              }
-            > = {
-              available: {
-                bg: "bg-gradient-to-br from-green-50 to-green-100",
-                border: "border-green-200",
-                text: "text-green-700",
-                badge: "bg-green-500",
-                label: "Available",
-              },
-              occupied: {
-                bg: "bg-gradient-to-br from-blue-50 to-blue-100",
-                border: "border-blue-200",
-                text: "text-blue-700",
-                badge: "bg-blue-500",
-                label: "Occupied",
-              },
-              maintenance: {
-                bg: "bg-gradient-to-br from-yellow-50 to-yellow-100",
-                border: "border-yellow-200",
-                text: "text-yellow-700",
-                badge: "bg-yellow-500",
-                label: "Maintenance",
-              },
-            };
-
-            const config =
-              statusConfig[displayStatus] || statusConfig.available;
-
-            return (
-              <div
-                key={room.id}
-                className={`${config.bg} ${config.border} border-2 rounded-xl p-4 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 cursor-pointer premium-room-card`}
-                onClick={() => {
-                  // Open the room details modal for any room status
-                  setSelectedRoom(room);
-                }}
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <h4 className="text-lg font-bold text-slate-900">
-                      {room.roomNumber}
-                    </h4>
-                    <p className="text-sm text-slate-600 mt-1">
-                      {roomType?.name || "N/A"}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div
-                      className={`${config.badge} w-3 h-3 rounded-full shadow-sm`}
-                    ></div>
-                    <button
-                      className="p-1 rounded hover:bg-white/30"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openRoomCalendar(room);
-                      }}
-                      title="View room calendar"
-                    >
-                      <CalendarIcon className="w-5 h-5 text-slate-700" />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                      Status
-                    </span>
-                    <span
-                      className={`text-xs font-bold ${config.text} px-2 py-1 rounded-full ${config.bg}`}
-                    >
-                      {config.label}
-                    </span>
-                  </div>
-
-                  {/* Floor removed per UI request */}
-
-                  {customer && currentReservation && (
-                    <div className="pt-2 border-t border-slate-200">
-                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
-                        Guest
-                      </p>
-                      <p className="text-sm font-medium text-slate-900 truncate">
-                        {customer.name}
-                      </p>
-                      <p className="text-xs text-slate-600 mt-1">
-                        {formatDate(currentReservation.checkIn)} -{" "}
-                        {formatDate(currentReservation.checkOut)}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xl font-bold text-slate-900 flex items-center">
+            <span className="w-1 h-6 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full mr-3"></span>
+            All Rooms
+          </h3>
+          <p className="text-sm text-slate-500">
+            Viewing in {viewMode.charAt(0).toUpperCase() + viewMode.slice(1)}{" "}
+            mode
+          </p>
         </div>
+
+        {viewMode === "grid" && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            {filteredRooms.map((room) => {
+              const roomType = state.roomTypes.find(
+                (rt) => rt.id === room.roomTypeId
+              );
+              const area = state.roomAreas.find((a) => a.id === room.areaId);
+              const roomAmenities = room.amenities
+                .map((id) => state.amenities.find((a) => a.id === id))
+                .filter(Boolean);
+
+              const displayStatus = getDisplayStatus(room.status);
+              const housekeeping = state.housekeeping.find(
+                (h) => h.roomId === room.id
+              );
+              const housekeepingStatus = housekeeping?.status || "cleaned";
+
+              const statusConfig: Record<
+                string,
+                {
+                  bg: string;
+                  border: string;
+                  text: string;
+                  badge: string;
+                  label: string;
+                }
+              > = {
+                available: {
+                  bg: "bg-gradient-to-br from-green-50 to-green-100",
+                  border: "border-green-200",
+                  text: "text-green-700",
+                  badge: "bg-green-500",
+                  label: "Available",
+                },
+                occupied: {
+                  bg: "bg-gradient-to-br from-blue-50 to-blue-100",
+                  border: "border-blue-200",
+                  text: "text-blue-700",
+                  badge: "bg-blue-500",
+                  label: "Occupied",
+                },
+                maintenance: {
+                  bg: "bg-gradient-to-br from-yellow-50 to-yellow-100",
+                  border: "border-yellow-200",
+                  text: "text-yellow-700",
+                  badge: "bg-yellow-500",
+                  label: "Maintenance",
+                },
+              };
+
+              const config =
+                statusConfig[displayStatus] || statusConfig.available;
+
+              const getHousekeepingIcon = () => {
+                switch (housekeepingStatus) {
+                  case "cleaned":
+                    return <CheckCircle className="w-4 h-4 text-green-600" />;
+                  case "to-clean":
+                    return <AlertCircle className="w-4 h-4 text-blue-700" />;
+                  case "cleaning-in-progress":
+                    return <Clock className="w-4 h-4 text-blue-600" />;
+                  case "maintenance":
+                    return <Wrench className="w-4 h-4 text-yellow-600" />;
+                  default:
+                    return <CheckCircle className="w-4 h-4 text-green-600" />;
+                }
+              };
+
+              return (
+                <div
+                  key={room.id}
+                  onClick={() => setSelectedRoom(room)}
+                  className={`${config.bg} ${config.border} border-2 rounded-lg overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 premium-room-grid-card cursor-pointer`}
+                >
+                  {/* Image header with overlays */}
+                  <div className="relative h-32 overflow-hidden">
+                    <img
+                      src={getRoomImage(room)}
+                      alt={`Room ${room.roomNumber}`}
+                      className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src =
+                          "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=400&h=300&fit=crop";
+                      }}
+                    />
+                    <div className="absolute top-3 right-3">
+                      <div
+                        className={`${config.badge} w-3 h-3 rounded-full shadow-lg`}
+                      ></div>
+                    </div>
+                    <div className="absolute top-2 left-2">
+                      <div className="bg-white/95 backdrop-blur-sm rounded px-2 py-1 shadow-md border border-white/20">
+                        <h3 className="text-sm font-bold text-slate-900">
+                          {room.roomNumber}
+                        </h3>
+                      </div>
+                    </div>
+                    <div className="absolute bottom-2 left-2">
+                      <div className="bg-black/60 backdrop-blur-sm rounded px-1.5 py-0.5">
+                        <p className="text-xs font-semibold text-white">
+                          {roomType?.name || "Unknown"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="absolute bottom-3 right-3">
+                      <button
+                        aria-label={`Open calendar for room ${room.roomNumber}`}
+                        title={`Open calendar for room ${room.roomNumber}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openRoomCalendar(room);
+                        }}
+                        className="w-9 h-9 bg-green-500 hover:bg-green-600 text-white rounded-full flex items-center justify-center shadow-lg"
+                      >
+                        <CalendarIcon className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Details */}
+                  <div className="p-3 space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-semibold text-slate-500">
+                        Status
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        {getHousekeepingIcon()}
+                        <span
+                          className={`font-bold ${config.text} px-2 py-0.5 rounded-full ${config.bg}`}
+                        >
+                          {config.label}
+                        </span>
+                      </div>
+                    </div>
+
+                    {area && (
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-semibold text-slate-500">
+                          Area
+                        </span>
+                        <span className="font-medium text-slate-700">
+                          {area.name}
+                        </span>
+                      </div>
+                    )}
+
+                    {roomType?.viewTypeId &&
+                      (() => {
+                        const vt = state.viewTypes.find(
+                          (v) => v.id === roomType.viewTypeId
+                        );
+                        return (
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-semibold text-slate-500">
+                              View
+                            </span>
+                            <span
+                              className={`text-white text-xs font-semibold px-2 py-0.5 rounded ${getViewTypeColor(
+                                vt?.name
+                              )}`}
+                            >
+                              {vt?.name}
+                            </span>
+                          </div>
+                        );
+                      })()}
+
+                    {roomAmenities.length > 0 && (
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        {roomAmenities.slice(0, 3).map((a: any) => (
+                          <div
+                            key={a!.id}
+                            className="flex items-center gap-1 bg-white/70 px-2 py-1 rounded"
+                          >
+                            <span className="text-slate-700">
+                              {getAmenityIcon(a!.name)}
+                            </span>
+                            <span className="text-xs text-slate-700">
+                              {a!.name}
+                            </span>
+                          </div>
+                        ))}
+                        {roomAmenities.length > 3 && (
+                          <span className="text-xs text-slate-600">
+                            +{roomAmenities.length - 3} more
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {viewMode === "list" && (
+          <div className="space-y-3">
+            {filteredRooms.map((room) => {
+              const roomType = state.roomTypes.find(
+                (rt) => rt.id === room.roomTypeId
+              );
+              const area = state.roomAreas.find((a) => a.id === room.areaId);
+              const roomAmenities = room.amenities
+                .map((id) => state.amenities.find((a) => a.id === id))
+                .filter(Boolean) as any[];
+
+              const housekeeping = state.housekeeping.find(
+                (h) => h.roomId === room.id
+              );
+              const housekeepingStatus = housekeeping?.status || "cleaned";
+              const displayStatus = getDisplayStatus(room.status);
+              const config =
+                (
+                  {
+                    available: {
+                      bg: "bg-gradient-to-br from-green-50 to-green-100",
+                      border: "border-green-200",
+                      text: "text-green-700",
+                      badge: "bg-green-500",
+                      label: "Available",
+                    },
+                    occupied: {
+                      bg: "bg-gradient-to-br from-blue-50 to-blue-100",
+                      border: "border-blue-200",
+                      text: "text-blue-700",
+                      badge: "bg-blue-500",
+                      label: "Occupied",
+                    },
+                    maintenance: {
+                      bg: "bg-gradient-to-br from-yellow-50 to-yellow-100",
+                      border: "border-yellow-200",
+                      text: "text-yellow-700",
+                      badge: "bg-yellow-500",
+                      label: "Maintenance",
+                    },
+                  } as Record<string, any>
+                )[displayStatus] ||
+                ({
+                  bg: "bg-gradient-to-br from-green-50 to-green-100",
+                  border: "border-green-200",
+                  text: "text-green-700",
+                  badge: "bg-green-500",
+                  label: "Available",
+                } as any);
+
+              const getHousekeepingIcon = () => {
+                switch (housekeepingStatus) {
+                  case "cleaned":
+                    return <CheckCircle className="w-4 h-4 text-green-600" />;
+                  case "to-clean":
+                    return <AlertCircle className="w-4 h-4 text-blue-700" />;
+                  case "cleaning-in-progress":
+                    return <Clock className="w-4 h-4 text-blue-600" />;
+                  case "maintenance":
+                    return <Wrench className="w-4 h-4 text-yellow-600" />;
+                  default:
+                    return <CheckCircle className="w-4 h-4 text-green-600" />;
+                }
+              };
+
+              return (
+                <div
+                  key={room.id}
+                  onClick={() => setSelectedRoom(room)}
+                  className={`flex items-center p-3 rounded-lg ${config.bg} ${config.border} border cursor-pointer`}
+                >
+                  <div className="relative w-40 h-28 rounded overflow-hidden">
+                    <img
+                      src={getRoomImage(room)}
+                      alt={`Room ${room.roomNumber}`}
+                      className="w-full h-full object-cover rounded"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src =
+                          "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=400&h=300&fit=crop";
+                      }}
+                    />
+                    <div className="absolute bottom-3 right-3">
+                      <button
+                        aria-label={`Open calendar for room ${room.roomNumber}`}
+                        title={`Open calendar for room ${room.roomNumber}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openRoomCalendar(room);
+                        }}
+                        className="w-9 h-9 bg-green-500 hover:bg-green-600 text-white rounded-full flex items-center justify-center shadow-lg"
+                      >
+                        <CalendarIcon className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="ml-4 flex-1">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="font-semibold text-xl text-slate-900">
+                          {room.roomNumber}{" "}
+                          <span className="text-sm font-medium text-slate-600">
+                            {roomType?.name}
+                          </span>
+                        </h3>
+                        <p className="text-sm text-slate-500">{area?.name}</p>
+                        {roomType?.viewTypeId &&
+                          (() => {
+                            const vt = state.viewTypes.find(
+                              (v) => v.id === roomType.viewTypeId
+                            );
+                            return (
+                              <div className="mt-1">
+                                <span
+                                  className={`text-white text-xs font-semibold px-2 py-0.5 rounded ${getViewTypeColor(
+                                    vt?.name
+                                  )}`}
+                                >
+                                  {vt?.name}
+                                </span>
+                              </div>
+                            );
+                          })()}
+                      </div>
+                      <div className="text-right">
+                        <div className="flex items-center justify-end mt-2">
+                          {getHousekeepingIcon()}
+                          <span className={`ml-2 font-bold ${config.text}`}>
+                            {config.label}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {roomAmenities.length > 0 && (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {roomAmenities.map((a) => (
+                          <div
+                            key={a!.id}
+                            className="flex items-center gap-2 bg-white/60 px-2 py-1 rounded"
+                          >
+                            <span className="text-slate-700">
+                              {getAmenityIcon(a!.name)}
+                            </span>
+                            <span className="text-sm text-slate-700">
+                              {a!.name}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </Card>
 
       {/* Room Details Modal (status-specific) */}

@@ -153,7 +153,7 @@ const initialState: HotelState = {
   amenities: [],
   roomAreas: [],
   reservations: [],
-  channels: [],
+  channels: mockChannels,
   seasons: [],
   bills: [],
   receipts: [],

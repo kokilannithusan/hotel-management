@@ -38,6 +38,7 @@ export interface RoomType {
   capacity: number;
   basePrice: number;
   viewTypeId?: string;
+  amenities?: string[];
 }
 
 export interface ViewType {
@@ -50,6 +51,7 @@ export interface Amenity {
   id: string;
   name: string;
   icon?: string;
+  price?: number;
 }
 
 export interface RoomArea {
@@ -67,6 +69,7 @@ export interface Room {
   amenities: string[];
   floor?: number;
   size?: number;
+  image?: string;
 }
 
 export interface Reservation {

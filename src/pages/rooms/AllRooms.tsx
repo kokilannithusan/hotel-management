@@ -23,11 +23,6 @@ import {
   Edit,
   Trash2,
   Plus,
-  Sparkles,
-  CheckCircle,
-  AlertCircle,
-  Wrench,
-  Clock,
 } from "lucide-react";
 
 export const AllRooms: React.FC = () => {
@@ -36,11 +31,12 @@ export const AllRooms: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [roomTypeFilter, setRoomTypeFilter] = useState<string>("all");
   const [viewTypeFilter, setViewTypeFilter] = useState<string>("all");
-  const [priceRangeFilter, setPriceRangeFilter] = useState<string>("all");
+  const [floorFilter, setFloorFilter] = useState<string>("all");
+  const [selectedCurrency, setSelectedCurrency] = useState<string>("");
   const [showModal, setShowModal] = useState(false);
   const [showAmenitiesModal, setShowAmenitiesModal] = useState(false);
   const [selectedRoomAmenities, setSelectedRoomAmenities] = useState<
-    { id: string; name: string }[]
+    { id: string; name: string; price?: number }[]
   >([]);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
   const [formData, setFormData] = useState({
@@ -49,7 +45,17 @@ export const AllRooms: React.FC = () => {
     areaId: "",
     status: "available" as Room["status"],
     amenities: [] as string[],
+    floor: undefined as number | undefined,
+    size: undefined as number | undefined,
+    image: "" as string,
   });
+
+  // Initialize default currency when component mounts
+  React.useEffect(() => {
+    if (!selectedCurrency && state.currencyRates.length > 0) {
+      setSelectedCurrency(state.currencyRates[0].id);
+    }
+  }, [state.currencyRates, selectedCurrency]);
 
   // Map room status to display status (cleaned/to-clean -> available)
   const getDisplayStatus = (roomStatus: string): string => {
@@ -73,32 +79,16 @@ export const AllRooms: React.FC = () => {
     const matchesViewType =
       viewTypeFilter === "all" || roomType?.viewTypeId === viewTypeFilter;
 
-    // Price range filter
-    let matchesPrice = true;
-    if (priceRangeFilter !== "all" && roomType?.basePrice) {
-      const price = roomType.basePrice;
-      switch (priceRangeFilter) {
-        case "0-100":
-          matchesPrice = price >= 0 && price <= 100;
-          break;
-        case "100-200":
-          matchesPrice = price > 100 && price <= 200;
-          break;
-        case "200-300":
-          matchesPrice = price > 200 && price <= 300;
-          break;
-        case "300+":
-          matchesPrice = price > 300;
-          break;
-      }
-    }
+    const matchesFloor =
+      floorFilter === "all" ||
+      (room.floor !== undefined && String(room.floor) === floorFilter);
 
     return (
       matchesSearch &&
       matchesStatus &&
       matchesRoomType &&
       matchesViewType &&
-      matchesPrice
+      matchesFloor
     );
   });
 
@@ -110,18 +100,28 @@ export const AllRooms: React.FC = () => {
       areaId: room.areaId || "",
       status: room.status,
       amenities: room.amenities,
+      floor: room.floor,
+      size: room.size,
+      image: room.image || "",
     });
     setShowModal(true);
   };
 
   const handleAdd = () => {
     setEditingRoom(null);
+    // Default to 'Standard' room type if present
+    const defaultRoomType = state.roomTypes.find(
+      (rt) => rt.name && rt.name.toLowerCase() === "standard"
+    );
     setFormData({
       roomNumber: "",
-      roomTypeId: "",
+      roomTypeId: defaultRoomType ? defaultRoomType.id : "",
       areaId: "",
       status: "available",
-      amenities: [],
+      amenities: defaultRoomType?.amenities || [],
+      floor: undefined,
+      size: undefined,
+      image: "",
     });
     setShowModal(true);
   };
@@ -155,70 +155,55 @@ export const AllRooms: React.FC = () => {
     }
   };
 
-  const toggleAmenity = (amenityId: string) => {
-    if (formData.amenities.includes(amenityId)) {
-      setFormData({
-        ...formData,
-        amenities: formData.amenities.filter((id) => id !== amenityId),
-      });
-    } else {
-      setFormData({
-        ...formData,
-        amenities: [...formData.amenities, amenityId],
-      });
-    }
-  };
-
   const handleShowAmenities = (room: Room) => {
     const roomAmenities = room.amenities
       .map((id) => {
         const amenity = state.amenities.find((a) => a.id === id);
-        return amenity ? { id: amenity.id, name: amenity.name } : null;
+        return amenity
+          ? { id: amenity.id, name: amenity.name, price: amenity.price }
+          : null;
       })
-      .filter(Boolean) as { id: string; name: string }[];
+      .filter(Boolean) as { id: string; name: string; price?: number }[];
     setSelectedRoomAmenities(roomAmenities);
     setShowAmenitiesModal(true);
   };
 
   // Amenity icon mapping
   const getAmenityIcon = (amenityName: string) => {
+    // normalize to lowercase so name variations (WiFi / wifi) map correctly
+    const key = (amenityName || "").toLowerCase();
     const iconMap: Record<string, React.ReactNode> = {
-      WiFi: <Wifi className="w-4 h-4" />,
-      AC: <Wind className="w-4 h-4" />,
-      TV: <Tv className="w-4 h-4" />,
-      Minibar: <Coffee className="w-4 h-4" />,
-      Safe: <Shield className="w-4 h-4" />,
-      Balcony: <Home className="w-4 h-4" />,
-      Jacuzzi: <Waves className="w-4 h-4" />,
-      Kitchenette: <ChefHat className="w-4 h-4" />,
-      "Work Desk": <Briefcase className="w-4 h-4" />,
-      "Coffee Maker": <Coffee className="w-4 h-4" />,
-      "Hair Dryer": <Droplets className="w-4 h-4" />,
-      "Iron & Board": <Scissors className="w-4 h-4" />,
+      wifi: <Wifi className="w-4 h-4" />,
+      ac: <Wind className="w-4 h-4" />,
+      tv: <Tv className="w-4 h-4" />,
+      minibar: <Coffee className="w-4 h-4" />,
+      safe: <Shield className="w-4 h-4" />,
+      balcony: <Home className="w-4 h-4" />,
+      jacuzzi: <Waves className="w-4 h-4" />,
+      kitchenette: <ChefHat className="w-4 h-4" />,
+      "work desk": <Briefcase className="w-4 h-4" />,
+      "coffee maker": <Coffee className="w-4 h-4" />,
+      "hair dryer": <Droplets className="w-4 h-4" />,
+      "iron & board": <Scissors className="w-4 h-4" />,
     };
-    return iconMap[amenityName] || <ImageIcon className="w-4 h-4" />;
+    return iconMap[key] || <ImageIcon className="w-4 h-4" />;
   };
 
-  // Get room image URL (placeholder for now)
-  const getRoomImage = (room: Room) => {
-    // You can replace this with actual image URLs from your data
-    const roomType = state.roomTypes.find((rt) => rt.id === room.roomTypeId);
-    const imageMap: Record<string, string> = {
-      Standard:
-        "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=400&h=300&fit=crop",
-      Deluxe:
-        "https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=400&h=300&fit=crop",
-      Suite:
-        "https://images.unsplash.com/photo-1590490360182-c33d57733427?w=400&h=300&fit=crop",
-      Presidential:
-        "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=400&h=300&fit=crop",
-      Family:
-        "https://images.unsplash.com/photo-1566665797739-1674de7a421a?w=400&h=300&fit=crop",
-    };
-    return (
-      imageMap[roomType?.name || "Standard"] ||
-      "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=400&h=300&fit=crop"
-    );
+  // Map view type name to a Tailwind color / gradient class for a small badge
+  const getViewTypeColor = (viewTypeName?: string) => {
+    const name = (viewTypeName || "").toLowerCase();
+    if (!name) return "bg-slate-400";
+    if (name.includes("sea") || name.includes("ocean"))
+      return "bg-gradient-to-r from-sky-500 to-teal-400";
+    if (name.includes("pool"))
+      return "bg-gradient-to-r from-cyan-400 to-blue-500";
+    if (name.includes("garden"))
+      return "bg-gradient-to-r from-emerald-400 to-green-600";
+    if (name.includes("mountain") || name.includes("hill"))
+      return "bg-gradient-to-r from-indigo-500 to-purple-500";
+    if (name.includes("city"))
+      return "bg-gradient-to-r from-gray-400 to-slate-600";
+    return "bg-gradient-to-r from-slate-400 to-slate-600";
   };
 
   return (
@@ -276,206 +261,211 @@ export const AllRooms: React.FC = () => {
             ]}
           />
           <Select
-            value={priceRangeFilter}
-            onChange={(e) => setPriceRangeFilter(e.target.value)}
+            value={floorFilter}
+            onChange={(e) => setFloorFilter(e.target.value)}
             options={[
-              { value: "all", label: "All Prices" },
-              { value: "0-100", label: "$0 - $100" },
-              { value: "100-200", label: "$100 - $200" },
-              { value: "200-300", label: "$200 - $300" },
-              { value: "300+", label: "$300+" },
+              { value: "all", label: "All Floors" },
+              ...Array.from(
+                new Set(
+                  state.rooms.map((r) => r.floor).filter((f) => f !== undefined)
+                )
+              ).map((f) => ({ value: String(f), label: `Floor ${f}` })),
             ]}
           />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {filteredRooms.map((room) => {
-            const roomType = state.roomTypes.find(
-              (rt) => rt.id === room.roomTypeId
-            );
-            const area = state.roomAreas.find((a) => a.id === room.areaId);
-            const roomAmenities = room.amenities
-              .map((id) => state.amenities.find((a) => a.id === id))
-              .filter(Boolean);
-
-            // Get housekeeping status for icon display
-            const housekeeping = state.housekeeping.find(
-              (h) => h.roomId === room.id
-            );
-            const housekeepingStatus = housekeeping?.status || "cleaned";
-
-            // Get display status (map cleaned/to-clean to available)
-            const displayStatus = getDisplayStatus(room.status);
-
-            const statusConfig: Record<
-              string,
-              {
-                bg: string;
-                border: string;
-                text: string;
-                badge: string;
-                label: string;
-              }
-            > = {
-              available: {
-                bg: "bg-gradient-to-br from-green-50 to-green-100",
-                border: "border-green-200",
-                text: "text-green-700",
-                badge: "bg-green-500",
-                label: "Available",
-              },
-              occupied: {
-                bg: "bg-gradient-to-br from-blue-50 to-blue-100",
-                border: "border-blue-200",
-                text: "text-blue-700",
-                badge: "bg-blue-500",
-                label: "Occupied",
-              },
-              maintenance: {
-                bg: "bg-gradient-to-br from-yellow-50 to-yellow-100",
-                border: "border-yellow-200",
-                text: "text-yellow-700",
-                badge: "bg-yellow-500",
-                label: "Maintenance",
-              },
-            };
-
-            const config =
-              statusConfig[displayStatus] || statusConfig.available;
-
-            // Get housekeeping icon based on housekeeping status
-            const getHousekeepingIcon = () => {
-              switch (housekeepingStatus) {
-                case "cleaned":
-                  return <CheckCircle className="w-4 h-4 text-green-600" />;
-                case "to-clean":
-                  return <AlertCircle className="w-4 h-4 text-blue-700" />;
-                case "cleaning-in-progress":
-                  return <Clock className="w-4 h-4 text-blue-600" />;
-                case "maintenance":
-                  return <Wrench className="w-4 h-4 text-yellow-600" />;
-                default:
-                  return <CheckCircle className="w-4 h-4 text-green-600" />;
-              }
-            };
-
-            return (
-              <div
-                key={room.id}
-                className={`${config.bg} ${config.border} border-2 rounded-lg overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 premium-room-grid-card`}
-              >
-                {/* Room Image */}
-                <div className="relative h-32 overflow-hidden">
-                  <img
-                    src={getRoomImage(room)}
-                    alt={`Room ${room.roomNumber}`}
-                    className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.src =
-                        "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=400&h=300&fit=crop";
-                    }}
-                  />
-                  {/* Status Badge */}
-                  <div className="absolute top-3 right-3">
-                    <div
-                      className={`${config.badge} w-3 h-3 rounded-full shadow-lg`}
-                    ></div>
-                  </div>
-                  {/* Room Number - Top Left Corner */}
-                  <div className="absolute top-2 left-2">
-                    <div className="bg-white/95 backdrop-blur-sm rounded px-2 py-1 shadow-md border border-white/20">
-                      <h3 className="text-sm font-bold text-slate-900">
-                        {room.roomNumber}
-                      </h3>
-                    </div>
-                  </div>
-                  {/* Room Type - Bottom Left Corner (Small) */}
-                  <div className="absolute bottom-2 left-2">
-                    <div className="bg-black/60 backdrop-blur-sm rounded px-1.5 py-0.5">
-                      <p className="text-xs font-semibold text-white">
-                        {roomType?.name || "Unknown"}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Room Details */}
-                <div className="p-3 space-y-2">
-                  {/* Price Section - Compact */}
-                  {roomType?.basePrice && (
-                    <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-md p-2 border border-blue-200">
-                      <div className="flex items-center justify-between">
-                        <p className="text-xs font-semibold text-blue-700">
-                          Price
-                        </p>
-                        <p className="text-sm font-bold text-blue-900">
-                          {formatCurrency(roomType.basePrice)}
-                        </p>
+        {/* Table view */}
+        <div
+          className="overflow-x-auto border rounded-lg shadow-sm"
+          style={{ scrollbarWidth: "thin", scrollbarColor: "#cbd5e1 #f1f5f9" }}
+        >
+          <style>{`
+            .custom-table::-webkit-scrollbar { height: 8px; }
+            .custom-table::-webkit-scrollbar-track { background: #f1f5f9; }
+            .custom-table::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+            .custom-table::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+          `}</style>
+          <div className="custom-table max-h-[65vh] overflow-auto">
+            <table className="w-full text-sm border-collapse">
+              <thead className="bg-slate-100 sticky top-0 z-10 border-b border-slate-300">
+                <tr>
+                  <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                    Room No
+                  </th>
+                  <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                    Status
+                  </th>
+                  <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                    Area
+                  </th>
+                  <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                    View
+                  </th>
+                  <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                    Persons
+                  </th>
+                  <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                    Room Type
+                  </th>
+                  <th className="px-4 py-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-semibold text-slate-700">
+                        Price
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs text-gray-600">Currency:</span>
+                        <select
+                          value={selectedCurrency}
+                          onChange={(e) => setSelectedCurrency(e.target.value)}
+                          className="px-2 py-1 text-xs border border-gray-300 rounded bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="">Select currency</option>
+                          {state.currencyRates.map((cr) => (
+                            <option key={cr.id} value={cr.id}>
+                              {cr.code} ({cr.rate.toFixed(4)})
+                            </option>
+                          ))}
+                        </select>
                       </div>
                     </div>
-                  )}
+                  </th>
+                  <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredRooms.map((room, idx) => {
+                  const roomType = state.roomTypes.find(
+                    (rt) => rt.id === room.roomTypeId
+                  );
+                  const area = state.roomAreas.find(
+                    (a) => a.id === room.areaId
+                  );
+                  const viewType = roomType?.viewTypeId
+                    ? state.viewTypes.find((v) => v.id === roomType.viewTypeId)
+                    : undefined;
+                  const reservationsForRoom = state.reservations.filter(
+                    (r) => r.roomId === room.id && r.status !== "canceled"
+                  );
+                  const displayStatus = getDisplayStatus(room.status);
 
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-slate-500">Status</span>
-                    <div className="flex items-center gap-1.5">
-                      {getHousekeepingIcon()}
-                      <span
-                        className={`font-bold ${config.text} px-2 py-0.5 rounded-full ${config.bg}`}
-                      >
-                        {config.label}
-                      </span>
-                    </div>
-                  </div>
+                  const statusColors: Record<string, string> = {
+                    available: "bg-green-100 text-green-800",
+                    occupied: "bg-blue-100 text-blue-800",
+                    maintenance: "bg-yellow-100 text-yellow-800",
+                  };
 
-                  {area && (
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-semibold text-slate-500">Area</span>
-                      <span className="font-medium text-slate-700">
-                        {area.name}
-                      </span>
-                    </div>
-                  )}
-
-                  {roomAmenities.length > 0 && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleShowAmenities(room)}
-                      className="w-full flex items-center justify-center gap-1 text-xs"
+                  return (
+                    <tr
+                      key={room.id}
+                      className={`border-b border-slate-200 hover:bg-slate-50 transition-colors ${
+                        idx % 2 === 0 ? "bg-white" : "bg-slate-50"
+                      }`}
                     >
-                      <Sparkles className="w-3 h-3" />
-                      <span>Amenities ({roomAmenities.length})</span>
-                    </Button>
-                  )}
-
-                  {/* Actions */}
-                  <div className="flex gap-2 pt-1 border-t border-slate-200">
-                    <Button
-                      aria-label="Edit room"
-                      title="Edit room"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleEdit(room)}
-                      className="flex-1 flex items-center justify-center"
-                    >
-                      <Edit className="w-3 h-3" />
-                    </Button>
-                    <Button
-                      aria-label="Delete room"
-                      title="Delete room"
-                      size="sm"
-                      variant="danger"
-                      onClick={() => handleDelete(room)}
-                      className="flex-1 flex items-center justify-center"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+                      <td className="px-4 py-3 font-semibold text-slate-900">
+                        {room.roomNumber}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                              statusColors[displayStatus] ||
+                              statusColors.available
+                            }`}
+                          >
+                            {displayStatus.charAt(0).toUpperCase() +
+                              displayStatus.slice(1)}
+                          </span>
+                          {reservationsForRoom.length > 0 && (
+                            <button
+                              onClick={() => handleShowAmenities(room)}
+                              className="text-sm text-blue-600 hover:text-blue-800 font-medium underline"
+                              title={`${reservationsForRoom.length} reservation(s)`}
+                            >
+                              ({reservationsForRoom.length})
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-slate-700">
+                        {area?.name ?? "—"}
+                      </td>
+                      <td className="px-4 py-3">
+                        {viewType ? (
+                          <span
+                            className={`px-2 py-1 rounded text-xs font-semibold text-white ${getViewTypeColor(
+                              viewType.name
+                            )}`}
+                          >
+                            {viewType.name}
+                          </span>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-slate-700">
+                        {roomType?.capacity ?? "—"}
+                      </td>
+                      <td className="px-4 py-3 text-slate-700">
+                        {roomType?.name ?? "—"}
+                      </td>
+                      <td className="px-4 py-3">
+                        {roomType && selectedCurrency
+                          ? (() => {
+                              const selectedRate = state.currencyRates.find(
+                                (cr) => cr.id === selectedCurrency
+                              );
+                              const baseRate =
+                                state.currencyRates.length > 0
+                                  ? state.currencyRates[0].rate
+                                  : 1;
+                              const convertedPrice =
+                                selectedRate && baseRate
+                                  ? roomType.basePrice *
+                                    (selectedRate.rate / baseRate)
+                                  : roomType.basePrice;
+                              return (
+                                <div className="flex items-center gap-2">
+                                  <span className="font-semibold text-blue-700">
+                                    {convertedPrice.toFixed(2)}
+                                  </span>
+                                  <span className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded font-semibold">
+                                    {selectedRate?.code}
+                                  </span>
+                                </div>
+                              );
+                            })()
+                          : "—"}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex gap-2">
+                          <Button
+                            aria-label="Edit room"
+                            title="Edit room"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEdit(room)}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            aria-label="Delete room"
+                            title="Delete room"
+                            size="sm"
+                            variant="danger"
+                            onClick={() => handleDelete(room)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {filteredRooms.length === 0 && (
@@ -519,6 +509,18 @@ export const AllRooms: React.FC = () => {
             }))}
             required
           />
+          <Input
+            label="Floor (optional)"
+            type="number"
+            value={formData.floor ?? ""}
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                floor: e.target.value ? Number(e.target.value) : undefined,
+              })
+            }
+            placeholder="e.g., 1"
+          />
           <Select
             label="Area"
             value={formData.areaId}
@@ -547,20 +549,57 @@ export const AllRooms: React.FC = () => {
               { value: "to-clean", label: "To Clean" },
             ]}
           />
+          <Input
+            label="Room Size (sq ft) (optional)"
+            type="number"
+            value={formData.size ?? ""}
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                size: e.target.value ? Number(e.target.value) : undefined,
+              })
+            }
+            placeholder="e.g., 250"
+          />
+          <Input
+            label="Image URL (optional)"
+            value={formData.image}
+            onChange={(e) =>
+              setFormData({ ...formData, image: e.target.value })
+            }
+            placeholder="e.g., https://example.com/room.jpg"
+          />
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-2">
               Amenities
             </label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto border border-slate-200 rounded-lg p-3">
               {state.amenities.map((amenity) => (
                 <label key={amenity.id} className="flex items-center">
                   <input
                     type="checkbox"
                     checked={formData.amenities.includes(amenity.id)}
-                    onChange={() => toggleAmenity(amenity.id)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setFormData({
+                          ...formData,
+                          amenities: [...formData.amenities, amenity.id],
+                        });
+                      } else {
+                        setFormData({
+                          ...formData,
+                          amenities: formData.amenities.filter(
+                            (id) => id !== amenity.id
+                          ),
+                        });
+                      }
+                    }}
                     className="mr-2"
                   />
-                  {amenity.name}
+                  <span className="flex items-center gap-2">
+                    {getAmenityIcon(amenity.name)}
+                    {amenity.name}
+                  </span>
                 </label>
               ))}
             </div>
@@ -584,18 +623,29 @@ export const AllRooms: React.FC = () => {
       >
         <div className="space-y-3">
           {selectedRoomAmenities.length > 0 ? (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3">
               {selectedRoomAmenities.map((amenity) => (
                 <div
                   key={amenity.id}
-                  className="flex items-center gap-2 bg-slate-50 rounded-lg px-3 py-2 border border-slate-200"
+                  className="flex items-center justify-between bg-slate-50 rounded-lg px-4 py-3 border border-slate-200 hover:bg-slate-100 transition-colors"
                 >
-                  <span className="text-slate-700">
-                    {getAmenityIcon(amenity.name)}
-                  </span>
-                  <span className="text-sm font-medium text-slate-700">
-                    {amenity.name}
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-slate-700">
+                      {getAmenityIcon(amenity.name)}
+                    </span>
+                    <span className="text-sm font-medium text-slate-900">
+                      {amenity.name}
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    {amenity.price !== undefined && amenity.price > 0 ? (
+                      <span className="text-sm font-semibold text-blue-700 bg-blue-50 px-3 py-1 rounded">
+                        {formatCurrency(amenity.price)}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-slate-500">Included</span>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

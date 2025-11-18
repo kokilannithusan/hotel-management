@@ -3,17 +3,15 @@ import { useHotel } from "../../context/HotelContext";
 import { formatCurrency, generateId } from "../../utils/formatters";
 import { Modal } from "../../components/ui/Modal";
 import { DateRangePicker } from "../../components/forms/DateRangePicker";
+import { toast } from "react-toastify";
 import {
   DollarSign,
-  Info,
   User,
   Calendar,
   Percent,
   TrendingUp,
   RefreshCw,
   Check,
-  Lock,
-  Unlock,
 } from "lucide-react";
 
 export const ChannelPricingGrid: React.FC = () => {
@@ -32,7 +30,6 @@ export const ChannelPricingGrid: React.FC = () => {
   const [editSelectedMealPlans, setEditSelectedMealPlans] = useState<string[]>(
     []
   );
-  const [isLocked, setIsLocked] = useState<boolean>(false);
   // Only use the 4 specific meal plans: BB, RO, HB, FB
   const allowedMealPlanCodes = ["BB", "RO", "HB", "FB"];
   const mealPlans =
@@ -110,35 +107,40 @@ export const ChannelPricingGrid: React.FC = () => {
     "hike" | "decrease"
   >("hike");
   const [advancedInputValue, setAdvancedInputValue] = useState<string>("");
-  const [showAdvancedTable, setShowAdvancedTable] = useState<boolean>(false);
 
   // Price editing state
   const [showEditPriceModal, setShowEditPriceModal] = useState<boolean>(false);
   const [editingPrice, setEditingPrice] = useState<string>("");
   const [editingPriceData, setEditingPriceData] = useState<any>(null);
 
-  // Generate dynamic columns based on date range
-  const columns = useMemo(() => {
-    if (advancedDateStart && advancedDateEnd) {
-      // Create date range columns
-      const startDate = new Date(advancedDateStart);
-      const endDate = new Date(advancedDateEnd);
-      const dateColumns: Date[] = [];
+  // Reservation Type & Channel Selection state
+  const [selectedReservationType, setSelectedReservationType] = useState<
+    "DIRECT" | "WEB" | "OTA" | "TA" | ""
+  >("");
+  const [selectedChannelId, setSelectedChannelId] = useState<string>("");
 
-      for (
-        let d = new Date(startDate);
-        d <= endDate;
-        d.setDate(d.getDate() + 1)
-      ) {
-        dateColumns.push(new Date(d));
-      }
+  // Helper functions for Reservation Type and Channels
+  const reservationTypes: Array<"DIRECT" | "WEB" | "OTA" | "TA"> = [
+    "DIRECT",
+    "WEB",
+    "OTA",
+    "TA",
+  ];
 
-      return dateColumns;
-    }
+  const getChannelsForReservationType = (
+    type: "DIRECT" | "WEB" | "OTA" | "TA"
+  ) => {
+    return state.channels.filter(
+      (ch) =>
+        (ch as any).reservationType === type && !(ch as any).parentChannelId
+    );
+  };
 
-    // Fallback to numeric columns 1-8 if no date range selected
-    return Array.from({ length: 8 }, (_, i) => i + 1) as any[];
-  }, [advancedDateStart, advancedDateEnd]);
+  const availableChannelsForType = selectedReservationType
+    ? getChannelsForReservationType(
+        selectedReservationType as "DIRECT" | "WEB" | "OTA" | "TA"
+      )
+    : [];
 
   // Load stay type combinations from localStorage (same as StayTypes.tsx)
   const [stayTypeCombinations, setStayTypeCombinations] = useState<any[]>([]);
@@ -175,6 +177,21 @@ export const ChannelPricingGrid: React.FC = () => {
       window.removeEventListener("storage", loadCombinations);
       clearInterval(interval);
     };
+  }, []);
+
+  // Generate dynamic columns - show all 30 days for a full month view
+  const columns = useMemo(() => {
+    // Generate 30 date columns starting from today
+    const today = new Date();
+    const dateColumns: Date[] = [];
+
+    for (let i = 0; i < 30; i++) {
+      const date = new Date(today);
+      date.setDate(date.getDate() + i);
+      dateColumns.push(new Date(date));
+    }
+
+    return dateColumns;
   }, []);
 
   // Build pricing grid data from stay type combinations in localStorage
@@ -391,31 +408,84 @@ export const ChannelPricingGrid: React.FC = () => {
               channels
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            {/* Lock/Unlock Toggle */}
-            <button
-              type="button"
-              onClick={() => setIsLocked(!isLocked)}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all shadow-lg ${
-                isLocked
-                  ? "bg-red-600 hover:bg-red-700 text-white"
-                  : "bg-white text-slate-700 hover:bg-blue-50 border border-blue-200"
-              }`}
-              title={isLocked ? "Unlock for editing" : "Lock prices"}
-            >
-              {isLocked ? (
-                <Lock className="h-4 w-4" />
-              ) : (
-                <Unlock className="h-4 w-4" />
-              )}
-              {isLocked ? "Locked" : "Unlocked"}
-            </button>
-          </div>
         </div>
       </div>
 
       {/* Main Content Card */}
       <div className="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-full overflow-hidden">
+        {/* Reservation Type & Channel Selection Section */}
+        <div className="p-6 border-b border-slate-200 bg-gradient-to-br from-blue-50 to-indigo-50">
+          <div className="bg-white rounded-2xl shadow-lg border-2 border-blue-200 p-6">
+            <h3 className="text-lg font-bold text-black mb-4 flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-blue-600" />
+              Channel Selection
+            </h3>
+
+            {/* Reservation Type & Channel Selection Row */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Reservation Type Selector */}
+              <div className="space-y-1.5">
+                <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
+                  <DollarSign className="h-3.5 w-3.5 text-blue-600" />
+                  Reservation Type
+                </label>
+                <select
+                  value={selectedReservationType}
+                  onChange={(e) => {
+                    setSelectedReservationType(
+                      e.target.value as "DIRECT" | "WEB" | "OTA" | "TA" | ""
+                    );
+                    setSelectedChannelId(""); // Reset channel selection when reservation type changes
+                  }}
+                  className="w-full rounded-lg border-2 border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-200 hover:border-slate-400"
+                >
+                  <option value="">Select a Reservation Type</option>
+                  <option value="DIRECT">DIRECT</option>
+                  <option value="WEB">WEB</option>
+                  <option value="OTA">OTA</option>
+                  <option value="TA">TA</option>
+                </select>
+              </div>
+
+              {/* Channel Dropdown */}
+              <div className="space-y-1.5">
+                <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
+                  <User className="h-3.5 w-3.5 text-green-600" />
+                  Channel
+                </label>
+                <select
+                  value={selectedChannelId}
+                  onChange={(e) => setSelectedChannelId(e.target.value)}
+                  disabled={!selectedReservationType}
+                  className="w-full rounded-lg border-2 border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-200 hover:border-slate-400 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
+                >
+                  <option value="">
+                    {selectedReservationType
+                      ? "Select a Channel"
+                      : "Select Reservation Type First"}
+                  </option>
+                  {availableChannelsForType.map((channel) => (
+                    <option key={channel.id} value={channel.id}>
+                      {channel.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {selectedReservationType && selectedChannelId && (
+              <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                <p className="text-sm text-green-800 font-medium">
+                  ✓ Selected: {selectedReservationType} -{" "}
+                  {availableChannelsForType.find(
+                    (c) => c.id === selectedChannelId
+                  )?.name || "Unknown"}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* New Advanced Adjustments Section */}
         <div className="p-6 border-b border-slate-200 bg-gradient-to-br from-purple-50 to-indigo-50">
           <div className="bg-white rounded-2xl shadow-lg border-2 border-purple-200 p-6">
@@ -492,7 +562,7 @@ export const ChannelPricingGrid: React.FC = () => {
               <div className="space-y-1.5">
                 <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
                   <Calendar className="h-3.5 w-3.5 text-orange-600" />
-                  Season Option
+                  Season
                 </label>
                 <select
                   value={advancedSeasonalOption}
@@ -503,8 +573,16 @@ export const ChannelPricingGrid: React.FC = () => {
                   }
                   className="w-full rounded-lg border-2 border-slate-300 bg-white px-3 py-2 text-sm shadow-sm transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
                 >
-                  <option value="normal">Normal</option>
-                  <option value="seasonal">Seasonal</option>
+                  <option value="normal">Normal Pricing</option>
+                  {state.seasons && state.seasons.length > 0 ? (
+                    state.seasons.map((season) => (
+                      <option key={season.id} value={season.id}>
+                        {season.name}
+                      </option>
+                    ))
+                  ) : (
+                    <option value="seasonal">Seasonal</option>
+                  )}
                 </select>
               </div>
             </div>
@@ -627,7 +705,6 @@ export const ChannelPricingGrid: React.FC = () => {
                     setAdvancedAdjustmentType("percentage");
                     setAdvancedOperation("hike");
                     setAdvancedInputValue("");
-                    setShowAdvancedTable(false);
                   }}
                   className="flex items-center gap-2 rounded-lg border-2 border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 hover:border-gray-400 transition-all"
                 >
@@ -642,10 +719,17 @@ export const ChannelPricingGrid: React.FC = () => {
                       !advancedDateEnd ||
                       !advancedInputValue
                     ) {
-                      alert("Please select date range and enter a value");
+                      toast.error("Please select date range and enter a value");
                       return;
                     }
-                    setShowAdvancedTable(true);
+                    // Show toast notification
+                    const adjustmentValue = parseFloat(advancedInputValue) || 0;
+                    const message = `✓ Applied ${
+                      advancedAdjustmentType === "percentage"
+                        ? adjustmentValue + "%"
+                        : formatCurrency(adjustmentValue, "LKR")
+                    } ${advancedOperation}`;
+                    toast.success(message);
                   }}
                   disabled={
                     !advancedDateStart ||
@@ -666,104 +750,7 @@ export const ChannelPricingGrid: React.FC = () => {
               </div>
             </div>
 
-            {/* Advanced Adjustments Table */}
-            {showAdvancedTable && (
-              <div className="mt-6 pt-6 border-t border-blue-200">
-                <h4 className="text-md font-bold text-blue-900 mb-3 flex items-center gap-2">
-                  <Info className="h-4 w-4 text-blue-600" />
-                  Adjusted Pricing Preview
-                </h4>
-                <div className="overflow-x-auto rounded-lg border-2 border-blue-200 shadow-md">
-                  <table className="w-full border-collapse bg-white">
-                    <thead>
-                      <tr className="bg-gradient-to-r from-blue-600 to-blue-700">
-                        <th className="border-b-2 border-blue-500 px-4 py-3 text-left text-xs font-bold text-white uppercase">
-                          Room Type
-                        </th>
-                        <th className="border-b-2 border-blue-500 px-4 py-3 text-left text-xs font-bold text-white uppercase">
-                          Original Price
-                        </th>
-                        <th className="border-b-2 border-blue-500 px-4 py-3 text-left text-xs font-bold text-white uppercase">
-                          Adjustment
-                        </th>
-                        <th className="border-b-2 border-blue-500 px-4 py-3 text-left text-xs font-bold text-white uppercase">
-                          New Price
-                        </th>
-                        <th className="border-b-2 border-blue-500 px-4 py-3 text-left text-xs font-bold text-white uppercase">
-                          Currency
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {displayedPricingGridData.slice(0, 5).map((row, idx) => {
-                        const originalPrice = row.basePrices[0];
-                        const adjustmentValue =
-                          parseFloat(advancedInputValue) || 0;
-                        let newPrice = originalPrice;
-
-                        if (advancedAdjustmentType === "percentage") {
-                          const multiplier =
-                            advancedOperation === "hike"
-                              ? 1 + adjustmentValue / 100
-                              : 1 - adjustmentValue / 100;
-                          newPrice = originalPrice * multiplier;
-                        } else {
-                          newPrice =
-                            advancedOperation === "hike"
-                              ? originalPrice + adjustmentValue
-                              : originalPrice - adjustmentValue;
-                        }
-
-                        return (
-                          <tr
-                            key={idx}
-                            className={
-                              idx % 2 === 0 ? "bg-blue-50/30" : "bg-white"
-                            }
-                          >
-                            <td className="border-b border-blue-200 px-4 py-3 text-sm font-semibold text-slate-900">
-                              {row.roomTypeName}
-                            </td>
-                            <td className="border-b border-blue-200 px-4 py-3 text-sm text-slate-700">
-                              {formatCurrency(originalPrice, advancedCurrency)}
-                            </td>
-                            <td className="border-b border-blue-200 px-4 py-3 text-sm font-semibold">
-                              <span
-                                className={
-                                  advancedOperation === "hike"
-                                    ? "text-green-600"
-                                    : "text-red-600"
-                                }
-                              >
-                                {advancedOperation === "hike" ? "+" : "-"}
-                                {advancedAdjustmentType === "percentage"
-                                  ? `${adjustmentValue}%`
-                                  : formatCurrency(
-                                      adjustmentValue,
-                                      advancedCurrency
-                                    )}
-                              </span>
-                            </td>
-                            <td className="border-b border-blue-200 px-4 py-3 text-sm font-bold text-blue-900">
-                              {formatCurrency(newPrice, advancedCurrency)}
-                            </td>
-                            <td className="border-b border-blue-200 px-4 py-3 text-sm text-slate-600">
-                              {advancedCurrency}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-                {displayedPricingGridData.length > 5 && (
-                  <p className="text-xs text-slate-500 mt-2 text-center">
-                    Showing 5 of {displayedPricingGridData.length} total
-                    combinations
-                  </p>
-                )}
-              </div>
-            )}
+            {/* Advanced Adjustments Table - REMOVED */}
           </div>
         </div>
 
@@ -1305,7 +1292,7 @@ export const ChannelPricingGrid: React.FC = () => {
             type="button"
             onClick={() => {
               if (!editingPrice || parseFloat(editingPrice) < 0) {
-                alert("Please enter a valid price");
+                toast.error("Please enter a valid price");
                 return;
               }
 

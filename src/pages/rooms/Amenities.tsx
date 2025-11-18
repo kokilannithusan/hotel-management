@@ -5,7 +5,7 @@ import { Table } from "../../components/ui/Table";
 import { Button } from "../../components/ui/Button";
 import { Modal } from "../../components/ui/Modal";
 import { Input } from "../../components/ui/Input";
-import { generateId } from "../../utils/formatters";
+import { generateId, formatCurrency } from "../../utils/formatters";
 import { Amenity } from "../../types/entities";
 import {
   Edit,
@@ -37,6 +37,7 @@ import {
   Shield,
   Flag,
   Waves as Jacuzzi,
+  ChefHat,
   Shirt,
 } from "lucide-react";
 
@@ -44,7 +45,7 @@ export const Amenities: React.FC = () => {
   const { state, dispatch } = useHotel();
   const [showModal, setShowModal] = useState(false);
   const [editingAmenity, setEditingAmenity] = useState<Amenity | null>(null);
-  const [formData, setFormData] = useState({ name: "", icon: "" });
+  const [formData, setFormData] = useState({ name: "", icon: "", price: "" });
 
   // Map amenity names to icons
   const amenityIconMap: Record<string, React.ReactNode> = {
@@ -86,38 +87,49 @@ export const Amenities: React.FC = () => {
   };
 
   const getAmenityIcon = (name: string): React.ReactNode => {
-    const lowerName = name.toLowerCase();
-    return (
-      amenityIconMap[lowerName] || <span className="text-slate-400">●</span>
-    );
+    const val = (name || "").trim();
+    const lowerName = val.toLowerCase();
+    if (amenityIconMap[lowerName]) return amenityIconMap[lowerName];
+    // If user provided an emoji or custom icon string, render it directly
+    if (/[^a-z0-9\s\-&]/i.test(val))
+      return <span className="text-lg">{val}</span>;
+    return <span className="text-slate-400">●</span>;
   };
 
   const handleEdit = (amenity: Amenity) => {
     setEditingAmenity(amenity);
-    setFormData({ name: amenity.name, icon: amenity.icon || "" });
+    setFormData({
+      name: amenity.name,
+      icon: amenity.icon || "",
+      price: amenity.price !== undefined ? String(amenity.price) : "",
+    });
     setShowModal(true);
   };
 
   const handleAdd = () => {
     setEditingAmenity(null);
-    setFormData({ name: "", icon: "" });
+    setFormData({ name: "", icon: "", price: "" });
     setShowModal(true);
   };
 
   const handleSave = () => {
+    // Simple validation
+    if (!formData.name || !formData.name.trim()) {
+      alert("Amenity name is required.");
+      return;
+    }
+
+    const payload: Amenity = {
+      ...(editingAmenity || { id: generateId() }),
+      name: formData.name.trim(),
+      icon: formData.icon?.trim() || undefined,
+      price: formData.price ? Number(formData.price) : undefined,
+    };
+
     if (editingAmenity) {
-      dispatch({
-        type: "UPDATE_AMENITY",
-        payload: { ...editingAmenity, ...formData },
-      });
+      dispatch({ type: "UPDATE_AMENITY", payload });
     } else {
-      dispatch({
-        type: "ADD_AMENITY",
-        payload: {
-          id: generateId(),
-          ...formData,
-        },
-      });
+      dispatch({ type: "ADD_AMENITY", payload });
     }
     setShowModal(false);
   };
@@ -135,7 +147,20 @@ export const Amenities: React.FC = () => {
       header: "Icon",
       render: (amenity: Amenity) => (
         <div className="flex items-center justify-start">
-          {getAmenityIcon(amenity.name)}
+          {getAmenityIcon(
+            amenity.icon && amenity.icon.length > 0
+              ? amenity.icon
+              : amenity.name
+          )}
+        </div>
+      ),
+    },
+    {
+      key: "price",
+      header: "Price",
+      render: (amenity: Amenity) => (
+        <div className="text-sm text-slate-700">
+          {amenity.price !== undefined ? formatCurrency(amenity.price) : "-"}
         </div>
       ),
     },
@@ -184,6 +209,7 @@ export const Amenities: React.FC = () => {
           onClick={handleAdd}
         >
           <Plus className="w-4 h-4" />
+          <span className="ml-2">Add</span>
         </Button>
       </div>
       <Card>
@@ -223,6 +249,25 @@ export const Amenities: React.FC = () => {
             onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
             placeholder="Icon name or emoji"
           />
+          <Input
+            label="Price (optional)"
+            type="number"
+            value={formData.price}
+            onChange={(e) =>
+              setFormData({ ...formData, price: e.target.value })
+            }
+            placeholder="0.00"
+          />
+          <div className="flex items-center gap-3">
+            <div className="text-sm text-slate-600">Preview:</div>
+            <div className="p-1 bg-slate-50 rounded border border-slate-200">
+              {getAmenityIcon(
+                formData.icon && formData.icon.length > 0
+                  ? formData.icon
+                  : formData.name
+              )}
+            </div>
+          </div>
         </div>
       </Modal>
     </div>

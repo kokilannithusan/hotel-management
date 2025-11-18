@@ -173,6 +173,10 @@ export function Dashboard() {
     "all" | "check-in" | "check-out"
   >("all");
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   // Initialize selected date to today on mount
   useEffect(() => {
     const today = new Date();
@@ -483,6 +487,27 @@ export function Dashboard() {
     state.reservations,
   ]);
 
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [
+    filterReferenceNumber,
+    filterRoomNumber,
+    filterRoomType,
+    filterDateView,
+    filterSelectedDate,
+    filterStatus,
+  ]);
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredReservations.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedReservations = filteredReservations.slice(
+    startIndex,
+    endIndex
+  );
+
   // Get unique room types for the filter dropdown
   const roomTypeOptions = useMemo(() => {
     const uniqueTypes = new Set<string>();
@@ -627,6 +652,78 @@ export function Dashboard() {
             Check Out
           </button>
         </div>
+        {/* Pagination Controls */}
+        {filteredReservations.length > 0 && (
+          <div className="flex items-center justify-between px-6 py-4 mb-4 border border-slate-200 rounded-lg bg-slate-50">
+            <div className="text-sm text-slate-600">
+              Showing {startIndex + 1} to{" "}
+              {Math.min(endIndex, filteredReservations.length)} of{" "}
+              {filteredReservations.length} reservations
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                  currentPage === 1
+                    ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                    : "bg-white border border-slate-300 text-slate-700 hover:bg-slate-50"
+                }`}
+              >
+                Previous
+              </button>
+              <div className="flex items-center gap-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                  (page) => {
+                    // Show first page, last page, current page, and pages around current
+                    if (
+                      page === 1 ||
+                      page === totalPages ||
+                      (page >= currentPage - 1 && page <= currentPage + 1)
+                    ) {
+                      return (
+                        <button
+                          key={page}
+                          onClick={() => setCurrentPage(page)}
+                          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
+                            currentPage === page
+                              ? "bg-blue-600 text-white"
+                              : "bg-white border border-slate-300 text-slate-700 hover:bg-slate-50"
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      );
+                    } else if (
+                      page === currentPage - 2 ||
+                      page === currentPage + 2
+                    ) {
+                      return (
+                        <span key={page} className="text-slate-400">
+                          ...
+                        </span>
+                      );
+                    }
+                    return null;
+                  }
+                )}
+              </div>
+              <button
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                }
+                disabled={currentPage === totalPages}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                  currentPage === totalPages
+                    ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                    : "bg-white border border-slate-300 text-slate-700 hover:bg-slate-50"
+                }`}
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
         {/* Table */}
         <div className="overflow-x-auto rounded-lg border border-slate-200">
           <table className="min-w-full divide-y divide-slate-200">
@@ -659,7 +756,7 @@ export function Dashboard() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-slate-200">
-              {filteredReservations.length === 0 ? (
+              {paginatedReservations.length === 0 ? (
                 <tr>
                   <td
                     colSpan={8}
@@ -669,7 +766,7 @@ export function Dashboard() {
                   </td>
                 </tr>
               ) : (
-                filteredReservations.map((reservation) => {
+                paginatedReservations.map((reservation) => {
                   const isFuture = isReservationInFuture(reservation);
 
                   // Button disabled states

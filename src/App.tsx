@@ -49,11 +49,11 @@ import { Housekeeping } from "./pages/houseKeeping/Housekeeping";
 // Channels
 import { ReservationType } from "./pages/channels/ReservationType";
 import { Seasonal } from "./pages/channels/Seasonal";
+import { ChannelPricingGrid } from "./pages/channels/ChannelPricingGrid";
 import { StayTypes } from "./pages/rooms/StayTypes";
 
 // Pricing
 import { ChannelPricing } from "./pages/pricing/ChannelPricing";
-import { ChannelPricingGrid } from "./pages/pricing/ChannelPricingGrid";
 import { SeasonalPricing } from "./pages/pricing/SeasonalPricing";
 
 // Other

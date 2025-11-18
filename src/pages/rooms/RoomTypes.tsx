@@ -1,25 +1,26 @@
-import React, { useState } from 'react';
-import { useHotel } from '../../context/HotelContext';
-import { Card } from '../../components/ui/Card';
-import { Table } from '../../components/ui/Table';
-import { Button } from '../../components/ui/Button';
-import { Modal } from '../../components/ui/Modal';
-import { Input } from '../../components/ui/Input';
-import { Select } from '../../components/ui/Select';
-import { formatCurrency, generateId } from '../../utils/formatters';
-import { RoomType } from '../../types/entities';
-import { Edit, Trash2, Plus, X, Check } from 'lucide-react';
+import React, { useState } from "react";
+import { useHotel } from "../../context/HotelContext";
+import { Card } from "../../components/ui/Card";
+import { Table } from "../../components/ui/Table";
+import { Button } from "../../components/ui/Button";
+import { Modal } from "../../components/ui/Modal";
+import { Input } from "../../components/ui/Input";
+import { Select } from "../../components/ui/Select";
+import { generateId } from "../../utils/formatters";
+import { RoomType } from "../../types/entities";
+import { Edit, Trash2, Plus, X, Check } from "lucide-react";
 
 export const RoomTypes: React.FC = () => {
   const { state, dispatch } = useHotel();
   const [showModal, setShowModal] = useState(false);
   const [editingRoomType, setEditingRoomType] = useState<RoomType | null>(null);
   const [formData, setFormData] = useState({
-    name: '',
-    description: '',
+    name: "",
+    description: "",
     capacity: 2,
     basePrice: 0,
-    viewTypeId: '',
+    viewTypeId: "",
+    amenities: [] as string[],
   });
 
   const handleEdit = (roomType: RoomType) => {
@@ -29,30 +30,44 @@ export const RoomTypes: React.FC = () => {
       description: roomType.description,
       capacity: roomType.capacity,
       basePrice: roomType.basePrice,
-      viewTypeId: roomType.viewTypeId || '',
+      viewTypeId: roomType.viewTypeId || "",
+      amenities: roomType.amenities || [],
     });
     setShowModal(true);
   };
 
   const handleAdd = () => {
     setEditingRoomType(null);
-    setFormData({ name: '', description: '', capacity: 2, basePrice: 0, viewTypeId: '' });
+    setFormData({
+      name: "",
+      description: "",
+      capacity: 2,
+      basePrice: 0,
+      viewTypeId: "",
+      amenities: [],
+    });
     setShowModal(true);
   };
 
   const handleSave = () => {
     if (editingRoomType) {
       dispatch({
-        type: 'UPDATE_ROOM_TYPE',
-        payload: { ...editingRoomType, ...formData, viewTypeId: formData.viewTypeId || undefined },
+        type: "UPDATE_ROOM_TYPE",
+        payload: {
+          ...editingRoomType,
+          ...formData,
+          viewTypeId: formData.viewTypeId || undefined,
+          amenities: formData.amenities,
+        },
       });
     } else {
       dispatch({
-        type: 'ADD_ROOM_TYPE',
+        type: "ADD_ROOM_TYPE",
         payload: {
           id: generateId(),
           ...formData,
           viewTypeId: formData.viewTypeId || undefined,
+          amenities: formData.amenities,
         },
       });
     }
@@ -61,32 +76,63 @@ export const RoomTypes: React.FC = () => {
 
   const handleDelete = (roomType: RoomType) => {
     if (window.confirm(`Are you sure you want to delete ${roomType.name}?`)) {
-      dispatch({ type: 'DELETE_ROOM_TYPE', payload: roomType.id });
+      dispatch({ type: "DELETE_ROOM_TYPE", payload: roomType.id });
     }
   };
 
   const columns = [
-    { key: 'name', header: 'Name' },
-    { key: 'description', header: 'Description' },
-    { key: 'capacity', header: 'Capacity' },
-    { key: 'basePrice', header: 'Base Price', render: (rt: RoomType) => formatCurrency(rt.basePrice) },
+    { key: "name", header: "Name" },
+    { key: "description", header: "Description" },
     {
-      key: 'viewType',
-      header: 'View Type',
+      key: "capacity",
+      header: "Capacity",
+      render: (rt: RoomType) => `${rt.capacity} persons`,
+    },
+    {
+      key: "amenitiesCount",
+      header: "Amenities Count",
       render: (rt: RoomType) => {
-        const viewType = state.viewTypes.find((vt) => vt.id === rt.viewTypeId);
-        return viewType?.name || '-';
+        const count = rt.amenities?.length || 0;
+        return `${count}`;
       },
     },
     {
-      key: 'actions',
-      header: 'Actions',
+      key: "amenities",
+      header: "Amenities",
+      render: (rt: RoomType) => (
+        <div className="text-sm">
+          {rt.amenities && rt.amenities.length > 0
+            ? rt.amenities
+                .map(
+                  (id: string) => state.amenities.find((a) => a.id === id)?.name
+                )
+                .filter(Boolean)
+                .join(", ")
+            : "—"}
+        </div>
+      ),
+    },
+    {
+      key: "actions",
+      header: "Actions",
       render: (rt: RoomType) => (
         <div className="flex gap-2">
-          <Button aria-label="Edit room type" title="Edit room type" size="sm" variant="outline" onClick={() => handleEdit(rt)}>
+          <Button
+            aria-label="Edit room type"
+            title="Edit room type"
+            size="sm"
+            variant="outline"
+            onClick={() => handleEdit(rt)}
+          >
             <Edit className="w-4 h-4" />
           </Button>
-          <Button aria-label="Delete room type" title="Delete room type" size="sm" variant="danger" onClick={() => handleDelete(rt)}>
+          <Button
+            aria-label="Delete room type"
+            title="Delete room type"
+            size="sm"
+            variant="danger"
+            onClick={() => handleDelete(rt)}
+          >
             <Trash2 className="w-4 h-4" />
           </Button>
         </div>
@@ -101,10 +147,17 @@ export const RoomTypes: React.FC = () => {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
             Room Types
           </h1>
-          <p className="text-slate-600 mt-1 font-medium">Define and manage different room categories</p>
+          <p className="text-slate-600 mt-1 font-medium">
+            Define and manage different room categories
+          </p>
         </div>
-        <Button aria-label="Add room type" title="Add room type" onClick={handleAdd}>
+        <Button
+          aria-label="Add room type"
+          title="Add room type"
+          onClick={handleAdd}
+        >
           <Plus className="w-4 h-4" />
+          <span className="ml-2">New Room Type</span>
         </Button>
       </div>
       <Card>
@@ -114,10 +167,15 @@ export const RoomTypes: React.FC = () => {
       <Modal
         isOpen={showModal}
         onClose={() => setShowModal(false)}
-        title={editingRoomType ? 'Edit Room Type' : 'Add Room Type'}
+        title={editingRoomType ? "Edit Room Type" : "Add Room Type"}
         footer={
           <>
-            <Button aria-label="Cancel" title="Cancel" variant="secondary" onClick={() => setShowModal(false)}>
+            <Button
+              aria-label="Cancel"
+              title="Cancel"
+              variant="secondary"
+              onClick={() => setShowModal(false)}
+            >
               <X className="w-4 h-4" />
             </Button>
             <Button aria-label="Save" title="Save" onClick={handleSave}>
@@ -136,35 +194,45 @@ export const RoomTypes: React.FC = () => {
           <Input
             label="Description"
             value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            onChange={(e) =>
+              setFormData({ ...formData, description: e.target.value })
+            }
             required
           />
-          <Input
-            type="number"
-            label="Capacity"
-            value={formData.capacity}
-            onChange={(e) => setFormData({ ...formData, capacity: parseInt(e.target.value) || 2 })}
-            min={1}
-            required
-          />
-          <Input
-            type="number"
-            label="Base Price"
-            value={formData.basePrice}
-            onChange={(e) => setFormData({ ...formData, basePrice: parseFloat(e.target.value) || 0 })}
-            step="0.01"
-            min={0}
-            required
-          />
-          <Select
-            label="View Type"
-            value={formData.viewTypeId}
-            onChange={(e) => setFormData({ ...formData, viewTypeId: e.target.value })}
-            options={[{ value: '', label: 'None' }, ...state.viewTypes.map((vt) => ({ value: vt.id, label: vt.name }))]}
-          />
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Amenities
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {state.amenities.map((amenity) => (
+                <label key={amenity.id} className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={formData.amenities.includes(amenity.id)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setFormData({
+                          ...formData,
+                          amenities: [...formData.amenities, amenity.id],
+                        });
+                      } else {
+                        setFormData({
+                          ...formData,
+                          amenities: formData.amenities.filter(
+                            (id) => id !== amenity.id
+                          ),
+                        });
+                      }
+                    }}
+                    className="mr-2"
+                  />
+                  {amenity.name}
+                </label>
+              ))}
+            </div>
+          </div>
         </div>
       </Modal>
     </div>
   );
 };
-

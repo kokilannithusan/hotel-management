@@ -1,12 +1,11 @@
 import React, { useState } from "react";
 import { useHotel } from "../../context/HotelContext";
-import { Card } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
 import { Modal } from "../../components/ui/Modal";
 import { Input } from "../../components/ui/Input";
 import { generateId } from "../../utils/formatters";
 import type { Channel, ChannelStatus } from "../../types/entities";
-import { Edit, Trash2, Plus, X, Check, RefreshCw } from "lucide-react";
+import { Edit, Trash2, Plus, X, Check } from "lucide-react";
 
 type ReservationType = "DIRECT" | "WEB" | "OTA" | "TA";
 
@@ -18,7 +17,6 @@ export const ReservationType: React.FC = () => {
   const [showChannelModal, setShowChannelModal] = useState(false);
   const [editingChannel, setEditingChannel] = useState<Channel | null>(null);
   const [selectedChannelId, setSelectedChannelId] = useState<string>("");
-  const [selectedSubChannels, setSelectedSubChannels] = useState<string[]>([]);
 
   // Channel form data
   const [channelFormData, setChannelFormData] = useState<{
@@ -39,25 +37,6 @@ export const ReservationType: React.FC = () => {
   };
 
   const availableChannels = getChannelsForType(activeTab);
-
-  // Toggle sub-channel selection
-  const toggleSubChannelSelection = (channelId: string) => {
-    setSelectedSubChannels((prev) =>
-      prev.includes(channelId)
-        ? prev.filter((id) => id !== channelId)
-        : [...prev, channelId]
-    );
-  };
-
-  // Select all channels
-  const handleSelectAllChannels = () => {
-    setSelectedSubChannels(availableChannels.map((ch) => ch.id));
-  };
-
-  // Deselect all channels
-  const handleDeselectAllChannels = () => {
-    setSelectedSubChannels([]);
-  };
 
   // Channel CRUD operations
   const handleAddChannel = () => {
@@ -109,24 +88,30 @@ export const ReservationType: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-200">
-        <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
-            Reservation Types & Channels
-          </h1>
-          <p className="text-slate-600 mt-1 font-medium">
-            Manage booking channels for each reservation type
-          </p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-stone-50 to-amber-50/20 p-6">
+      {/* Header */}
+      <div className="mb-8">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="bg-gradient-to-br from-blue-500 to-blue-600 backdrop-blur-sm p-3 rounded-xl shadow-lg">
+            <Plus className="h-8 w-8 text-white" />
+          </div>
+          <div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
+              Reservation Types & Channels
+            </h1>
+            <p className="text-slate-600 mt-1 font-medium text-sm">
+              Manage booking channels for each reservation type
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* Header Section with Tab Buttons */}
-      <Card className="p-6 bg-white">
-        {/* Tab Buttons */}
-        <div className="mb-6">
-          <div className="text-sm font-semibold text-slate-700 mb-3">
-            Select Channel:
+      {/* Main Content Card */}
+      <div className="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-full overflow-hidden">
+        {/* Reservation Type Tabs Section */}
+        <div className="p-8 border-b border-slate-200 bg-gradient-to-br from-blue-50 to-indigo-50">
+          <div className="text-sm font-semibold text-slate-700 mb-4">
+            Select Reservation Type:
           </div>
           <div className="flex gap-3 flex-wrap">
             {reservationTypes.map((type) => (
@@ -136,10 +121,10 @@ export const ReservationType: React.FC = () => {
                   setActiveTab(type);
                   setSelectedChannelId("");
                 }}
-                className={`relative px-6 py-2.5 text-sm font-bold rounded-xl transition-all duration-200 ${
+                className={`relative px-6 py-3 text-sm font-bold rounded-xl transition-all duration-200 ${
                   activeTab === type
-                    ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/50"
-                    : "bg-white text-slate-700 border-2 border-slate-600 hover:border-blue-400"
+                    ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/50 scale-105"
+                    : "bg-white text-slate-700 border-2 border-slate-300 hover:border-blue-400 hover:shadow-md"
                 }`}
               >
                 {type}
@@ -148,141 +133,97 @@ export const ReservationType: React.FC = () => {
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex flex-wrap gap-2 mb-6 items-center">
-          <Button
-            size="sm"
-            onClick={() => handleAddChannel()}
-            className="gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            Add Channel
-          </Button>
+        {/* Channels Grid Section */}
+        <div className="p-8">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-xl font-bold text-slate-800">
+                {activeTab} Channels
+              </h2>
+              <p className="text-sm text-slate-600 mt-1">
+                {availableChannels.length} channel
+                {availableChannels.length !== 1 ? "s" : ""} available
+              </p>
+            </div>
+            <Button
+              onClick={() => handleAddChannel()}
+              className="gap-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
+            >
+              <Plus className="w-5 h-5" />
+              Add Channel
+            </Button>
+          </div>
 
-          {selectedChannelId && (
-            <>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  const channel = availableChannels.find(
-                    (ch) => ch.id === selectedChannelId
-                  );
-                  if (channel) handleEditChannel(channel);
-                }}
-              >
-                <Edit className="w-4 h-4" />
-                Edit
-              </Button>
-              <Button
-                size="sm"
-                variant="danger"
-                onClick={() => {
-                  const channel = availableChannels.find(
-                    (ch) => ch.id === selectedChannelId
-                  );
-                  if (channel) handleDeleteChannel(channel);
-                }}
-              >
-                <Trash2 className="w-4 h-4" />
-                Delete
-              </Button>
-            </>
-          )}
+          {availableChannels.length === 0 ? (
+            <div className="text-center py-12 rounded-xl bg-slate-50 border-2 border-dashed border-slate-300">
+              <Plus className="h-12 w-12 text-slate-300 mx-auto mb-3" />
+              <p className="text-slate-600 font-medium">No channels yet</p>
+              <p className="text-sm text-slate-500 mt-1">
+                Add your first channel to get started
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {availableChannels.map((channel) => (
+                <div
+                  key={channel.id}
+                  onClick={() => setSelectedChannelId(channel.id)}
+                  className={`relative p-5 rounded-xl border-2 transition-all cursor-pointer group ${
+                    selectedChannelId === channel.id
+                      ? "bg-blue-50 border-blue-500 shadow-lg"
+                      : "bg-white border-slate-200 hover:border-blue-300 hover:shadow-md"
+                  }`}
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <h3 className="font-bold text-slate-900 text-base">
+                        {channel.name}
+                      </h3>
+                      <div className="flex items-center gap-2 mt-2">
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                            channel.status === "active"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-slate-100 text-slate-800"
+                          }`}
+                        >
+                          {channel.status === "active"
+                            ? "✓ Active"
+                            : "Inactive"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
 
-          {selectedChannelId && (
-            <div className="text-xs text-slate-600 bg-slate-100 px-3 py-2 rounded-lg border border-slate-300 ml-auto">
-              <span className="font-semibold">
-                {
-                  availableChannels.find((ch) => ch.id === selectedChannelId)
-                    ?.name
-                }
-              </span>
-              {" pricing active"}
+                  {/* Action Buttons */}
+                  <div className="flex gap-2 mt-4 opacity-0 group-hover:opacity-100 transition-all">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEditChannel(channel);
+                      }}
+                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg font-medium text-sm transition-all"
+                    >
+                      <Edit className="w-4 h-4" />
+                      Edit
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteChannel(channel);
+                      }}
+                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-red-50 hover:bg-red-100 text-red-700 rounded-lg font-medium text-sm transition-all"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
-
-        {/* Sub-Channels Selection Panel */}
-        {availableChannels.length > 0 && (
-          <div className="rounded-xl p-4 border-2 border-slate-300 bg-slate-50">
-            <div className="flex items-center justify-between mb-4">
-              <h4 className="text-sm font-bold text-slate-700">
-                Select Sub-Channels for Batch Adjustment
-              </h4>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={handleSelectAllChannels}
-                  className="text-xs px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-all"
-                >
-                  Select All
-                </button>
-                <button
-                  type="button"
-                  onClick={handleDeselectAllChannels}
-                  className="text-xs px-3 py-1.5 bg-slate-600 hover:bg-slate-700 text-white rounded-lg font-semibold transition-all"
-                >
-                  Clear
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    selectedSubChannels.forEach((channelId) => {
-                      const channel = state.channels.find(
-                        (ch) => ch.id === channelId
-                      );
-                      if (channel) {
-                        dispatch({
-                          type: "UPDATE_CHANNEL",
-                          payload: {
-                            ...channel,
-                            priceModifierPercent: 0,
-                          },
-                        });
-                      }
-                    });
-                    setSelectedSubChannels([]);
-                  }}
-                  className="text-xs px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-semibold transition-all flex items-center gap-1"
-                >
-                  <RefreshCw className="h-3 w-3" />
-                  Reset
-                </button>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-              {availableChannels.map((channel) => (
-                <label
-                  key={channel.id}
-                  className={`flex items-center gap-2 p-3 rounded-lg cursor-pointer transition-all border-2 ${
-                    selectedSubChannels.includes(channel.id)
-                      ? "bg-blue-100 border-blue-500"
-                      : "bg-white border-slate-300 hover:bg-slate-100"
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedSubChannels.includes(channel.id)}
-                    onChange={() => toggleSubChannelSelection(channel.id)}
-                    className="h-4 w-4 rounded text-blue-600 focus:ring-blue-500 cursor-pointer"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="text-xs font-bold text-slate-900 truncate">
-                      {channel.name}
-                    </div>
-                    {channel.status === "active" && (
-                      <div className="text-[10px] text-slate-600">
-                        {channel.status}
-                      </div>
-                    )}
-                  </div>
-                </label>
-              ))}
-            </div>
-          </div>
-        )}
-      </Card>
+      </div>
 
       {/* Channel Modal */}
       <Modal
