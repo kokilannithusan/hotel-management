@@ -634,10 +634,16 @@ export const HotelProvider: React.FC<{ children: ReactNode }> = ({
     const refunds = getStorageItem(storageKeys.refunds, mockRefunds);
     const taxes = getStorageItem(storageKeys.taxes, mockTaxes);
     const policies = getStorageItem(storageKeys.policies, mockPolicies);
-    const currencyRates = getStorageItem(
+    let currencyRates = getStorageItem(
       storageKeys.currencyRates,
       mockCurrencyRates
     );
+
+    // Force refresh if stored currency rates are outdated (missing LKR or other new currencies)
+    if (currencyRates.length < mockCurrencyRates.length) {
+      currencyRates = mockCurrencyRates;
+      setStorageItem(storageKeys.currencyRates, mockCurrencyRates);
+    }
     const channelPricing = getStorageItem(
       storageKeys.channelPricing,
       mockChannelPricing

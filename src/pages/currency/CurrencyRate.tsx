@@ -12,17 +12,26 @@ export const CurrencyRate: React.FC = () => {
   const [editingRates, setEditingRates] = useState<Record<string, number>>({});
 
   // Currency Converter State
-  const [amount, setAmount] = useState<string>("100");
+  const [amount, setAmount] = useState<string>("1");
   const [fromCurrency, setFromCurrency] = useState<string>("");
   const [toCurrency, setToCurrency] = useState<string>("");
   const [convertedAmount, setConvertedAmount] = useState<number>(0);
   const [isConverterExpanded, setIsConverterExpanded] = useState<boolean>(true);
 
-  // Initialize default currencies when rates are available
+  // Initialize default currencies when rates are available (USD to LKR)
   useEffect(() => {
     if (state.currencyRates.length >= 2 && !fromCurrency && !toCurrency) {
-      setFromCurrency(state.currencyRates[0].id);
-      setToCurrency(state.currencyRates[1]?.id || state.currencyRates[0].id);
+      const usd = state.currencyRates.find((cr) => cr.code === "USD");
+      const lkr = state.currencyRates.find((cr) => cr.code === "LKR");
+
+      if (usd && lkr) {
+        setFromCurrency(usd.id);
+        setToCurrency(lkr.id);
+      } else {
+        // Fallback to first two currencies if USD or LKR not found
+        setFromCurrency(state.currencyRates[0].id);
+        setToCurrency(state.currencyRates[1]?.id || state.currencyRates[0].id);
+      }
     }
   }, [state.currencyRates, fromCurrency, toCurrency]);
 
@@ -52,10 +61,19 @@ export const CurrencyRate: React.FC = () => {
   };
 
   const handleReset = () => {
-    setAmount("100");
+    setAmount("1");
     if (state.currencyRates.length >= 2) {
-      setFromCurrency(state.currencyRates[0].id);
-      setToCurrency(state.currencyRates[1]?.id || state.currencyRates[0].id);
+      const usd = state.currencyRates.find((cr) => cr.code === "USD");
+      const lkr = state.currencyRates.find((cr) => cr.code === "LKR");
+
+      if (usd && lkr) {
+        setFromCurrency(usd.id);
+        setToCurrency(lkr.id);
+      } else {
+        // Fallback to first two currencies if USD or LKR not found
+        setFromCurrency(state.currencyRates[0].id);
+        setToCurrency(state.currencyRates[1]?.id || state.currencyRates[0].id);
+      }
     }
   };
 
@@ -105,7 +123,7 @@ export const CurrencyRate: React.FC = () => {
       render: (cr: CurrencyRateEntity) => {
         const isEditing = editingRates[cr.id] !== undefined;
         return (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 min-w-[300px]">
             {isEditing ? (
               <>
                 <Input
@@ -119,7 +137,7 @@ export const CurrencyRate: React.FC = () => {
                 />
                 <button
                   onClick={() => handleSave(cr)}
-                  className="px-2 py-1 text-sm bg-green-500 text-white rounded hover:bg-green-600"
+                  className="px-3 py-1.5 text-sm bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
                 >
                   Save
                 </button>
@@ -129,19 +147,21 @@ export const CurrencyRate: React.FC = () => {
                     delete newEditingRates[cr.id];
                     setEditingRates(newEditingRates);
                   }}
-                  className="px-2 py-1 text-sm bg-slate-500 text-white rounded hover:bg-gray-600"
+                  className="px-3 py-1.5 text-sm bg-slate-500 text-white rounded hover:bg-slate-600 transition-colors"
                 >
                   Cancel
                 </button>
               </>
             ) : (
               <>
-                <span>{cr.rate.toFixed(4)}</span>
+                <span className="font-mono font-medium text-slate-900 min-w-[80px]">
+                  {cr.rate.toFixed(4)}
+                </span>
                 <button
                   onClick={() =>
                     setEditingRates({ ...editingRates, [cr.id]: cr.rate })
                   }
-                  className="px-2 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
+                  className="px-3 py-1.5 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
                 >
                   Edit
                 </button>
