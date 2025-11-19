@@ -34,7 +34,6 @@ export const RoomsOverview: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [roomTypeFilter, setRoomTypeFilter] = useState<string>("all");
   const [viewTypeFilter, setViewTypeFilter] = useState<string>("all");
-  const [floorFilter, setFloorFilter] = useState<string>("all");
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedReservation, setSelectedReservation] =
     useState<Reservation | null>(null);
@@ -61,6 +60,8 @@ export const RoomsOverview: React.FC = () => {
   };
 
   const filteredRooms = state.rooms.filter((room) => {
+    if (!room) return false;
+
     const matchesSearch =
       !searchTerm ||
       room.roomNumber.toLowerCase().includes(searchTerm.toLowerCase());
@@ -75,17 +76,7 @@ export const RoomsOverview: React.FC = () => {
     const matchesViewType =
       viewTypeFilter === "all" || roomType?.viewTypeId === viewTypeFilter;
 
-    const matchesFloor =
-      floorFilter === "all" ||
-      (room.floor !== undefined && String(room.floor) === floorFilter);
-
-    return (
-      matchesSearch &&
-      matchesStatus &&
-      matchesRoomType &&
-      matchesViewType &&
-      matchesFloor
-    );
+    return matchesSearch && matchesStatus && matchesRoomType && matchesViewType;
   });
 
   // Get days in current month
@@ -257,22 +248,6 @@ export const RoomsOverview: React.FC = () => {
               ...state.viewTypes.map((vt) => ({
                 value: vt.id,
                 label: vt.name,
-              })),
-            ]}
-          />
-          <Select
-            label="Floor"
-            value={floorFilter}
-            onChange={(e) => setFloorFilter(e.target.value)}
-            options={[
-              { value: "all", label: "All Floors" },
-              ...Array.from(
-                new Set(
-                  state.rooms.map((r) => r.floor).filter((f) => f !== undefined)
-                )
-              ).map((f) => ({
-                value: String(f),
-                label: `Floor ${f}`,
               })),
             ]}
           />

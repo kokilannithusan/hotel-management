@@ -113,8 +113,8 @@ const navItems: NavItem[] = [
     icon: <DollarSign className="w-5 h-5" />,
     children: [
       {
-        path: "/invoicing/bill",
-        label: "Bill",
+        path: "/invoicing/invoices",
+        label: "Invoices",
         icon: <FileText className="w-4 h-4" />,
       },
       {
@@ -126,6 +126,16 @@ const navItems: NavItem[] = [
         path: "/invoicing/refunds",
         label: "Refunds",
         icon: <FileCheck className="w-4 h-4" />,
+      },
+      {
+        path: "/invoicing/credit-notes",
+        label: "Credit Notes",
+        icon: <FileText className="w-4 h-4" />,
+      },
+      {
+        path: "/invoicing/event-invoices",
+        label: "Event Invoices",
+        icon: <PartyPopper className="w-4 h-4" />,
       },
       {
         path: "/invoicing/additional",
@@ -145,23 +155,8 @@ const navItems: NavItem[] = [
         icon: <Home className="w-4 h-4" />,
       },
       {
-        path: "/rooms/all",
-        label: "All Rooms",
-        icon: <Building className="w-4 h-4" />,
-      },
-      {
-        path: "/rooms/checklist",
-        label: "Room Checklist",
-        icon: <ClipboardList className="w-4 h-4" />,
-      },
-      {
         path: "/rooms/view-type",
         label: "View Type",
-        icon: <Home className="w-4 h-4" />,
-      },
-      {
-        path: "/rooms/amenities",
-        label: "Amenities",
         icon: <Home className="w-4 h-4" />,
       },
       {
@@ -170,23 +165,33 @@ const navItems: NavItem[] = [
         icon: <Home className="w-4 h-4" />,
       },
       {
+        path: "/rooms/amenities",
+        label: "Amenities",
+        icon: <Home className="w-4 h-4" />,
+      },
+      {
         path: "/rooms/types",
         label: "Room Types",
         icon: <Home className="w-4 h-4" />,
       },
       {
-        path: "/rooms/price",
-        label: "Price",
-        icon: <DollarSign className="w-4 h-4" />,
+        path: "/rooms/meal-plan",
+        label: "Meal Plan",
+        icon: <Home className="w-4 h-4" />,
+      },
+      {
+        path: "/rooms/checklist",
+        label: "Room Checklist",
+        icon: <ClipboardList className="w-4 h-4" />,
+      },
+      {
+        path: "/rooms/all",
+        label: "All Rooms",
+        icon: <Building className="w-4 h-4" />,
       },
       {
         path: "/rooms/stay-types",
         label: "Stay Types",
-        icon: <Home className="w-4 h-4" />,
-      },
-      {
-        path: "/rooms/meal-plan",
-        label: "Meal Plan",
         icon: <Home className="w-4 h-4" />,
       },
     ],

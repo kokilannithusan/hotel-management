@@ -1,9 +1,8 @@
-import React, { useMemo, useState } from "react";
+import React, { ChangeEvent, useEffect, useMemo, useState } from "react";
 import { useHotel } from "../../context/HotelContext";
 import { Card } from "../../components/ui/Card";
 import { Table } from "../../components/ui/Table";
 import { Input } from "../../components/ui/Input";
-import { Select } from "../../components/ui/Select";
 import { Button } from "../../components/ui/Button";
 import { Modal } from "../../components/ui/Modal";
 import {
@@ -14,16 +13,6 @@ import {
 } from "../../utils/formatters";
 import { Customer, CustomerStatus } from "../../types/entities";
 import { Edit, Trash2, Plus, X, Check, Eye } from "lucide-react";
-
-type StatusFilter = CustomerStatus | "all";
-type SortOption =
-  | "recent"
-  | "name-az"
-  | "name-za"
-  | "visits-high"
-  | "visits-low"
-  | "spend-high"
-  | "spend-low";
 
 interface CustomerMetrics {
   visitCount: number;
@@ -39,52 +28,42 @@ interface EnhancedCustomer extends Customer {
   lastVisit: string | null;
   totalSpent: number;
   firstSeen: string | null;
-}
-
-interface SummarySnapshot {
-  total: number;
-  avgVisits: number;
-  upcoming: number;
-  topGuest: { name: string; visits: number } | null;
+  calculatedStatus: CustomerStatus;
 }
 
 const STATUS_BADGE_CLASS: Record<CustomerStatus, string> = {
-  customer: "bg-blue-100 text-blue-800",
+  VIP: "bg-amber-100 text-amber-700",
+  "regular customer": "bg-blue-100 text-blue-800",
+  "new customer": "bg-emerald-100 text-emerald-700",
 };
 
-const STATUS_FILTERS: Array<{
-  value: StatusFilter;
-  label: string;
-  description: string;
-}> = [
-  {
-    value: "all",
-    label: "All customers",
-    description: "Show every guest in your directory",
-  },
-];
-
-const SORT_OPTIONS: Array<{ value: SortOption; label: string }> = [
-  { value: "recent", label: "Recently added" },
-  { value: "name-az", label: "Name A - Z" },
-  { value: "name-za", label: "Name Z - A" },
-  { value: "visits-high", label: "Most visits" },
-  { value: "visits-low", label: "Fewest visits" },
-  { value: "spend-high", label: "Highest spend" },
-  { value: "spend-low", label: "Lowest spend" },
-];
+const ITEMS_PER_PAGE = 10;
 
 const createEmptyCustomerForm = () => ({
-  name: "",
+  firstName: "",
+  lastName: "",
+  identificationNumber: "",
   email: "",
   phone: "",
+  dob: "",
   nationality: "",
+  country: "",
+  city: "",
+  addressLine1: "",
+  addressLine2: "",
 });
 
 type CustomerFormState = ReturnType<typeof createEmptyCustomerForm>;
 
 const formatStatusLabel = (status: CustomerStatus) => {
-  return "Customer";
+  switch (status) {
+    case "VIP":
+      return "VIP guest";
+    case "new customer":
+      return "New customer";
+    default:
+      return "Regular customer";
+  }
 };
 
 export const ManageCustomer: React.FC = () => {
@@ -92,17 +71,20 @@ export const ManageCustomer: React.FC = () => {
   const currencyCode = state.settings?.currency ?? "USD";
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [sortOption, setSortOption] = useState<SortOption>("recent");
   const [showModal, setShowModal] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(
     null
   );
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
   const [formData, setFormData] = useState<CustomerFormState>(
     createEmptyCustomerForm()
   );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   const customerMetrics = useMemo(() => {
     const metricsMap = new Map<string, CustomerMetrics>();
@@ -117,9 +99,6 @@ export const ManageCustomer: React.FC = () => {
       });
     });
 
-    const reservationById = new Map(
-      state.reservations.map((reservation) => [reservation.id, reservation])
-    );
     const now = new Date();
 
     state.reservations.forEach((reservation) => {
@@ -185,7 +164,7 @@ export const ManageCustomer: React.FC = () => {
         firstSeen: customer.createdAt ?? null,
       };
 
-      const calculatedStatus: CustomerStatus = "customer";
+      const calculatedStatus: CustomerStatus = "regular customer";
 
       return {
         ...customer,
@@ -199,89 +178,61 @@ export const ManageCustomer: React.FC = () => {
     });
   }, [state.customers, customerMetrics]);
 
-  const statusCounts = useMemo(() => {
-    const counts: Record<StatusFilter, number> = {
-      all: customersWithStatus.length,
-      customer: customersWithStatus.length,
-    };
-
-    return counts;
-  }, [customersWithStatus]);
-
-  const summarySnapshot: SummarySnapshot = useMemo(() => {
-    const summary: SummarySnapshot = {
-      total: customersWithStatus.length,
-      avgVisits: 0,
-      upcoming: 0,
-      topGuest: null,
-    };
-
-    if (customersWithStatus.length === 0) {
-      return summary;
-    }
-
-    let totalVisits = 0;
-
-    customersWithStatus.forEach((customer) => {
-      totalVisits += customer.visitCount;
-      summary.upcoming += customer.upcomingCount;
-      if (!summary.topGuest || customer.visitCount > summary.topGuest.visits) {
-        summary.topGuest = {
-          name: customer.name,
-          visits: customer.visitCount,
-        };
-      }
-    });
-
-    summary.avgVisits = totalVisits / customersWithStatus.length;
-
-    return summary;
-  }, [customersWithStatus]);
-
   const filteredCustomers = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
 
     const filtered = customersWithStatus.filter((customer) => {
       const matchesSearch =
         !normalizedSearch ||
-        customer.name.toLowerCase().includes(normalizedSearch) ||
+        (customer.firstName?.toLowerCase().includes(normalizedSearch) ??
+          false) ||
+        (customer.lastName?.toLowerCase().includes(normalizedSearch) ??
+          false) ||
+        (customer.identificationNumber
+          ?.toLowerCase()
+          .includes(normalizedSearch) ??
+          false) ||
         customer.email.toLowerCase().includes(normalizedSearch) ||
-        customer.phone.toLowerCase().includes(normalizedSearch);
+        customer.phone.toLowerCase().includes(normalizedSearch) ||
+        (customer.country?.toLowerCase().includes(normalizedSearch) ?? false) ||
+        (customer.city?.toLowerCase().includes(normalizedSearch) ?? false) ||
+        (customer.addressLine1?.toLowerCase().includes(normalizedSearch) ??
+          false);
 
-      const matchesStatus =
-        statusFilter === "all" || customer.calculatedStatus === statusFilter;
-
-      return matchesSearch && matchesStatus;
+      return matchesSearch;
     });
 
     return filtered.sort((a, b) => {
-      switch (sortOption) {
-        case "name-az":
-          return a.name.localeCompare(b.name);
-        case "name-za":
-          return b.name.localeCompare(a.name);
-        case "visits-high":
-          return b.visitCount - a.visitCount;
-        case "visits-low":
-          return a.visitCount - b.visitCount;
-        case "spend-high":
-          return b.totalSpent - a.totalSpent;
-        case "spend-low":
-          return a.totalSpent - b.totalSpent;
-        case "recent":
-        default: {
-          const aDate = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-          const bDate = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-          return bDate - aDate;
-        }
-      }
+      const aDate = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const bDate = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return bDate - aDate;
     });
-  }, [customersWithStatus, searchTerm, statusFilter, sortOption]);
+  }, [customersWithStatus, searchTerm]);
 
-  const filtersActive =
-    searchTerm.trim().length > 0 ||
-    statusFilter !== "all" ||
-    sortOption !== "recent";
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredCustomers.length / ITEMS_PER_PAGE)
+  );
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  const pagedCustomers = filteredCustomers.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  const tableStartIndex =
+    filteredCustomers.length === 0 ? 0 : (currentPage - 1) * ITEMS_PER_PAGE + 1;
+  const tableEndIndex = Math.min(
+    filteredCustomers.length,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  const filtersActive = searchTerm.trim().length > 0;
 
   const selectedCustomer = useMemo(() => {
     if (!selectedCustomerId) {
@@ -296,8 +247,7 @@ export const ManageCustomer: React.FC = () => {
 
   const handleResetFilters = () => {
     setSearchTerm("");
-    setStatusFilter("all");
-    setSortOption("recent");
+    setCurrentPage(1);
   };
 
   const handleAdd = () => {
@@ -310,35 +260,73 @@ export const ManageCustomer: React.FC = () => {
   const handleEdit = (customer: Customer) => {
     setEditingCustomer(customer);
     setFormData({
-      name: customer.name,
+      firstName: customer.firstName ?? "",
+      lastName: customer.lastName ?? "",
+      identificationNumber: customer.identificationNumber ?? "",
       email: customer.email,
       phone: customer.phone,
+      dob: customer.dob ?? "",
       nationality: customer.nationality,
+      country: customer.country ?? "",
+      city: customer.city ?? "",
+      addressLine1: customer.addressLine1 ?? "",
+      addressLine2: customer.addressLine2 ?? "",
     });
     setShowModal(true);
     setIsDetailsOpen(false);
   };
 
   const handleSave = () => {
-    const trimmedName = formData.name.trim();
+    const trimmedFirstName = formData.firstName.trim();
+    const trimmedLastName = formData.lastName.trim();
+    const trimmedIdNumber = formData.identificationNumber.trim();
     const trimmedEmail = formData.email.trim();
     const trimmedPhone = formData.phone.trim();
     const trimmedNationality = formData.nationality.trim();
+    const trimmedCountry = formData.country.trim();
+    const trimmedCity = formData.city.trim();
+    const trimmedAddressLine1 = formData.addressLine1.trim();
+    const trimmedAddressLine2 = formData.addressLine2.trim();
+    const dobValue = formData.dob.trim();
 
-    if (!trimmedName || !trimmedEmail || !trimmedPhone || !trimmedNationality) {
+    if (
+      !trimmedFirstName ||
+      !trimmedLastName ||
+      !trimmedIdNumber ||
+      !trimmedEmail ||
+      !trimmedPhone ||
+      !dobValue ||
+      !trimmedNationality ||
+      !trimmedCountry ||
+      !trimmedCity ||
+      !trimmedAddressLine1
+    ) {
       window.alert("Please fill in all required fields before saving.");
       return;
     }
+
+    const normalizedName = `${trimmedFirstName} ${trimmedLastName}`;
+    const preparedPayload = {
+      firstName: trimmedFirstName,
+      lastName: trimmedLastName,
+      identificationNumber: trimmedIdNumber,
+      name: normalizedName,
+      email: trimmedEmail,
+      phone: trimmedPhone,
+      dob: dobValue,
+      nationality: trimmedNationality,
+      country: trimmedCountry,
+      city: trimmedCity,
+      addressLine1: trimmedAddressLine1,
+      addressLine2: trimmedAddressLine2,
+    };
 
     if (editingCustomer) {
       dispatch({
         type: "UPDATE_CUSTOMER",
         payload: {
           ...editingCustomer,
-          name: trimmedName,
-          email: trimmedEmail,
-          phone: trimmedPhone,
-          nationality: trimmedNationality,
+          ...preparedPayload,
         },
       });
     } else {
@@ -346,11 +334,8 @@ export const ManageCustomer: React.FC = () => {
         type: "ADD_CUSTOMER",
         payload: {
           id: generateId(),
-          name: trimmedName,
-          email: trimmedEmail,
-          phone: trimmedPhone,
-          nationality: trimmedNationality,
           createdAt: new Date().toISOString(),
+          ...preparedPayload,
         },
       });
     }
@@ -371,6 +356,38 @@ export const ManageCustomer: React.FC = () => {
     }
   };
 
+  const handleDocumentUpload = (
+    customer: EnhancedCustomer,
+    event: ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    const targetCustomer = state.customers.find(
+      (existing) => existing.id === customer.id
+    );
+
+    if (!targetCustomer) {
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      dispatch({
+        type: "UPDATE_CUSTOMER",
+        payload: {
+          ...targetCustomer,
+          identificationDocumentName: file.name,
+          identificationDocumentUrl: reader.result as string,
+        },
+      });
+    };
+    reader.readAsDataURL(file);
+    event.currentTarget.value = "";
+  };
+
   const handleView = (customer: EnhancedCustomer) => {
     setSelectedCustomerId(customer.id);
     setIsDetailsOpen(true);
@@ -383,59 +400,94 @@ export const ManageCustomer: React.FC = () => {
 
   const columns = [
     {
-      key: "customer",
-      header: "Customer",
-      cellClassName: "whitespace-normal max-w-xs",
+      key: "firstName",
+      header: "First name",
+      cellClassName: "whitespace-normal max-w-[140px]",
       render: (customer: EnhancedCustomer) => (
-        <div className="space-y-1">
-          <span className="text-sm font-semibold text-slate-900">
-            {customer.name}
-          </span>
-          <span className="text-xs text-slate-500 break-words">
-            {customer.email}
-          </span>
-          <span className="text-xs text-slate-500">
-            {formatPhoneNumber(customer.phone)}
-          </span>
-        </div>
-      ),
-    },
-    {
-      key: "loyalty",
-      header: "Loyalty",
-      cellClassName: "whitespace-normal",
-      render: (customer: EnhancedCustomer) => (
-        <span
-          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-            STATUS_BADGE_CLASS[customer.calculatedStatus]
-          }`}
-        >
-          {formatStatusLabel(customer.calculatedStatus)}
+        <span className="text-sm font-semibold text-slate-900">
+          {customer.firstName}
         </span>
       ),
     },
     {
-      key: "activity",
-      header: "Activity",
-      cellClassName: "whitespace-normal",
+      key: "lastName",
+      header: "Last name",
+      cellClassName: "whitespace-normal max-w-[140px]",
       render: (customer: EnhancedCustomer) => (
-        <div className="space-y-1 text-xs text-slate-600">
-          <span>
-            {customer.visitCount} visit
-            {customer.visitCount !== 1 ? "s" : ""}
-          </span>
-          {customer.upcomingCount > 0 && (
-            <span>
-              {customer.upcomingCount} upcoming stay
-              {customer.upcomingCount !== 1 ? "s" : ""}
-            </span>
-          )}
-          <span>
-            Last stay:{" "}
-            {customer.lastVisit
-              ? formatDate(customer.lastVisit)
-              : "No stay yet"}
-          </span>
+        <span className="text-sm text-slate-900">{customer.lastName}</span>
+      ),
+    },
+    {
+      key: "identificationNumber",
+      header: "ID (NIC/Passport)",
+      cellClassName: "whitespace-normal max-w-[160px]",
+      render: (customer: EnhancedCustomer) => (
+        <span className="text-xs text-slate-600">
+          {customer.identificationNumber ?? "Not provided"}
+        </span>
+      ),
+    },
+    {
+      key: "email",
+      header: "Email",
+      cellClassName: "whitespace-normal max-w-[180px]",
+      render: (customer: EnhancedCustomer) => (
+        <span className="text-xs text-slate-600 break-words">
+          {customer.email}
+        </span>
+      ),
+    },
+    {
+      key: "phone",
+      header: "Phone",
+      cellClassName: "whitespace-normal max-w-[140px]",
+      render: (customer: EnhancedCustomer) => (
+        <span className="text-xs text-slate-600">
+          {formatPhoneNumber(customer.phone)}
+        </span>
+      ),
+    },
+    {
+      key: "country",
+      header: "Country",
+      cellClassName: "whitespace-normal max-w-[140px]",
+      render: (customer: EnhancedCustomer) => (
+        <span className="text-xs text-slate-600">
+          {customer.country ?? "Not set"}
+        </span>
+      ),
+    },
+    {
+      key: "addressLine2",
+      header: "Add. 2",
+      cellClassName: "whitespace-normal max-w-[220px]",
+      render: (customer: EnhancedCustomer) => (
+        <span className="text-xs text-slate-600">
+          {customer.addressLine2 ?? "—"}
+        </span>
+      ),
+    },
+    {
+      key: "document",
+      header: "NIC/Passport doc",
+      cellClassName: "whitespace-normal max-w-[180px]",
+      render: (customer: EnhancedCustomer) => (
+        <div className="flex flex-col gap-1 text-xs text-slate-600">
+          <p className="font-semibold text-slate-900">
+            {customer.identificationDocumentName ?? "No file uploaded"}
+          </p>
+          <label
+            className="inline-flex cursor-pointer items-center rounded-full border border-dashed border-slate-300 px-3 py-1 text-xs font-semibold text-slate-600 transition hover:border-slate-500 hover:shadow-sm"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <input
+              type="file"
+              accept="image/*,.pdf"
+              className="hidden"
+              onChange={(event) => handleDocumentUpload(customer, event)}
+            />
+            Upload
+          </label>
         </div>
       ),
     },
@@ -489,68 +541,6 @@ export const ManageCustomer: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4">
-        <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
-            Manage Customers
-          </h1>
-          <p className="mt-1 text-sm font-medium text-slate-600">
-            Understand guest value, loyalty, and upcoming stays at a glance.
-          </p>
-        </div>
-        <Button
-          aria-label="Add customer"
-          title="Add customer"
-          onClick={handleAdd}
-          className="flex items-center gap-2"
-        >
-          <Plus className="h-4 w-4" />
-          Add customer
-        </Button>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Card>
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-slate-500">
-              Total customers
-            </p>
-            <p className="text-2xl font-bold text-slate-900">
-              {summarySnapshot.total}
-            </p>
-            <p className="text-xs text-slate-500">
-              All guests are treated equally.
-            </p>
-          </div>
-        </Card>
-        <Card>
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-slate-500">Average visits</p>
-            <p className="text-2xl font-bold text-slate-900">
-              {summarySnapshot.avgVisits.toFixed(1)}
-            </p>
-            <p className="text-xs text-slate-500">
-              {summarySnapshot.topGuest
-                ? `${summarySnapshot.topGuest.name} leads with ${summarySnapshot.topGuest.visits} visits`
-                : "No repeat visit data yet"}
-            </p>
-          </div>
-        </Card>
-        <Card>
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-slate-500">
-              Upcoming reservations
-            </p>
-            <p className="text-2xl font-bold text-slate-900">
-              {summarySnapshot.upcoming}
-            </p>
-            <p className="text-xs text-slate-500">
-              Includes all confirmed future stays
-            </p>
-          </div>
-        </Card>
-      </div>
-
       <Card>
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -562,6 +552,15 @@ export const ManageCustomer: React.FC = () => {
               guests
             </p>
           </div>
+          <Button
+            aria-label="Add customer"
+            title="Add customer"
+            onClick={handleAdd}
+            className="flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Add customer
+          </Button>
           {filtersActive && (
             <Button
               type="button"
@@ -574,53 +573,51 @@ export const ManageCustomer: React.FC = () => {
           )}
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4 mb-6">
-          <div className="md:col-span-2 xl:col-span-2">
-            <Input
-              placeholder="Search by name, email, or phone..."
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-            />
-          </div>
-          <Select
-            label="Sort by"
-            value={sortOption}
-            onChange={(event) =>
-              setSortOption(event.target.value as SortOption)
-            }
-            options={SORT_OPTIONS}
+        <div className="mb-6">
+          <Input
+            placeholder="Search by name, email, or phone..."
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
           />
-        </div>
-
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4 mb-6">
-          {STATUS_FILTERS.map((filter) => (
-            <Button
-              key={filter.value}
-              type="button"
-              size="sm"
-              variant={statusFilter === filter.value ? "primary" : "outline"}
-              className="flex w-full items-center justify-between gap-3 text-left"
-              onClick={() => setStatusFilter(filter.value)}
-            >
-              <div>
-                <p className="text-sm font-semibold">{filter.label}</p>
-                <p className="text-xs font-medium text-slate-500">
-                  {filter.description}
-                </p>
-              </div>
-              <span className="rounded-full bg-white/80 px-2 py-0.5 text-xs font-semibold text-slate-700">
-                {statusCounts[filter.value]}
-              </span>
-            </Button>
-          ))}
         </div>
 
         <Table
           columns={columns}
-          data={filteredCustomers}
+          data={pagedCustomers}
           onRowClick={handleView}
           emptyMessage="No customers match the current filters."
         />
+        {filteredCustomers.length > 0 && (
+          <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-xs text-slate-500 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+            <p>
+              Showing {tableStartIndex}–{tableEndIndex} of{" "}
+              {filteredCustomers.length} guests
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+              >
+                Previous
+              </Button>
+              <span className="text-xs text-slate-500">
+                Page {currentPage} / {totalPages}
+              </span>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={currentPage === totalPages}
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                }
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        )}
       </Card>
 
       <Modal
@@ -656,39 +653,100 @@ export const ManageCustomer: React.FC = () => {
         }
       >
         <div className="space-y-4">
-          <Input
-            label="Name"
-            value={formData.name}
-            onChange={(event) =>
-              setFormData({ ...formData, name: event.target.value })
-            }
-            required
-          />
-          <Input
-            label="Email"
-            type="email"
-            value={formData.email}
-            onChange={(event) =>
-              setFormData({ ...formData, email: event.target.value })
-            }
-            required
-          />
-          <Input
-            label="Phone"
-            value={formData.phone}
-            onChange={(event) =>
-              setFormData({ ...formData, phone: event.target.value })
-            }
-            required
-          />
-          <Input
-            label="Nationality"
-            value={formData.nationality}
-            onChange={(event) =>
-              setFormData({ ...formData, nationality: event.target.value })
-            }
-            required
-          />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Input
+              label="First name"
+              value={formData.firstName}
+              onChange={(event) =>
+                setFormData({ ...formData, firstName: event.target.value })
+              }
+              required
+            />
+            <Input
+              label="Last name"
+              value={formData.lastName}
+              onChange={(event) =>
+                setFormData({ ...formData, lastName: event.target.value })
+              }
+              required
+            />
+            <Input
+              label="NIC / Passport number"
+              value={formData.identificationNumber}
+              onChange={(event) =>
+                setFormData({
+                  ...formData,
+                  identificationNumber: event.target.value,
+                })
+              }
+              required
+            />
+            <Input
+              label="Date of birth"
+              type="date"
+              value={formData.dob}
+              onChange={(event) =>
+                setFormData({ ...formData, dob: event.target.value })
+              }
+              required
+            />
+            <Input
+              label="Email"
+              type="email"
+              value={formData.email}
+              onChange={(event) =>
+                setFormData({ ...formData, email: event.target.value })
+              }
+              required
+            />
+            <Input
+              label="Phone"
+              value={formData.phone}
+              onChange={(event) =>
+                setFormData({ ...formData, phone: event.target.value })
+              }
+              required
+            />
+            <Input
+              label="Nationality"
+              value={formData.nationality}
+              onChange={(event) =>
+                setFormData({ ...formData, nationality: event.target.value })
+              }
+              required
+            />
+            <Input
+              label="Country"
+              value={formData.country}
+              onChange={(event) =>
+                setFormData({ ...formData, country: event.target.value })
+              }
+              required
+            />
+            <Input
+              label="City"
+              value={formData.city}
+              onChange={(event) =>
+                setFormData({ ...formData, city: event.target.value })
+              }
+              required
+            />
+            <Input
+              label="Address line 1"
+              value={formData.addressLine1}
+              onChange={(event) =>
+                setFormData({ ...formData, addressLine1: event.target.value })
+              }
+              required
+            />
+            <Input
+              label="Address line 2"
+              value={formData.addressLine2}
+              onChange={(event) =>
+                setFormData({ ...formData, addressLine2: event.target.value })
+              }
+            />
+          </div>
         </div>
       </Modal>
 
@@ -748,6 +806,51 @@ export const ManageCustomer: React.FC = () => {
                 <p className="text-sm font-semibold text-slate-900">
                   {formatCurrency(selectedCustomer.totalSpent, currencyCode)}
                 </p>
+              </Card>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Card>
+                <p className="text-xs font-medium text-slate-500">
+                  NIC / Passport
+                </p>
+                <p className="text-sm font-semibold text-slate-900">
+                  {selectedCustomer.identificationNumber || "Not recorded"}
+                </p>
+                <p className="text-xs text-slate-500">
+                  {selectedCustomer.identificationDocumentName
+                    ? "Document uploaded"
+                    : "No document uploaded"}
+                </p>
+              </Card>
+              <Card>
+                <p className="text-xs font-medium text-slate-500">
+                  Date of birth
+                </p>
+                <p className="text-sm font-semibold text-slate-900">
+                  {selectedCustomer.dob
+                    ? formatDate(selectedCustomer.dob)
+                    : "Not recorded"}
+                </p>
+              </Card>
+              <Card>
+                <p className="text-xs font-medium text-slate-500">Location</p>
+                <p className="text-sm font-semibold text-slate-900">
+                  {selectedCustomer.country || "Country not set"}
+                </p>
+                <p className="text-xs text-slate-500">
+                  {selectedCustomer.city || "City not set"}
+                </p>
+              </Card>
+              <Card>
+                <p className="text-xs font-medium text-slate-500">Address</p>
+                <p className="text-sm font-semibold text-slate-900">
+                  {selectedCustomer.addressLine1 || "Address line 1 missing"}
+                </p>
+                {selectedCustomer.addressLine2 && (
+                  <p className="text-xs text-slate-500">
+                    {selectedCustomer.addressLine2}
+                  </p>
+                )}
               </Card>
             </div>
             <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">

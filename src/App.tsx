@@ -27,9 +27,22 @@ import { EventReporting } from "./pages/events/EventReporting";
 
 // Invoicing
 import { Bill } from "./pages/invoicing/Bill";
-import { Receipts } from "./pages/invoicing/Receipts";
-import { Refunds } from "./pages/invoicing/Refunds";
 import { AdditionalBilling } from "./pages/invoicing/AdditionalBilling";
+import { InvoiceList } from "./pages/invoicing/InvoiceList";
+import { InvoiceView } from "./pages/invoicing/InvoiceView";
+import { CreateInvoice } from "./pages/invoicing/CreateInvoice";
+import { ReceiptsList } from "./pages/invoicing/ReceiptsList";
+import { ViewReceipt } from "./pages/invoicing/ViewReceipt";
+import { CreateReceipt } from "./pages/invoicing/CreateReceipt";
+import { RefundsNew } from "./pages/invoicing/RefundsList";
+import { ViewRefund } from "./pages/invoicing/ViewRefund";
+import { CreateRefund } from "./pages/invoicing/CreateRefund";
+import { CreditNotesList } from "./pages/invoicing/CreditNotesList";
+import { ViewCreditNote } from "./pages/invoicing/ViewCreditNote";
+import { CreateCreditNote } from "./pages/invoicing/CreateCreditNote";
+import { EventInvoicesList } from "./pages/invoicing/EventInvoicesList";
+import { ViewEventInvoice } from "./pages/invoicing/ViewEventInvoice";
+import { CreateEventInvoice } from "./pages/invoicing/CreateEventInvoice";
 
 // Rooms
 import { RoomsOverview } from "./pages/rooms/Overview";
@@ -38,7 +51,6 @@ import { ViewType } from "./pages/rooms/ViewType";
 import { Amenities } from "./pages/rooms/Amenities";
 import { RoomAreas } from "./pages/rooms/RoomAreas";
 import { RoomTypes } from "./pages/rooms/RoomTypes";
-import { Price } from "./pages/rooms/Price";
 
 import { MealPlan } from "./pages/rooms/MealPlan";
 import { RoomChecklist } from "./pages/rooms/RoomChecklist";
@@ -125,13 +137,68 @@ function App() {
                       path="/events/reporting"
                       element={<EventReporting />}
                     />
-                    <Route path="/invoicing/bill" element={<Bill />} />
-                    <Route path="/invoicing/receipts" element={<Receipts />} />
-                    <Route path="/invoicing/refunds" element={<Refunds />} />
+                    <Route
+                      path="/invoicing/invoices"
+                      element={<InvoiceList />}
+                    />
+                    <Route
+                      path="/invoicing/invoices/create"
+                      element={<CreateInvoice />}
+                    />
+                    <Route
+                      path="/invoicing/invoices/:id"
+                      element={<InvoiceView />}
+                    />
+                    <Route
+                      path="/invoicing/receipts"
+                      element={<ReceiptsList />}
+                    />
+                    <Route
+                      path="/invoicing/receipts/create"
+                      element={<CreateReceipt />}
+                    />
+                    <Route
+                      path="/invoicing/receipts/:id"
+                      element={<ViewReceipt />}
+                    />
+                    <Route path="/invoicing/refunds" element={<RefundsNew />} />
+                    <Route
+                      path="/invoicing/refunds/create"
+                      element={<CreateRefund />}
+                    />
+                    <Route
+                      path="/invoicing/refunds/:id"
+                      element={<ViewRefund />}
+                    />
+                    <Route
+                      path="/invoicing/credit-notes"
+                      element={<CreditNotesList />}
+                    />
+                    <Route
+                      path="/invoicing/credit-notes/create"
+                      element={<CreateCreditNote />}
+                    />
+                    <Route
+                      path="/invoicing/credit-notes/:id"
+                      element={<ViewCreditNote />}
+                    />
+                    <Route
+                      path="/invoicing/event-invoices"
+                      element={<EventInvoicesList />}
+                    />
+                    <Route
+                      path="/invoicing/event-invoices/create"
+                      element={<CreateEventInvoice />}
+                    />
+                    <Route
+                      path="/invoicing/event-invoices/:id"
+                      element={<ViewEventInvoice />}
+                    />
                     <Route
                       path="/invoicing/additional"
                       element={<AdditionalBilling />}
                     />
+                    <Route path="/invoicing/bill" element={<Bill />} />
                     <Route path="/rooms/overview" element={<RoomsOverview />} />
                     <Route path="/rooms/all" element={<AllRooms />} />
                     <Route
@@ -143,7 +210,6 @@ function App() {
                     <Route path="/rooms/areas" element={<RoomAreas />} />
                     <Route path="/rooms/types" element={<RoomTypes />} />
                     <Route path="/rooms/stay-types" element={<StayTypes />} />
-                    <Route path="/rooms/price" element={<Price />} />
                     <Route path="/rooms/meal-plan" element={<MealPlan />} />
                     <Route
                       path="/housekeeping/manager"

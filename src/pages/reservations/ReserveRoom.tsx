@@ -1,4 +1,4 @@
-﻿import React, { useState } from "react";
+﻿import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useHotel } from "../../context/HotelContext";
 import { Customer } from "../../types/entities";
@@ -6,7 +6,7 @@ import { Card } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
 import { Modal } from "../../components/ui/Modal";
 import { Input } from "../../components/ui/Input";
-import { generateId } from "../../utils/formatters";
+import { generateId, formatDate } from "../../utils/formatters";
 import {
   X,
   Users,
@@ -18,7 +18,25 @@ import {
   Eye,
   Calendar,
   Info,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
+
+import {
+  addDays,
+  addMonths,
+  eachDayOfInterval,
+  endOfMonth,
+  endOfWeek,
+  format as formatDateFns,
+  isAfter,
+  isBefore,
+  isSameDay,
+  isWithinInterval,
+  startOfDay,
+  startOfMonth,
+  startOfWeek,
+} from "date-fns";
 
 // Room type configurations with images
 const ROOM_IMAGES: Record<string, string> = {
@@ -31,6 +49,9 @@ const ROOM_IMAGES: Record<string, string> = {
   Executive:
     "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=800&auto=format&fit=crop&q=80",
 };
+
+const WEEK_DAYS = ["S", "M", "T", "W", "T", "F", "S"];
+type CalendarMode = "checkIn" | "checkOut";
 
 export const ReserveRoom: React.FC = () => {
   const { state, dispatch } = useHotel();
@@ -75,6 +96,16 @@ export const ReserveRoom: React.FC = () => {
   const [selectedRoomForAmenities, setSelectedRoomForAmenities] = useState<
     string | null
   >(null);
+  const [showGuestPanel, setShowGuestPanel] = useState(false);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [calendarBaseMonth, setCalendarBaseMonth] = useState(() =>
+    startOfMonth(new Date())
+  );
+  const [calendarSelectionMode, setCalendarSelectionMode] =
+    useState<CalendarMode>("checkIn");
+  const calendarRef = useRef<HTMLDivElement | null>(null);
+  const guestDropdownRef = useRef<HTMLDivElement | null>(null);
+  const guestButtonRef = useRef<HTMLButtonElement | null>(null);
 
   const [matchedCustomer, setMatchedCustomer] = useState<Customer | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -87,6 +118,11 @@ export const ReserveRoom: React.FC = () => {
     balance: number;
     mode: string;
   } | null>(null);
+
+  const initialChildAges = Array.from(
+    { length: extendingReservation?.children ?? 0 },
+    () => 1
+  );
 
   const [formData, setFormData] = useState({
     customerId: extendingReservation?.customerId || "",
@@ -101,7 +137,7 @@ export const ReserveRoom: React.FC = () => {
     guestEmail: "",
     guestPhone: "",
     guestIdNumber: "",
-    childPolicyId: "",
+    childAges: initialChildAges,
   });
 
   const [errors, setErrors] = useState<{
@@ -137,6 +173,51 @@ export const ReserveRoom: React.FC = () => {
 
     return true;
   };
+
+  // useEffect hooks for click-outside detection
+  useEffect(() => {
+    if (!isCalendarOpen) return;
+    const handleOutsideClick = (event: MouseEvent) => {
+      if (
+        calendarRef.current &&
+        !calendarRef.current.contains(event.target as Node)
+      ) {
+        setIsCalendarOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, [isCalendarOpen]);
+
+  useEffect(() => {
+    if (!showGuestPanel) return;
+    const handleOutsideClick = (event: MouseEvent) => {
+      if (
+        guestDropdownRef.current &&
+        guestDropdownRef.current.contains(event.target as Node)
+      ) {
+        return;
+      }
+      if (
+        guestButtonRef.current &&
+        guestButtonRef.current.contains(event.target as Node)
+      ) {
+        return;
+      }
+      setShowGuestPanel(false);
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, [showGuestPanel]);
+
+  useEffect(() => {
+    if (currentStep !== 1) {
+      setIsCalendarOpen(false);
+      setShowGuestPanel(false);
+    }
+  }, [currentStep]);
 
   const validateDates = () => {
     const newErrors: typeof errors = {};
@@ -212,7 +293,7 @@ export const ReserveRoom: React.FC = () => {
         type: "UPDATE_RESERVATION",
         payload: updatedReservation,
       });
-      navigate("/reservations/overview");
+      navigate("/dashboard");
       return;
     }
 
@@ -290,7 +371,11 @@ export const ReserveRoom: React.FC = () => {
     };
 
     dispatch({ type: "ADD_RESERVATION", payload: newReservation });
-    navigate("/reservations/overview");
+
+    // Use setTimeout to ensure state update completes before navigation
+    setTimeout(() => {
+      navigate("/dashboard");
+    }, 0);
   };
 
   const handleChange = (
@@ -353,6 +438,205 @@ export const ReserveRoom: React.FC = () => {
       customerId: customer.id,
     }));
   };
+
+  // Calendar helper functions
+  const generateMonthDays = (monthDate: Date) => {
+    const start = startOfWeek(startOfMonth(monthDate));
+    const end = endOfWeek(endOfMonth(monthDate));
+    return eachDayOfInterval({ start, end });
+  };
+
+  const openCalendarPopover = (mode: CalendarMode) => {
+    setShowGuestPanel(false);
+    let baseDate = new Date();
+    if (mode === "checkIn" && formData.checkIn) {
+      baseDate = new Date(formData.checkIn);
+    } else if (mode === "checkOut" && formData.checkOut) {
+      baseDate = new Date(formData.checkOut);
+    } else if (formData.checkIn) {
+      baseDate = new Date(formData.checkIn);
+    }
+    setCalendarBaseMonth(startOfMonth(baseDate));
+    setCalendarSelectionMode(mode);
+    setIsCalendarOpen(true);
+  };
+
+  const toggleGuestPanel = () => {
+    setIsCalendarOpen(false);
+    setShowGuestPanel((prev) => !prev);
+  };
+
+  const handleCalendarDayClick = (day: Date) => {
+    const iso = formatDateFns(day, "yyyy-MM-dd");
+    setFormData((prev) => {
+      if (calendarSelectionMode === "checkIn") {
+        const existingCheckOut = prev.checkOut ? new Date(prev.checkOut) : null;
+        const nextCheckOut =
+          existingCheckOut && isAfter(existingCheckOut, day)
+            ? prev.checkOut
+            : formatDateFns(addDays(day, 1), "yyyy-MM-dd");
+        return { ...prev, checkIn: iso, checkOut: nextCheckOut };
+      }
+      return { ...prev, checkOut: iso };
+    });
+    if (calendarSelectionMode === "checkIn") {
+      setCalendarSelectionMode("checkOut");
+    } else {
+      setIsCalendarOpen(false);
+    }
+  };
+
+  const renderGuestDetailsContent = () => (
+    <div className="space-y-2">
+      <div className="bg-slate-50 border border-slate-200 rounded-lg p-2 text-center">
+        <p className="text-xs font-semibold text-slate-900">Room {roomCount}</p>
+        <p className="text-[10px] text-slate-500">
+          {formData.adults} Adult{formData.adults > 1 ? "s" : ""}
+          {formData.children > 0
+            ? `, ${formData.children} Child${
+                formData.children > 1 ? "ren" : ""
+              }`
+            : ""}
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        <div className="border border-slate-200 rounded-lg p-2 space-y-1">
+          <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
+            Adults
+          </p>
+          <div className="flex items-center justify-between text-sm font-semibold">
+            <span>{formData.adults}</span>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() =>
+                  setFormData((prev) =>
+                    prev.adults > 1
+                      ? { ...prev, adults: prev.adults - 1 }
+                      : prev
+                  )
+                }
+                disabled={formData.adults <= 1}
+                className="w-7 h-7 rounded-full border border-slate-300 text-slate-600 disabled:opacity-40 text-sm"
+              >
+                –
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  setFormData((prev) =>
+                    prev.adults < 10
+                      ? { ...prev, adults: prev.adults + 1 }
+                      : prev
+                  )
+                }
+                disabled={formData.adults >= 10}
+                className="w-7 h-7 rounded-full border border-slate-300 text-slate-600 disabled:opacity-40 text-sm"
+              >
+                +
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="border border-slate-200 rounded-lg p-2 space-y-1">
+          <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
+            Children
+          </p>
+          <div className="flex items-center justify-between text-sm font-semibold">
+            <span>{formData.children}</span>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() =>
+                  setFormData((prev) => {
+                    if (prev.children <= 0) return prev;
+                    const nextChildren = prev.children - 1;
+                    return {
+                      ...prev,
+                      children: nextChildren,
+                      childAges: prev.childAges.slice(0, nextChildren),
+                    };
+                  })
+                }
+                disabled={formData.children <= 0}
+                className="w-7 h-7 rounded-full border border-slate-300 text-slate-600 disabled:opacity-40 text-sm"
+              >
+                -
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  setFormData((prev) => {
+                    if (prev.children >= 10) return prev;
+                    return {
+                      ...prev,
+                      children: prev.children + 1,
+                      childAges: [...prev.childAges, 1],
+                    };
+                  })
+                }
+                disabled={formData.children >= 10}
+                className="w-7 h-7 rounded-full border border-slate-300 text-slate-600 disabled:opacity-40 text-sm"
+              >
+                +
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {formData.children > 0 && (
+          <div className="space-y-1.5">
+            {formData.childAges.map((age, index) => (
+              <div
+                key={index}
+                className="border border-slate-200 rounded-lg p-2 flex items-center justify-between gap-2"
+              >
+                <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
+                  Child {index + 1} Age*
+                </label>
+                <select
+                  value={age}
+                  onChange={(e) =>
+                    setFormData((prev) => {
+                      const nextAges = [...prev.childAges];
+                      nextAges[index] = parseInt(e.target.value, 10) || 1;
+                      return { ...prev, childAges: nextAges };
+                    })
+                  }
+                  className="w-16 rounded-md border border-slate-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none"
+                >
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map((value) => (
+                    <option key={value} value={value}>
+                      {value}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  const totalGuests = formData.adults + formData.children;
+  const roomCount = Math.max(1, selectedRooms.length);
+  const guestSummaryLabel = `${totalGuests} guest${
+    totalGuests > 1 ? "s" : ""
+  }, ${roomCount} room${roomCount > 1 ? "s" : ""}`;
+  const checkInDateValue = formData.checkIn ? new Date(formData.checkIn) : null;
+  const checkOutDateValue = formData.checkOut
+    ? new Date(formData.checkOut)
+    : null;
+  const today = startOfDay(new Date());
+  const checkInDisplay = formData.checkIn
+    ? formatDate(formData.checkIn, "EEE, MMM dd, yyyy")
+    : "Add date";
+  const checkOutDisplay = formData.checkOut
+    ? formatDate(formData.checkOut, "EEE, MMM dd, yyyy")
+    : "Add date";
 
   // Calculate total amount in real-time
   const calculateInvoice = () => {
@@ -573,270 +857,250 @@ export const ReserveRoom: React.FC = () => {
                   </Card>
                 )}
 
-                {/* Check-in and Check-out Dates */}
-                <Card>
-                  <div className="p-6">
-                    {/* Date Picker - Dual Calendar View */}
-                    <div className="border border-slate-200 rounded-lg overflow-hidden">
-                      {/* Calendar Grid */}
-                      <div
-                        className={`grid ${
-                          isExtendMode
-                            ? "grid-cols-1"
-                            : "grid-cols-1 md:grid-cols-2"
-                        } divide-x divide-slate-200`}
-                      >
-                        {!isExtendMode && (
-                          <div className="p-4">
-                            <input
-                              type="date"
-                              name="checkIn"
-                              value={formData.checkIn}
-                              onChange={handleChange}
-                              min={new Date().toISOString().split("T")[0]}
-                              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900"
-                            />
-                          </div>
-                        )}
-
-                        <div className="p-4">
-                          <input
-                            type="date"
-                            name="checkOut"
-                            value={formData.checkOut}
-                            onChange={handleChange}
-                            min={formData.checkIn || undefined}
-                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900"
-                          />
+                <div className="relative mb-6" ref={calendarRef}>
+                  <div className="grid gap-3 md:grid-cols-3">
+                    <button
+                      type="button"
+                      onClick={() => openCalendarPopover("checkIn")}
+                      className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition hover:shadow-lg"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="rounded-full bg-slate-50 p-2">
+                          <Calendar className="h-4 w-4 text-blue-600" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] uppercase tracking-[0.3em] text-slate-500">
+                            Check-in
+                          </p>
+                          <p className="text-sm font-semibold text-slate-900">
+                            {checkInDisplay}
+                          </p>
                         </div>
                       </div>
-
-                      {/* Check-In / Check-Out Display */}
-                      <div
-                        className={`grid ${
-                          isExtendMode ? "grid-cols-1" : "grid-cols-2"
-                        } divide-x divide-slate-200 border-t border-slate-200 bg-slate-50`}
-                      >
-                        {!isExtendMode && (
-                          <div className="py-6 text-center">
-                            <p className="text-sm text-slate-600 mb-1">
-                              Check In
-                            </p>
-                            <p className="text-slate-900 font-medium">
-                              {formData.checkIn || "____-__-__"}
-                            </p>
-                          </div>
-                        )}
-
-                        <div className="py-6 text-center">
-                          <p className="text-sm text-slate-600 mb-1">
-                            Check Out{" "}
-                            {isExtendMode && (
-                              <span className="text-blue-600">(New)</span>
-                            )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openCalendarPopover("checkOut")}
+                      className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 transition hover:shadow-lg"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="rounded-full bg-slate-50 p-2">
+                          <Calendar className="h-4 w-4 text-purple-600" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] uppercase tracking-[0.3em] text-slate-500">
+                            Check-out
                           </p>
-                          <p className="text-slate-900 font-medium">
-                            {formData.checkOut || "____-__-__"}
+                          <p className="text-sm font-semibold text-slate-900">
+                            {checkOutDisplay}
                           </p>
                         </div>
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={toggleGuestPanel}
+                      ref={guestButtonRef}
+                      className="text-left rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="rounded-full bg-gradient-to-br from-blue-600 to-blue-700 p-2 text-white shadow">
+                          <Users className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] uppercase tracking-[0.3em] text-slate-500">
+                            Guests
+                          </p>
+                          <p className="text-sm font-semibold text-slate-900">
+                            {guestSummaryLabel}
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  </div>
+                  {isCalendarOpen && (
+                    <div className="absolute inset-x-4 top-full z-30 mt-4 mx-auto w-[min(580px,100%)] rounded-3xl border border-slate-200 bg-white shadow-2xl">
+                      <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
+                        <p className="text-xs font-semibold tracking-[0.4em] text-slate-500">
+                          {calendarSelectionMode === "checkIn"
+                            ? "SELECT CHECK-IN"
+                            : "SELECT CHECK-OUT"}
+                        </p>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setCalendarBaseMonth((prev) =>
+                                addMonths(prev, -1)
+                              )
+                            }
+                            className="rounded-full p-1 text-slate-600 transition hover:bg-slate-100"
+                          >
+                            <ChevronLeft className="h-5 w-5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setCalendarBaseMonth((prev) => addMonths(prev, 1))
+                            }
+                            className="rounded-full p-1 text-slate-600 transition hover:bg-slate-100"
+                          >
+                            <ChevronRight className="h-5 w-5" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="grid gap-4 px-5 py-4 md:grid-cols-2">
+                        {[0, 1].map((offset) => {
+                          const monthDate = addMonths(
+                            calendarBaseMonth,
+                            offset
+                          );
+                          const days = generateMonthDays(monthDate);
+                          return (
+                            <div key={offset} className="space-y-3">
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm font-semibold text-slate-700">
+                                  {formatDateFns(monthDate, "MMMM yyyy")}
+                                </span>
+                              </div>
+                              <div className="grid grid-cols-7 gap-1 text-[9px] font-semibold uppercase tracking-[0.4em] text-slate-400">
+                                {WEEK_DAYS.map((dayAbbrev) => (
+                                  <span key={`${offset}-${dayAbbrev}`}>
+                                    {dayAbbrev}
+                                  </span>
+                                ))}
+                              </div>
+                              <div className="grid grid-cols-7 gap-1">
+                                {days.map((day) => {
+                                  const isCurrentMonth =
+                                    day.getMonth() === monthDate.getMonth();
+                                  const isDisabled =
+                                    isBefore(day, today) ||
+                                    (calendarSelectionMode === "checkOut" &&
+                                      Boolean(
+                                        checkInDateValue &&
+                                          !isAfter(day, checkInDateValue)
+                                      ));
+                                  const isStart = Boolean(
+                                    checkInDateValue &&
+                                      isSameDay(day, checkInDateValue)
+                                  );
+                                  const isEnd = Boolean(
+                                    checkOutDateValue &&
+                                      isSameDay(day, checkOutDateValue)
+                                  );
+                                  const hasRange = Boolean(
+                                    checkInDateValue && checkOutDateValue
+                                  );
+                                  const isInRange =
+                                    hasRange &&
+                                    isWithinInterval(day, {
+                                      start: checkInDateValue!,
+                                      end: checkOutDateValue!,
+                                    });
+                                  const highlightClass =
+                                    isStart || isEnd
+                                      ? "bg-gradient-to-br from-blue-600 to-blue-500 text-white shadow-lg"
+                                      : isInRange
+                                      ? "bg-blue-100 text-blue-700"
+                                      : isCurrentMonth
+                                      ? "text-slate-700 hover:bg-blue-50"
+                                      : "text-slate-300";
+                                  return (
+                                    <button
+                                      key={day.toISOString()}
+                                      type="button"
+                                      disabled={isDisabled}
+                                      onClick={() =>
+                                        handleCalendarDayClick(day)
+                                      }
+                                      className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold transition ${highlightClass} ${
+                                        isDisabled
+                                          ? "cursor-not-allowed opacity-60"
+                                          : ""
+                                      }`}
+                                    >
+                                      {day.getDate()}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
+                  )}
+                  {showGuestPanel && !isExtendMode && (
+                    <div
+                      ref={guestDropdownRef}
+                      className="absolute right-0 top-full z-30 mt-4 w-[min(280px,100%)] rounded-2xl border border-slate-200 bg-white shadow-2xl"
+                    >
+                      <div className="flex items-center justify-between border-b border-slate-200 px-3 py-2">
+                        <p className="text-[10px] font-semibold tracking-wider text-slate-500">
+                          GUESTS
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => setShowGuestPanel(false)}
+                          className="rounded-full p-1 text-slate-500 transition hover:bg-slate-100"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                      <div className="space-y-2 p-3">
+                        {renderGuestDetailsContent()}
+                        <Button
+                          type="button"
+                          variant="primary"
+                          className="w-full text-xs py-1.5"
+                          onClick={() => setShowGuestPanel(false)}
+                        >
+                          Done
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
 
-                    {/* Error Messages */}
-                    {errors.checkIn && (
-                      <p className="text-red-500 text-xs mt-2">
-                        {errors.checkIn}
-                      </p>
-                    )}
-                    {(errors.checkOut || errors.newCheckOut) && (
-                      <p className="text-red-500 text-xs mt-2">
-                        {errors.checkOut || errors.newCheckOut}
-                      </p>
-                    )}
+                {/* Error Messages */}
+                {errors.checkIn && (
+                  <p className="text-red-500 text-xs mt-2">{errors.checkIn}</p>
+                )}
+                {(errors.checkOut || errors.newCheckOut) && (
+                  <p className="text-red-500 text-xs mt-2">
+                    {errors.checkOut || errors.newCheckOut}
+                  </p>
+                )}
 
-                    {/* Room Not Available Warning - Extend Mode */}
-                    {isExtendMode && isRoomUnavailable() && (
-                      <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-4">
-                        <div className="flex items-start gap-3">
-                          <div className="flex-shrink-0 mt-0.5">
-                            <div className="flex items-center justify-center h-8 w-8 rounded-full bg-red-100">
-                              <X className="h-5 w-5 text-red-600" />
-                            </div>
-                          </div>
-                          <div className="flex-1">
-                            <h3 className="font-bold text-red-900 text-sm">
-                              Room Not Available
-                            </h3>
-                            <p className="text-red-700 text-xs mt-1">
-                              The selected checkout date conflicts with another
-                              reservation. The room is not available for this
-                              period.
-                            </p>
-                            <p className="text-red-600 text-xs font-semibold mt-2">
-                              You can proceed to checkout the guest now.
-                            </p>
-                          </div>
+                {/* Room Not Available Warning - Extend Mode */}
+                {isExtendMode && isRoomUnavailable() && (
+                  <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0 mt-0.5">
+                        <div className="flex items-center justify-center h-8 w-8 rounded-full bg-red-100">
+                          <X className="h-5 w-5 text-red-600" />
                         </div>
                       </div>
-                    )}
+                      <div className="flex-1">
+                        <h3 className="font-bold text-red-900 text-sm">
+                          Room Not Available
+                        </h3>
+                        <p className="text-red-700 text-xs mt-1">
+                          The selected checkout date conflicts with another
+                          reservation. The room is not available for this
+                          period.
+                        </p>
+                        <p className="text-red-600 text-xs font-semibold mt-2">
+                          You can proceed to checkout the guest now.
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                </Card>
+                )}
 
                 {!isExtendMode && (
                   <>
-                    {/* Guest Information */}
-                    <Card>
-                      <div className="p-6">
-                        {/* Summary Display */}
-                        <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-6">
-                          <p className="text-slate-700 font-medium">
-                            {selectedRooms.length} Room
-                            {selectedRooms.length > 1 ? "s" : ""},{" "}
-                            {formData.adults} Guest
-                            {formData.adults > 1 ? "s" : ""}
-                            {formData.children > 0
-                              ? `, ${formData.children} Child${
-                                  formData.children > 1 ? "ren" : ""
-                                }`
-                              : ""}
-                          </p>
-                        </div>
-
-                        {/* Room 1 Section */}
-                        <div className="border border-slate-200 rounded-lg p-5 space-y-4">
-                          <h4 className="font-semibold text-slate-900 mb-4">
-                            Room 1
-                          </h4>
-
-                          {/* Guests Counter */}
-                          <div className="flex items-center justify-between">
-                            <label className="text-sm font-medium text-slate-700">
-                              Guests
-                            </label>
-                            <div className="flex items-center gap-3">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (formData.adults > 1) {
-                                    setFormData((prev) => ({
-                                      ...prev,
-                                      adults: prev.adults - 1,
-                                    }));
-                                  }
-                                }}
-                                disabled={formData.adults <= 1}
-                                className="w-8 h-8 rounded border border-slate-300 flex items-center justify-center text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                              >
-                                −
-                              </button>
-                              <span className="text-base font-medium text-slate-900 min-w-[2rem] text-center">
-                                {formData.adults}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (formData.adults < 10) {
-                                    setFormData((prev) => ({
-                                      ...prev,
-                                      adults: prev.adults + 1,
-                                    }));
-                                  }
-                                }}
-                                disabled={formData.adults >= 10}
-                                className="w-8 h-8 rounded border border-slate-300 flex items-center justify-center text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                              >
-                                +
-                              </button>
-                            </div>
-                          </div>
-
-                          {/* Children Counter */}
-                          <div className="flex items-center justify-between">
-                            <label className="text-sm font-medium text-slate-700">
-                              Children
-                            </label>
-                            <div className="flex items-center gap-3">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (formData.children > 0) {
-                                    setFormData((prev) => ({
-                                      ...prev,
-                                      children: prev.children - 1,
-                                    }));
-                                  }
-                                }}
-                                disabled={formData.children <= 0}
-                                className="w-8 h-8 rounded border border-slate-300 flex items-center justify-center text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                              >
-                                −
-                              </button>
-                              <span className="text-base font-medium text-slate-900 min-w-[2rem] text-center">
-                                {formData.children}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (formData.children < 10) {
-                                    setFormData((prev) => ({
-                                      ...prev,
-                                      children: prev.children + 1,
-                                    }));
-                                  }
-                                }}
-                                disabled={formData.children >= 10}
-                                className="w-8 h-8 rounded border border-slate-300 flex items-center justify-center text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                              >
-                                +
-                              </button>
-                            </div>
-                          </div>
-
-                          {/* Select Age Dropdown - Only visible if children > 0 */}
-                          {formData.children > 0 && (
-                            <div>
-                              <label className="block text-sm font-medium text-slate-700 mb-2">
-                                Select Age
-                              </label>
-                              <select
-                                value={formData.childPolicyId}
-                                onChange={(e) =>
-                                  setFormData((prev) => ({
-                                    ...prev,
-                                    childPolicyId: e.target.value,
-                                  }))
-                                }
-                                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-                              >
-                                <option value="">Select Age</option>
-                                {state.policies
-                                  .filter((p) =>
-                                    p.category.toLowerCase().includes("child")
-                                  )
-                                  .filter((p) => p.isActive)
-                                  .map((policy) => (
-                                    <option key={policy.id} value={policy.id}>
-                                      {policy.title}
-                                    </option>
-                                  ))}
-                              </select>
-                              {formData.childPolicyId && (
-                                <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                                  <p className="text-sm text-blue-900">
-                                    {
-                                      state.policies.find(
-                                        (p) => p.id === formData.childPolicyId
-                                      )?.description
-                                    }
-                                  </p>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </Card>
-
                     {/* Booking Channel */}
                     <Card>
                       <div className="p-6">
@@ -2214,219 +2478,224 @@ export const ReserveRoom: React.FC = () => {
         </div>
 
         {/* Right Side - Live Invoice */}
-        <div className="w-96 bg-white overflow-y-auto shadow-2xl border-l border-slate-200">
-          <div className="p-6 sticky top-0 bg-white/95 backdrop-blur-sm z-10 border-b border-slate-200">
-            <h2 className="text-2xl font-bold mb-1 text-slate-900">Invoice</h2>
-            <p className="text-sm text-slate-500">Live Booking Summary</p>
-          </div>
+        {currentStep !== 1 && (
+          <div className="w-96 bg-white overflow-y-auto shadow-2xl border-l border-slate-200">
+            <div className="p-6 sticky top-0 bg-white/95 backdrop-blur-sm z-10 border-b border-slate-200">
+              <h2 className="text-2xl font-bold mb-1 text-slate-900">
+                Invoice
+              </h2>
+              <p className="text-sm text-slate-500">Live Booking Summary</p>
+            </div>
 
-          <div className="p-6 space-y-6">
-            {/* Guest Information */}
-            {formData.guestName && (
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-slate-600 uppercase tracking-wider">
-                  Guest Details
-                </h3>
-                <div className="space-y-2 bg-slate-50 rounded-lg p-4 border border-slate-200">
-                  <div>
-                    <p className="text-xs text-slate-500">Name</p>
-                    <p className="font-medium text-slate-900">
-                      {formData.guestName}
-                    </p>
-                  </div>
-                  {formData.guestEmail && (
-                    <div>
-                      <p className="text-xs text-slate-500">Email</p>
-                      <p className="text-sm text-slate-700">
-                        {formData.guestEmail}
-                      </p>
-                    </div>
-                  )}
-                  {formData.guestPhone && (
-                    <div>
-                      <p className="text-xs text-slate-500">Phone</p>
-                      <p className="text-sm text-slate-700">
-                        {formData.guestPhone}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Stay Information */}
-            {(formData.checkIn || formData.checkOut) && (
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-slate-600 uppercase tracking-wider">
-                  Stay Details
-                </h3>
-                <div className="space-y-2 bg-slate-50 rounded-lg p-4 border border-slate-200">
-                  {formData.checkIn && (
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">Check-in</span>
-                      <span className="font-medium text-slate-900">
-                        {new Date(formData.checkIn).toLocaleDateString()}
-                      </span>
-                    </div>
-                  )}
-                  {formData.checkOut && (
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">Check-out</span>
-                      <span className="font-medium text-slate-900">
-                        {new Date(formData.checkOut).toLocaleDateString()}
-                      </span>
-                    </div>
-                  )}
-                  {invoice.nights > 0 && (
-                    <div className="flex justify-between pt-2 border-t border-slate-200">
-                      <span className="text-slate-500">Duration</span>
-                      <span className="font-bold text-blue-600">
-                        {invoice.nights} night{invoice.nights > 1 ? "s" : ""}
-                      </span>
-                    </div>
-                  )}
-                  {formData.adults > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">Guests</span>
-                      <span className="text-slate-900">
-                        {formData.adults} Adult{formData.adults > 1 ? "s" : ""}
-                        {formData.children > 0
-                          ? `, ${formData.children} Child${
-                              formData.children > 1 ? "ren" : ""
-                            }`
-                          : ""}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Room Details */}
-            {invoice.roomDetails.length > 0 && (
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-slate-600 uppercase tracking-wider">
-                  Rooms ({invoice.roomDetails.length})
-                </h3>
+            <div className="p-6 space-y-6">
+              {/* Guest Information */}
+              {formData.guestName && (
                 <div className="space-y-3">
-                  {invoice.roomDetails.map((room, index) => (
-                    <div
-                      key={index}
-                      className="bg-slate-50 rounded-lg p-4 space-y-2 border border-slate-200"
-                    >
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <p className="font-semibold text-slate-900">
-                            {room.roomType}
-                          </p>
-                          <p className="text-xs text-slate-500">
-                            Room {room.roomNumber}
-                          </p>
-                        </div>
-                        <p className="font-bold text-blue-600">
-                          ${room.price.toFixed(2)}
+                  <h3 className="text-sm font-semibold text-slate-600 uppercase tracking-wider">
+                    Guest Details
+                  </h3>
+                  <div className="space-y-2 bg-slate-50 rounded-lg p-4 border border-slate-200">
+                    <div>
+                      <p className="text-xs text-slate-500">Name</p>
+                      <p className="font-medium text-slate-900">
+                        {formData.guestName}
+                      </p>
+                    </div>
+                    {formData.guestEmail && (
+                      <div>
+                        <p className="text-xs text-slate-500">Email</p>
+                        <p className="text-sm text-slate-700">
+                          {formData.guestEmail}
                         </p>
                       </div>
-                      {room.mealPlan !== "No meal plan" && (
-                        <div className="flex justify-between text-sm pt-2 border-t border-slate-200">
-                          <span className="text-slate-600">
-                            {room.mealPlan}
-                          </span>
-                          <span className="text-green-600">
-                            +${room.mealCost.toFixed(2)}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Price Breakdown */}
-            {invoice.nights > 0 && invoice.roomDetails.length > 0 && (
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-slate-600 uppercase tracking-wider">
-                  Price Summary
-                </h3>
-                <div className="space-y-2 bg-blue-50 rounded-lg p-4 border border-blue-200">
-                  <div className="flex justify-between">
-                    <span className="text-slate-400">Room Cost</span>
-                    <span className="font-medium">
-                      ${invoice.roomCost.toFixed(2)}
-                    </span>
+                    )}
+                    {formData.guestPhone && (
+                      <div>
+                        <p className="text-xs text-slate-500">Phone</p>
+                        <p className="text-sm text-slate-700">
+                          {formData.guestPhone}
+                        </p>
+                      </div>
+                    )}
                   </div>
-                  {invoice.mealCost > 0 && (
+                </div>
+              )}
+
+              {/* Stay Information */}
+              {(formData.checkIn || formData.checkOut) && (
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold text-slate-600 uppercase tracking-wider">
+                    Stay Details
+                  </h3>
+                  <div className="space-y-2 bg-slate-50 rounded-lg p-4 border border-slate-200">
+                    {formData.checkIn && (
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Check-in</span>
+                        <span className="font-medium text-slate-900">
+                          {new Date(formData.checkIn).toLocaleDateString()}
+                        </span>
+                      </div>
+                    )}
+                    {formData.checkOut && (
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Check-out</span>
+                        <span className="font-medium text-slate-900">
+                          {new Date(formData.checkOut).toLocaleDateString()}
+                        </span>
+                      </div>
+                    )}
+                    {invoice.nights > 0 && (
+                      <div className="flex justify-between pt-2 border-t border-slate-200">
+                        <span className="text-slate-500">Duration</span>
+                        <span className="font-bold text-blue-600">
+                          {invoice.nights} night{invoice.nights > 1 ? "s" : ""}
+                        </span>
+                      </div>
+                    )}
+                    {formData.adults > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Guests</span>
+                        <span className="text-slate-900">
+                          {formData.adults} Adult
+                          {formData.adults > 1 ? "s" : ""}
+                          {formData.children > 0
+                            ? `, ${formData.children} Child${
+                                formData.children > 1 ? "ren" : ""
+                              }`
+                            : ""}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Room Details */}
+              {invoice.roomDetails.length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold text-slate-600 uppercase tracking-wider">
+                    Rooms ({invoice.roomDetails.length})
+                  </h3>
+                  <div className="space-y-3">
+                    {invoice.roomDetails.map((room, index) => (
+                      <div
+                        key={index}
+                        className="bg-slate-50 rounded-lg p-4 space-y-2 border border-slate-200"
+                      >
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="font-semibold text-slate-900">
+                              {room.roomType}
+                            </p>
+                            <p className="text-xs text-slate-500">
+                              Room {room.roomNumber}
+                            </p>
+                          </div>
+                          <p className="font-bold text-blue-600">
+                            ${room.price.toFixed(2)}
+                          </p>
+                        </div>
+                        {room.mealPlan !== "No meal plan" && (
+                          <div className="flex justify-between text-sm pt-2 border-t border-slate-200">
+                            <span className="text-slate-600">
+                              {room.mealPlan}
+                            </span>
+                            <span className="text-green-600">
+                              +${room.mealCost.toFixed(2)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Price Breakdown */}
+              {invoice.nights > 0 && invoice.roomDetails.length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold text-slate-600 uppercase tracking-wider">
+                    Price Summary
+                  </h3>
+                  <div className="space-y-2 bg-blue-50 rounded-lg p-4 border border-blue-200">
                     <div className="flex justify-between">
-                      <span className="text-slate-400">Meal Plans</span>
+                      <span className="text-slate-400">Room Cost</span>
                       <span className="font-medium">
-                        ${invoice.mealCost.toFixed(2)}
+                        ${invoice.roomCost.toFixed(2)}
                       </span>
                     </div>
-                  )}
-                  <div className="flex justify-between pt-2 border-t border-slate-700">
-                    <span className="text-slate-400">Subtotal</span>
-                    <span className="font-medium">
-                      ${invoice.subtotal.toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-400">Tax (10%)</span>
-                    <span className="font-medium">
-                      ${invoice.tax.toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between pt-3 border-t-2 border-blue-500">
-                    <span className="text-lg font-bold">Total Amount</span>
-                    <span className="text-2xl font-bold text-blue-400">
-                      ${invoice.total.toFixed(2)}
-                    </span>
+                    {invoice.mealCost > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Meal Plans</span>
+                        <span className="font-medium">
+                          ${invoice.mealCost.toFixed(2)}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex justify-between pt-2 border-t border-slate-700">
+                      <span className="text-slate-400">Subtotal</span>
+                      <span className="font-medium">
+                        ${invoice.subtotal.toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Tax (10%)</span>
+                      <span className="font-medium">
+                        ${invoice.tax.toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between pt-3 border-t-2 border-blue-500">
+                      <span className="text-lg font-bold">Total Amount</span>
+                      <span className="text-2xl font-bold text-blue-400">
+                        ${invoice.total.toFixed(2)}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {paymentSummary && (
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-slate-600 uppercase tracking-wider">
-                  Payment Summary
-                </h3>
-                <div className="space-y-2 bg-emerald-50 rounded-lg p-4 border border-emerald-200">
-                  <div className="flex justify-between text-sm text-slate-700">
-                    <span>Mode</span>
-                    <span className="font-semibold text-emerald-700">
-                      {paymentSummary.mode}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm text-slate-700">
-                    <span>Paid</span>
-                    <span className="font-semibold text-emerald-700">
-                      ${paymentSummary.amountPaid.toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm text-slate-700">
-                    <span>Balance</span>
-                    <span className="font-semibold text-red-600">
-                      ${paymentSummary.balance.toFixed(2)}
-                    </span>
+              {paymentSummary && (
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold text-slate-600 uppercase tracking-wider">
+                    Payment Summary
+                  </h3>
+                  <div className="space-y-2 bg-emerald-50 rounded-lg p-4 border border-emerald-200">
+                    <div className="flex justify-between text-sm text-slate-700">
+                      <span>Mode</span>
+                      <span className="font-semibold text-emerald-700">
+                        {paymentSummary.mode}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm text-slate-700">
+                      <span>Paid</span>
+                      <span className="font-semibold text-emerald-700">
+                        ${paymentSummary.amountPaid.toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm text-slate-700">
+                      <span>Balance</span>
+                      <span className="font-semibold text-red-600">
+                        ${paymentSummary.balance.toFixed(2)}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Empty State */}
-            {invoice.nights === 0 && invoice.roomDetails.length === 0 && (
-              <div className="text-center py-12">
-                <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Calendar className="h-10 w-10 text-slate-400" />
+              {/* Empty State */}
+              {invoice.nights === 0 && invoice.roomDetails.length === 0 && (
+                <div className="text-center py-12">
+                  <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Calendar className="h-10 w-10 text-slate-400" />
+                  </div>
+                  <p className="text-slate-500 text-sm">
+                    Fill in the booking details to see your invoice
+                  </p>
                 </div>
-                <p className="text-slate-500 text-sm">
-                  Fill in the booking details to see your invoice
-                </p>
-              </div>
-            )}
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       <Modal

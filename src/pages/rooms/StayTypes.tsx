@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useHotel } from "../../context/HotelContext";
 import { Card } from "../../components/ui/Card";
-import { Table } from "../../components/ui/Table";
 import { Button } from "../../components/ui/Button";
 import { Modal } from "../../components/ui/Modal";
 import { Input } from "../../components/ui/Input";
@@ -24,8 +23,7 @@ export const StayTypes: React.FC = () => {
     children: number;
     mealPlanId: string;
     viewTypeId: string;
-    price?: number;
-    currency?: string;
+    pricing: Array<{ currency: string; price: number }>;
   };
 
   // Load from localStorage on mount
@@ -42,20 +40,19 @@ export const StayTypes: React.FC = () => {
   const [comboForm, setComboForm] = useState<Partial<Combination>>({
     adults: 1,
     children: 0,
-    price: 0,
-    currency: "",
+    pricing: [],
   });
+
+  const [pricingRows, setPricingRows] = useState<
+    Array<{ currency: string; price: number }>
+  >([{ currency: "", price: 0 }]);
 
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [selectedCurrency, setSelectedCurrency] = useState<string>("");
-
-  // Initialize default currency when component mounts
-  React.useEffect(() => {
-    if (!selectedCurrency && state.currencyRates.length > 0) {
-      setSelectedCurrency(state.currencyRates[0].id);
-    }
-  }, [state.currencyRates, selectedCurrency]);
+  const [showPricingModal, setShowPricingModal] = useState(false);
+  const [selectedPricing, setSelectedPricing] = useState<
+    Array<{ currency: string; price: number }>
+  >([]);
 
   // Save to localStorage whenever combinations change
   useEffect(() => {
@@ -80,8 +77,9 @@ export const StayTypes: React.FC = () => {
       return;
     }
 
-    if (comboForm.price === undefined || comboForm.price === null) {
-      alert("Please enter a price for this combination");
+    const validPricing = pricingRows.filter((p) => p.currency && p.price > 0);
+    if (validPricing.length === 0) {
+      alert("Please add at least one currency and price for this combination");
       return;
     }
 
@@ -92,8 +90,7 @@ export const StayTypes: React.FC = () => {
       children: comboForm.children ?? 0,
       mealPlanId: comboForm.mealPlanId as string,
       viewTypeId: comboForm.viewTypeId as string,
-      price: comboForm.price ?? 0,
-      currency: comboForm.currency || "",
+      pricing: validPricing,
     };
 
     setCombinations((s) => [newCombo, ...s]);
@@ -103,9 +100,8 @@ export const StayTypes: React.FC = () => {
       roomTypeId: "",
       mealPlanId: "",
       viewTypeId: "",
-      price: 0,
-      currency: "",
     });
+    setPricingRows([{ currency: "", price: 0 }]);
     setShowModal(false);
   };
 
@@ -118,9 +114,12 @@ export const StayTypes: React.FC = () => {
       children: combo.children,
       mealPlanId: combo.mealPlanId,
       viewTypeId: combo.viewTypeId,
-      price: combo.price ?? 0,
-      currency: combo.currency || "",
     });
+    setPricingRows(
+      combo.pricing && combo.pricing.length > 0
+        ? combo.pricing
+        : [{ currency: "", price: 0 }]
+    );
     setEditingId(id);
     setShowModal(true);
   };
@@ -139,8 +138,10 @@ export const StayTypes: React.FC = () => {
       alert("Please select a View Type");
       return;
     }
-    if (comboForm.price === undefined || comboForm.price === null) {
-      alert("Please enter a price for this combination");
+
+    const validPricing = pricingRows.filter((p) => p.currency && p.price > 0);
+    if (validPricing.length === 0) {
+      alert("Please add at least one currency and price for this combination");
       return;
     }
 
@@ -154,8 +155,7 @@ export const StayTypes: React.FC = () => {
               children: comboForm.children ?? 0,
               mealPlanId: comboForm.mealPlanId as string,
               viewTypeId: comboForm.viewTypeId as string,
-              price: comboForm.price ?? 0,
-              currency: comboForm.currency || "",
+              pricing: validPricing,
             }
           : c
       )
@@ -168,9 +168,8 @@ export const StayTypes: React.FC = () => {
       roomTypeId: "",
       mealPlanId: "",
       viewTypeId: "",
-      price: 0,
-      currency: "",
     });
+    setPricingRows([{ currency: "", price: 0 }]);
     setShowModal(false);
   };
 
@@ -179,88 +178,20 @@ export const StayTypes: React.FC = () => {
     setCombinations((s) => s.filter((c) => c.id !== id));
   };
 
-  const comboColumns = [
-    {
-      key: "roomType",
-      header: "Room Type",
-      render: (c: Combination) =>
-        state.roomTypes.find((rt) => rt.id === c.roomTypeId)?.name || "Unknown",
-    },
-    { key: "adults", header: "Adults", render: (c: Combination) => c.adults },
-    {
-      key: "children",
-      header: "Children",
-      render: (c: Combination) => c.children,
-    },
-    {
-      key: "mealPlan",
-      header: "Meal Plan",
-      render: (c: Combination) =>
-        state.mealPlans.find((m) => m.id === c.mealPlanId)?.name || "Unknown",
-    },
-    {
-      key: "viewType",
-      header: "View Type",
-      render: (c: Combination) =>
-        state.viewTypes.find((v) => v.id === c.viewTypeId)?.name || "Unknown",
-    },
-    {
-      key: "price",
-      header: "Price",
-      render: (c: Combination) => {
-        let convertedPrice = c.price ?? 0;
-        let displayCurrency = c.currency || "USD";
+  // Commented out - no longer needed with single Price column
+  // const getAllCurrencies = (): string[] => {
+  //   const currencies = new Set<string>();
+  //   combinations.forEach((combo) => {
+  //     if (combo.pricing && Array.isArray(combo.pricing)) {
+  //       combo.pricing.forEach((p) => {
+  //         if (p.currency) currencies.add(p.currency);
+  //       });
+  //     }
+  //   });
+  //   return Array.from(currencies).sort();
+  // };
 
-        if (selectedCurrency) {
-          const selectedRate = state.currencyRates.find(
-            (cr) => cr.id === selectedCurrency
-          );
-          const baseCurrencyRate = state.currencyRates.find(
-            (cr) => cr.code === (c.currency || "USD")
-          );
-          const baseRate = baseCurrencyRate?.rate || 1;
-
-          if (selectedRate && baseRate) {
-            convertedPrice = (c.price ?? 0) * (selectedRate.rate / baseRate);
-            displayCurrency = selectedRate.code;
-          }
-        }
-
-        return (
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-blue-700">
-              {convertedPrice.toFixed(2)}
-            </span>
-            <span className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded font-semibold">
-              {displayCurrency}
-            </span>
-          </div>
-        );
-      },
-    },
-    {
-      key: "actions",
-      header: "Actions",
-      render: (c: Combination) => (
-        <div className="flex gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => handleEditCombination(c.id)}
-          >
-            <Edit className="w-4 h-4" />
-          </Button>
-          <Button
-            size="sm"
-            variant="danger"
-            onClick={() => handleDeleteCombination(c.id)}
-          >
-            <Trash2 className="w-4 h-4" />
-          </Button>
-        </div>
-      ),
-    },
-  ];
+  // const uniqueCurrencies = getAllCurrencies();
 
   return (
     <div className="space-y-6">
@@ -284,8 +215,8 @@ export const StayTypes: React.FC = () => {
               roomTypeId: "",
               mealPlanId: "",
               viewTypeId: "",
-              price: 0,
             });
+            setPricingRows([{ currency: "", price: 0 }]);
             setShowModal(true);
           }}
         >
@@ -296,30 +227,111 @@ export const StayTypes: React.FC = () => {
 
       {/* Saved Combinations Card */}
       <Card title="Saved Combinations">
-        {combinations.length > 0 && (
-          <div className="mb-4 flex justify-end items-center gap-2">
-            <span className="text-sm text-gray-600">Display Currency:</span>
-            <select
-              value={selectedCurrency}
-              onChange={(e) => setSelectedCurrency(e.target.value)}
-              className="px-3 py-1.5 text-sm border border-gray-300 rounded bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Select currency</option>
-              {state.currencyRates.map((cr) => (
-                <option key={cr.id} value={cr.id}>
-                  {cr.code} - {cr.currency} ({cr.rate.toFixed(4)})
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
         {combinations.length === 0 ? (
           <div className="text-center py-12 text-gray-500">
             No combinations saved yet. Use the Add button above to create
             combinations.
           </div>
         ) : (
-          <Table columns={comboColumns} data={combinations} />
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm border-collapse">
+              <thead className="bg-slate-100 border-b border-slate-300">
+                <tr>
+                  <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                    Room Type
+                  </th>
+                  <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                    Adults
+                  </th>
+                  <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                    Children
+                  </th>
+                  <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                    Meal Plan
+                  </th>
+                  <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                    View Type
+                  </th>
+                  <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                    Price
+                  </th>
+                  <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {combinations.map((combo, idx) => (
+                  <tr
+                    key={combo.id}
+                    className={`border-b border-slate-200 hover:bg-slate-50 transition-colors ${
+                      idx % 2 === 0 ? "bg-white" : "bg-slate-50"
+                    }`}
+                  >
+                    <td className="px-4 py-3 text-slate-700">
+                      {state.roomTypes.find((rt) => rt.id === combo.roomTypeId)
+                        ?.name || "Unknown"}
+                    </td>
+                    <td className="px-4 py-3 text-slate-700">{combo.adults}</td>
+                    <td className="px-4 py-3 text-slate-700">
+                      {combo.children}
+                    </td>
+                    <td className="px-4 py-3 text-slate-700">
+                      {state.mealPlans.find((m) => m.id === combo.mealPlanId)
+                        ?.name || "Unknown"}
+                    </td>
+                    <td className="px-4 py-3 text-slate-700">
+                      {state.viewTypes.find((v) => v.id === combo.viewTypeId)
+                        ?.name || "Unknown"}
+                    </td>
+                    <td className="px-4 py-3 text-slate-700">
+                      {combo.pricing &&
+                      Array.isArray(combo.pricing) &&
+                      combo.pricing.length > 0 ? (
+                        combo.pricing.length === 1 ? (
+                          <span className="font-semibold">
+                            {combo.pricing[0].currency}{" "}
+                            {combo.pricing[0].price.toFixed(2)}
+                          </span>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedPricing(combo.pricing);
+                              setShowPricingModal(true);
+                            }}
+                          >
+                            View Pricing ({combo.pricing.length})
+                          </Button>
+                        )
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEditCombination(combo.id)}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="danger"
+                          onClick={() => handleDeleteCombination(combo.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </Card>
 
@@ -328,6 +340,7 @@ export const StayTypes: React.FC = () => {
         isOpen={showModal}
         onClose={() => setShowModal(false)}
         title={editingId ? "Edit Combination" : "Add New Combination"}
+        size="3xl"
         footer={
           <>
             <Button variant="secondary" onClick={() => setShowModal(false)}>
@@ -344,103 +357,262 @@ export const StayTypes: React.FC = () => {
         }
       >
         <div className="space-y-4">
-          <Select
-            label="Room Type"
-            value={comboForm.roomTypeId || ""}
-            onChange={(e) =>
-              setComboForm({ ...comboForm, roomTypeId: e.target.value })
-            }
-            options={[
-              { value: "", label: "Select Room Type" },
-              ...state.roomTypes.map((rt) => ({
-                value: rt.id,
-                label: rt.name,
-              })),
-            ]}
-            required
-          />
+          {/* Row 1: Room Type, View Type, Meal Plan */}
+          <div className="grid grid-cols-3 gap-4">
+            <Select
+              label="Room Type"
+              value={comboForm.roomTypeId || ""}
+              onChange={(e) =>
+                setComboForm({ ...comboForm, roomTypeId: e.target.value })
+              }
+              options={[
+                { value: "", label: "Select Room Type" },
+                ...state.roomTypes.map((rt) => ({
+                  value: rt.id,
+                  label: rt.name,
+                })),
+              ]}
+              required
+            />
 
-          <Select
-            label="View Type"
-            value={comboForm.viewTypeId || ""}
-            onChange={(e) =>
-              setComboForm({ ...comboForm, viewTypeId: e.target.value })
-            }
-            options={[
-              { value: "", label: "Select View Type" },
-              ...state.viewTypes.map((v) => ({ value: v.id, label: v.name })),
-            ]}
-            required
-          />
+            <Select
+              label="View Type"
+              value={comboForm.viewTypeId || ""}
+              onChange={(e) =>
+                setComboForm({ ...comboForm, viewTypeId: e.target.value })
+              }
+              options={[
+                { value: "", label: "Select View Type" },
+                ...state.viewTypes.map((v) => ({ value: v.id, label: v.name })),
+              ]}
+              required
+            />
 
-          <Select
-            label="Meal Plan"
-            value={comboForm.mealPlanId || ""}
-            onChange={(e) =>
-              setComboForm({ ...comboForm, mealPlanId: e.target.value })
-            }
-            options={[
-              { value: "", label: "Select Meal Plan" },
-              ...state.mealPlans.map((m) => ({ value: m.id, label: m.name })),
-            ]}
-            required
-          />
+            <Select
+              label="Meal Plan"
+              value={comboForm.mealPlanId || ""}
+              onChange={(e) =>
+                setComboForm({ ...comboForm, mealPlanId: e.target.value })
+              }
+              options={[
+                { value: "", label: "Select Meal Plan" },
+                ...state.mealPlans.map((m) => ({ value: m.id, label: m.name })),
+              ]}
+              required
+            />
+          </div>
 
-          <Input
-            label="Number of Adults"
-            type="number"
-            value={comboForm.adults}
-            onChange={(e) =>
-              setComboForm({
-                ...comboForm,
-                adults: parseInt(e.target.value) || 0,
-              })
-            }
-            min={0}
-          />
+          {/* Row 2: Adults and Children */}
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Number of Adults"
+              type="number"
+              value={comboForm.adults}
+              onChange={(e) =>
+                setComboForm({
+                  ...comboForm,
+                  adults: parseInt(e.target.value) || 0,
+                })
+              }
+              min={0}
+            />
 
-          <Input
-            label="Number of Children"
-            type="number"
-            value={comboForm.children}
-            onChange={(e) =>
-              setComboForm({
-                ...comboForm,
-                children: parseInt(e.target.value) || 0,
-              })
-            }
-            min={0}
-          />
+            <Input
+              label="Number of Children"
+              type="number"
+              value={comboForm.children}
+              onChange={(e) =>
+                setComboForm({
+                  ...comboForm,
+                  children: parseInt(e.target.value) || 0,
+                })
+              }
+              min={0}
+            />
+          </div>
 
-          <Select
-            label="Currency"
-            value={comboForm.currency || ""}
-            onChange={(e) =>
-              setComboForm({ ...comboForm, currency: e.target.value })
-            }
-            options={[
-              { value: "", label: "Select Currency" },
-              ...state.currencyRates.map((cr) => ({
-                value: cr.code,
-                label: `${cr.code} - ${cr.currency}`,
-              })),
-            ]}
-          />
+          {/* Row 3: Currency and Price with Add Button */}
+          <div className="space-y-3">
+            <div className="grid grid-cols-3 gap-4 items-start">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Currency
+                </label>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Price
+                </label>
+              </div>
+              <div className="h-8"></div>
+            </div>
+            {pricingRows.map((row, index) => (
+              <div key={index} className="grid grid-cols-3 gap-4 items-end">
+                <Select
+                  label=""
+                  value={row.currency || ""}
+                  onChange={(e) => {
+                    const updated = [...pricingRows];
+                    updated[index].currency = e.target.value;
+                    setPricingRows(updated);
+                  }}
+                  options={[
+                    { value: "", label: "Select Currency" },
+                    ...state.currencyRates.map((cr) => ({
+                      value: cr.code,
+                      label: `${cr.code} - ${cr.currency}`,
+                    })),
+                  ]}
+                />
+                <Input
+                  label=""
+                  type="number"
+                  step="0.01"
+                  value={row.price}
+                  onChange={(e) => {
+                    const updated = [...pricingRows];
+                    updated[index].price = parseFloat(e.target.value) || 0;
+                    setPricingRows(updated);
+                  }}
+                  min={0}
+                  placeholder="0.00"
+                />
+                <div className="flex gap-2 justify-end">
+                  {index === pricingRows.length - 1 && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setPricingRows([
+                          ...pricingRows,
+                          { currency: "", price: 0 },
+                        ])
+                      }
+                      className="h-10 px-3 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center justify-center flex-shrink-0"
+                      title="Add another pricing row"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  )}
+                  {pricingRows.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPricingRows(
+                          pricingRows.filter((_, i) => i !== index)
+                        );
+                      }}
+                      className="h-10 px-3 bg-red-500 text-white rounded hover:bg-red-600 flex items-center justify-center flex-shrink-0"
+                      title="Delete this pricing row"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </Modal>
 
-          <Input
-            label="Price"
-            type="number"
-            step="0.01"
-            value={comboForm.price}
-            onChange={(e) =>
-              setComboForm({
-                ...comboForm,
-                price: parseFloat(e.target.value) || 0,
-              })
-            }
-            min={0}
-            required
-          />
+      {/* Pricing Details Modal */}
+      <Modal
+        isOpen={showPricingModal}
+        onClose={() => setShowPricingModal(false)}
+        title="Pricing Details"
+        size="lg"
+        footer={
+          <Button
+            variant="secondary"
+            onClick={() => setShowPricingModal(false)}
+          >
+            Close
+          </Button>
+        }
+      >
+        <div className="space-y-4">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm border-collapse">
+              <thead className="bg-slate-100 border-b border-slate-300">
+                <tr>
+                  <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                    Currency
+                  </th>
+                  <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                    Price
+                  </th>
+                  <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {selectedPricing.map((entry, idx) => (
+                  <tr
+                    key={idx}
+                    className={`border-b border-slate-200 ${
+                      idx % 2 === 0 ? "bg-white" : "bg-slate-50"
+                    }`}
+                  >
+                    <td className="px-4 py-3 text-slate-700 font-medium">
+                      {entry.currency}
+                    </td>
+                    <td className="px-4 py-3 text-slate-700 font-semibold">
+                      {entry.price.toFixed(2)}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            // Find the combination being edited
+                            const comboIndex = combinations.findIndex(
+                              (c) => c.pricing === selectedPricing
+                            );
+                            if (comboIndex === -1) return;
+                            // Update pricing rows and show main modal for editing
+                            setPricingRows(combinations[comboIndex].pricing);
+                            setEditingId(combinations[comboIndex].id);
+                            setShowPricingModal(false);
+                            setShowModal(true);
+                          }}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="danger"
+                          onClick={() => {
+                            // Remove the pricing entry from selectedPricing
+                            const updated = selectedPricing.filter(
+                              (_, i) => i !== idx
+                            );
+                            setSelectedPricing(updated);
+
+                            // Also update the combination in the list
+                            const comboIndex = combinations.findIndex(
+                              (c) => c.pricing === selectedPricing
+                            );
+                            if (comboIndex !== -1) {
+                              setCombinations((s) =>
+                                s.map((c, i) =>
+                                  i === comboIndex
+                                    ? { ...c, pricing: updated }
+                                    : c
+                                )
+                              );
+                            }
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </Modal>
     </div>
