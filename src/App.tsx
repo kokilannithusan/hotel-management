@@ -47,9 +47,11 @@ import { RoomChecklist } from "./pages/rooms/RoomChecklist";
 import { Housekeeping } from "./pages/houseKeeping/Housekeeping";
 
 // Channels
-import { ReservationType } from "./pages/channels/ReservationType";
+import { ChannelsWrapper } from "./pages/channels/ChannelsWrapper";
+import { ReservationTypeManager } from "./pages/channels/ReservationTypeManager";
 import { Seasonal } from "./pages/channels/Seasonal";
 import { ChannelPricingGrid } from "./pages/channels/ChannelPricingGrid";
+import { SeasonalType } from "./pages/channels/SeasonalType";
 import { StayTypes } from "./pages/rooms/StayTypes";
 
 // Pricing
@@ -163,10 +165,18 @@ function App() {
                       element={<Housekeeping key="legacy" mode="housekeeper" />}
                     />
                     <Route
-                      path="/channels/reservation-type"
-                      element={<ReservationType />}
+                      path="/channels/channels"
+                      element={<ChannelsWrapper />}
+                    />
+                    <Route
+                      path="/channels/registration"
+                      element={<ReservationTypeManager />}
                     />
                     <Route path="/channels/seasonal" element={<Seasonal />} />
+                    <Route
+                      path="/channels/seasonal-type"
+                      element={<SeasonalType />}
+                    />
                     <Route path="/channels/stay-type" element={<StayTypes />} />
                     <Route
                       path="/channels/price-grid"

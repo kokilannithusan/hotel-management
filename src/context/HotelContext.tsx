@@ -3,6 +3,7 @@ import React, {
   useContext,
   useReducer,
   useEffect,
+  useLayoutEffect,
   ReactNode,
 } from "react";
 import {
@@ -153,7 +154,7 @@ const initialState: HotelState = {
   amenities: [],
   roomAreas: [],
   reservations: [],
-  channels: mockChannels,
+  channels: [],
   seasons: [],
   bills: [],
   receipts: [],
@@ -602,6 +603,7 @@ export const HotelProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
   const [state, dispatch] = useReducer(hotelReducer, initialState);
+  const [isInitialized, setIsInitialized] = React.useState(false);
 
   const initializeData = () => {
     // Check if this is first time loading (no data in localStorage or empty arrays)
@@ -797,21 +799,21 @@ export const HotelProvider: React.FC<{ children: ReactNode }> = ({
     }
   };
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     initializeData();
+    setIsInitialized(true);
   }, []);
 
   useEffect(() => {
     // Persist state to localStorage whenever it changes
-    // Only save if state is initialized (not empty)
-    if (state.customers.length > 0 || state.rooms.length > 0) {
+    // Only save if state is initialized
+    if (isInitialized) {
       Object.entries(storageKeys).forEach(([key, storageKey]) => {
         if (key !== "auth") {
           const stateValue = state[key as keyof HotelState];
           if (stateValue !== null && stateValue !== undefined) {
-            if (Array.isArray(stateValue) ? stateValue.length > 0 : true) {
-              setStorageItem(storageKey, stateValue);
-            }
+            // Always save arrays (even if empty) and non-array values
+            setStorageItem(storageKey, stateValue);
           }
         }
       });
@@ -823,7 +825,7 @@ export const HotelProvider: React.FC<{ children: ReactNode }> = ({
       setStorageItem(storageKeys.eventInvoices, state.eventInvoices);
       setStorageItem(storageKeys.eventBookings, state.eventBookings);
     }
-  }, [state]);
+  }, [state, isInitialized]);
 
   // Events CRUD functions
   const createEvent = (
@@ -930,6 +932,11 @@ export const HotelProvider: React.FC<{ children: ReactNode }> = ({
   const deleteHall = (hallId: string) => {
     dispatch({ type: "DELETE_HALL", payload: hallId });
   };
+
+  // Don't render children until data is initialized to prevent flashing
+  if (!isInitialized) {
+    return null;
+  }
 
   return (
     <HotelContext.Provider

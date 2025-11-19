@@ -14,7 +14,7 @@ import {
   Check,
 } from "lucide-react";
 
-export const ChannelPricingGrid: React.FC = () => {
+export const SeasonalType: React.FC = () => {
   const { state, dispatch } = useHotel();
   const [showAddRoomTypeModal, setShowAddRoomTypeModal] =
     useState<boolean>(false);
@@ -119,6 +119,7 @@ export const ChannelPricingGrid: React.FC = () => {
     "DIRECT" | "WEB" | "OTA" | "TA" | ""
   >("");
   const [selectedChannelId, setSelectedChannelId] = useState<string>("");
+  const [selectedSeasonType, setSelectedSeasonType] = useState<string>("");
 
   // Table Filter state
   const [filterStartDate, setFilterStartDate] = useState<string>("");
@@ -429,15 +430,15 @@ export const ChannelPricingGrid: React.FC = () => {
           <div>
             <div className="flex items-center gap-3 mb-2">
               <div className="bg-gradient-to-br from-blue-500 to-blue-600 backdrop-blur-sm p-3 rounded-xl shadow-lg">
-                <DollarSign className="h-8 w-8 text-white" />
+                <Calendar className="h-8 w-8 text-white" />
               </div>
               <h1 className="text-4xl font-bold text-slate-700">
-                Channel Price Management
+                Seasonal Price Management
               </h1>
             </div>
             <p className="text-slate-300 text-base ml-14 text-slate-700">
-              Dynamic pricing control with real-time updates across all booking
-              channels
+              Manage seasonal pricing strategies and adjustments across
+              different periods
             </p>
           </div>
         </div>
@@ -454,7 +455,7 @@ export const ChannelPricingGrid: React.FC = () => {
             </h3>
 
             {/* Reservation Type & Channel Selection Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Reservation Type Selector */}
               <div className="space-y-1.5">
                 <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
@@ -503,6 +504,26 @@ export const ChannelPricingGrid: React.FC = () => {
                   ))}
                 </select>
               </div>
+
+              {/* Season Type Dropdown */}
+              <div className="space-y-1.5">
+                <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
+                  <Calendar className="h-3.5 w-3.5 text-orange-600" />
+                  Season Type
+                </label>
+                <select
+                  value={selectedSeasonType}
+                  onChange={(e) => setSelectedSeasonType(e.target.value)}
+                  className="w-full rounded-lg border-2 border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-200 hover:border-slate-400"
+                >
+                  <option value="">Select a Season Type</option>
+                  <option value="peak">Peak Season</option>
+                  <option value="off-peak">Off-Peak Season</option>
+                  <option value="shoulder">Shoulder Season</option>
+                  <option value="holiday">Holiday Season</option>
+                  <option value="special">Special Events</option>
+                </select>
+              </div>
             </div>
 
             {selectedReservationType && selectedChannelId && (
@@ -512,6 +533,11 @@ export const ChannelPricingGrid: React.FC = () => {
                   {availableChannelsForType.find(
                     (c) => c.id === selectedChannelId
                   )?.name || "Unknown"}
+                  {selectedSeasonType &&
+                    ` - ${
+                      selectedSeasonType.charAt(0).toUpperCase() +
+                      selectedSeasonType.slice(1).replace("-", " ")
+                    }`}
                 </p>
               </div>
             )}

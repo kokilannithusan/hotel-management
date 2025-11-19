@@ -175,7 +175,7 @@ export function Dashboard() {
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 15;
 
   // Initialize selected date to today on mount
   useEffect(() => {
@@ -530,20 +530,6 @@ export function Dashboard() {
 
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-        {stats.map((stat) => (
-          <div
-            key={stat.label}
-            className="bg-white rounded-lg border border-slate-200 p-2.5"
-          >
-            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">
-              {stat.label}
-            </div>
-            <div className="text-lg font-bold text-slate-900">{stat.value}</div>
-          </div>
-        ))}
-      </div>
-
       <Card>
         <div className="mb-4">
           <h2 className="text-xl font-bold text-slate-900 mb-1">
@@ -652,78 +638,6 @@ export function Dashboard() {
             Check Out
           </button>
         </div>
-        {/* Pagination Controls */}
-        {filteredReservations.length > 0 && (
-          <div className="flex items-center justify-between px-6 py-4 mb-4 border border-slate-200 rounded-lg bg-slate-50">
-            <div className="text-sm text-slate-600">
-              Showing {startIndex + 1} to{" "}
-              {Math.min(endIndex, filteredReservations.length)} of{" "}
-              {filteredReservations.length} reservations
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                  currentPage === 1
-                    ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-                    : "bg-white border border-slate-300 text-slate-700 hover:bg-slate-50"
-                }`}
-              >
-                Previous
-              </button>
-              <div className="flex items-center gap-1">
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                  (page) => {
-                    // Show first page, last page, current page, and pages around current
-                    if (
-                      page === 1 ||
-                      page === totalPages ||
-                      (page >= currentPage - 1 && page <= currentPage + 1)
-                    ) {
-                      return (
-                        <button
-                          key={page}
-                          onClick={() => setCurrentPage(page)}
-                          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
-                            currentPage === page
-                              ? "bg-blue-600 text-white"
-                              : "bg-white border border-slate-300 text-slate-700 hover:bg-slate-50"
-                          }`}
-                        >
-                          {page}
-                        </button>
-                      );
-                    } else if (
-                      page === currentPage - 2 ||
-                      page === currentPage + 2
-                    ) {
-                      return (
-                        <span key={page} className="text-slate-400">
-                          ...
-                        </span>
-                      );
-                    }
-                    return null;
-                  }
-                )}
-              </div>
-              <button
-                onClick={() =>
-                  setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-                }
-                disabled={currentPage === totalPages}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                  currentPage === totalPages
-                    ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-                    : "bg-white border border-slate-300 text-slate-700 hover:bg-slate-50"
-                }`}
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        )}
         {/* Table */}
         <div className="overflow-x-auto rounded-lg border border-slate-200">
           <table className="min-w-full divide-y divide-slate-200">
@@ -975,6 +889,81 @@ export function Dashboard() {
             </tbody>
           </table>
         </div>
+        {filteredReservations.length > 0 && (
+          <div className="mt-4">
+            {/* Pagination Controls (Below Table) */}
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-slate-600">
+                Showing {startIndex + 1} to{" "}
+                {Math.min(endIndex, filteredReservations.length)} of{" "}
+                {filteredReservations.length} reservations
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(1, prev - 1))
+                  }
+                  disabled={currentPage === 1}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                    currentPage === 1
+                      ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                      : "bg-white border border-slate-300 text-slate-700 hover:bg-slate-50"
+                  }`}
+                >
+                  Previous
+                </button>
+                <div className="flex gap-2">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                    (page) => {
+                      if (
+                        page === 1 ||
+                        page === totalPages ||
+                        (page >= currentPage - 1 && page <= currentPage + 1)
+                      ) {
+                        return (
+                          <button
+                            key={page}
+                            onClick={() => setCurrentPage(page)}
+                            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
+                              currentPage === page
+                                ? "bg-blue-600 text-white"
+                                : "bg-white border border-slate-300 text-slate-700 hover:bg-slate-50"
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        );
+                      } else if (
+                        page === currentPage - 2 ||
+                        page === currentPage + 2
+                      ) {
+                        return (
+                          <span key={page} className="text-slate-400">
+                            ...
+                          </span>
+                        );
+                      }
+                      return null;
+                    }
+                  )}
+                </div>
+                <button
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                  }
+                  disabled={currentPage === totalPages}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                    currentPage === totalPages
+                      ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                      : "bg-white border border-slate-300 text-slate-700 hover:bg-slate-50"
+                  }`}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </Card>
 
       <Card>

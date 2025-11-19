@@ -18,7 +18,6 @@ import {
   Shield,
   FileCheck,
   Coins,
-  Clock,
   PartyPopper,
   Plus,
 } from "lucide-react";
@@ -215,8 +214,13 @@ const navItems: NavItem[] = [
     icon: <Globe className="w-5 h-5" />,
     children: [
       {
-        path: "/channels/reservation-type",
+        path: "/channels/registration",
         label: "Reservation Type",
+        icon: <Plus className="w-4 h-4" />,
+      },
+      {
+        path: "/channels/channels",
+        label: "Channels",
         icon: <FileText className="w-4 h-4" />,
       },
       {
@@ -225,9 +229,9 @@ const navItems: NavItem[] = [
         icon: <Calendar className="w-4 h-4" />,
       },
       {
-        path: "/channels/stay-type",
-        label: "Stay Type",
-        icon: <Clock className="w-4 h-4" />,
+        path: "/channels/seasonal-type",
+        label: "Seasonal Type",
+        icon: <Calendar className="w-4 h-4" />,
       },
       {
         path: "/channels/price-grid",
