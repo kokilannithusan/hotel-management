@@ -7,7 +7,6 @@ import {
   Trash2,
   Eye,
   Search,
-  CheckCircle,
   Filter,
   X,
 } from "lucide-react";
@@ -325,16 +324,6 @@ export const CreateEventForm: React.FC<CreateEventFormProps> = ({
     return searchMatch && nameMatch && hallMatch && statusMatch;
   });
 
-  // Calculate statistics
-  const allEvents = state.events || [];
-  const totalEvents = allEvents.length;
-  const activeEvents = allEvents.filter(
-    (event) => event.status === "confirmed"
-  ).length;
-  const inactiveEvents = allEvents.filter(
-    (event) => event.status === "cancelled"
-  ).length;
-
   // Get status color for table display
   const getStatusColor = (status: string): string => {
     // Determine if event is active or inactive
@@ -511,54 +500,6 @@ export const CreateEventForm: React.FC<CreateEventFormProps> = ({
             Create Event
           </Button>
         )}
-      </div>
-
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0">
-          <div className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm opacity-90">Total Events</p>
-                <p className="text-3xl font-bold">{totalEvents}</p>
-              </div>
-              <Calendar className="w-8 h-8 opacity-80" />
-            </div>
-            <div className="mt-2 text-xs opacity-75">
-              All time events created
-            </div>
-          </div>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white border-0">
-          <div className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm opacity-90">Active Events</p>
-                <p className="text-3xl font-bold">{activeEvents}</p>
-              </div>
-              <CheckCircle className="w-8 h-8 opacity-80" />
-            </div>
-            <div className="mt-2 text-xs opacity-75">
-              Ongoing and scheduled events
-            </div>
-          </div>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-red-500 to-red-600 text-white border-0">
-          <div className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm opacity-90">Inactive Events</p>
-                <p className="text-3xl font-bold">{inactiveEvents}</p>
-              </div>
-              <Eye className="w-8 h-8 opacity-80" />
-            </div>
-            <div className="mt-2 text-xs opacity-75">
-              Completed and cancelled events
-            </div>
-          </div>
-        </Card>
       </div>
 
       {/* Search Bar and Filters */}

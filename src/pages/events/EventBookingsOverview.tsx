@@ -12,9 +12,7 @@ import {
   XCircle,
   AlertCircle,
   DollarSign,
-  Download,
   Plus,
-  Clock,
   CalendarDays,
   Grid3X3,
   ChevronLeft,
@@ -128,45 +126,6 @@ export const EventBookingsOverview: React.FC<
       return matchesSearch && matchesStatus && matchesType && matchesDate;
     });
   }, [allEvents, searchTerm, statusFilter, typeFilter, dateFilter]);
-
-  // Statistics
-  const stats = useMemo(() => {
-    if (!Array.isArray(allEvents)) {
-      return {
-        total: 0,
-        confirmed: 0,
-        pending: 0,
-        cancelled: 0,
-        upcoming: 0,
-        totalRevenue: 0,
-      };
-    }
-
-    const total = allEvents.length;
-    const confirmed = allEvents.filter(
-      (e) => e && e.status === "confirmed"
-    ).length;
-    const pending = allEvents.filter((e) => e && e.status === "pending").length;
-    const cancelled = allEvents.filter(
-      (e) => e && e.status === "cancelled"
-    ).length;
-
-    // Calculate upcoming events (confirmed events that haven't started yet)
-    const now = new Date();
-    const upcoming = allEvents.filter((e) => {
-      if (!e || e.status !== "confirmed" || !e.startDateTime) return false;
-      const eventStartDate = new Date(e.startDateTime);
-      return eventStartDate > now;
-    }).length;
-
-    const totalRevenue = allEvents.reduce((sum, e) => {
-      const revenue =
-        e && typeof e.totalRevenue === "number" ? e.totalRevenue : 0;
-      return sum + revenue;
-    }, 0);
-
-    return { total, confirmed, pending, cancelled, upcoming, totalRevenue };
-  }, [allEvents]);
 
   // Calendar utility functions
   const getDaysInMonth = (date: Date) => {
@@ -439,32 +398,6 @@ export const EventBookingsOverview: React.FC<
           </p>
         </div>
         <div className="flex gap-3">
-          {/* View Toggle */}
-          <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1 gap-1">
-            <Button
-              variant={viewType === "list" ? "primary" : "outline"}
-              size="sm"
-              onClick={() => setViewType("list")}
-              className="flex items-center gap-2 px-4 py-2"
-            >
-              <Grid3X3 className="w-4 h-4" />
-              List
-            </Button>
-            <Button
-              variant={viewType === "calendar" ? "primary" : "outline"}
-              size="sm"
-              onClick={() => setViewType("calendar")}
-              className="flex items-center gap-2 px-4 py-2"
-            >
-              <CalendarDays className="w-4 h-4" />
-              Calendar
-            </Button>
-          </div>
-
-          <Button variant="outline" className="flex items-center gap-2">
-            <Download className="w-4 h-4" />
-            Export
-          </Button>
           {(() => {
             const NewBookingButton: React.FC = () => {
               const navigate = useNavigate();
@@ -483,123 +416,54 @@ export const EventBookingsOverview: React.FC<
         </div>
       </div>
 
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 lg:gap-4">
-        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 hover:shadow-md transition-shadow">
-          <div className="p-3 lg:p-4 xl:p-5">
-            <div className="flex items-center justify-between">
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-medium text-blue-700 truncate">
-                  Total Bookings
-                </p>
-                <p className="text-xl lg:text-2xl xl:text-3xl font-bold text-blue-900">
-                  {stats.total}
-                </p>
-              </div>
-              <div className="p-2 bg-blue-500 rounded-full ml-2 flex-shrink-0">
-                <Calendar className="w-4 h-4 lg:w-5 lg:h-5 xl:w-6 xl:h-6 text-white" />
-              </div>
+      {/* Events Content */}
+      <div className="space-y-4">
+        {/* Header with Title, Search, Filters, and View Toggle */}
+        <div className="space-y-4">
+          {/* First Row: Title and View Toggle */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                Event Bookings ({filteredEvents.length})
+                {viewType === "calendar" && (
+                  <span className="ml-2 text-lg font-normal text-gray-600 dark:text-gray-400">
+                    -{" "}
+                    {currentDate.toLocaleDateString("en-US", {
+                      month: "long",
+                      year: "numeric",
+                    })}
+                  </span>
+                )}
+              </h2>
+              <p className="text-sm text-gray-500 mt-1">
+                {filteredEvents.length} of {allEvents.length} events
+              </p>
+            </div>
+
+            {/* View Toggle - Right Side */}
+            <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1 gap-1">
+              <Button
+                variant={viewType === "list" ? "primary" : "outline"}
+                size="sm"
+                onClick={() => setViewType("list")}
+                className="flex items-center gap-2 px-4 py-2"
+              >
+                <Grid3X3 className="w-4 h-4" />
+                List
+              </Button>
+              <Button
+                variant={viewType === "calendar" ? "primary" : "outline"}
+                size="sm"
+                onClick={() => setViewType("calendar")}
+                className="flex items-center gap-2 px-4 py-2"
+              >
+                <CalendarDays className="w-4 h-4" />
+                Calendar
+              </Button>
             </div>
           </div>
-        </Card>
 
-        <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200 hover:shadow-md transition-shadow">
-          <div className="p-3 lg:p-4 xl:p-5">
-            <div className="flex items-center justify-between">
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-medium text-green-700 truncate">
-                  Confirmed
-                </p>
-                <p className="text-xl lg:text-2xl xl:text-3xl font-bold text-green-900">
-                  {stats.confirmed}
-                </p>
-              </div>
-              <div className="p-2 bg-green-500 rounded-full ml-2 flex-shrink-0">
-                <CheckCircle className="w-4 h-4 lg:w-5 lg:h-5 xl:w-6 xl:h-6 text-white" />
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-yellow-200 hover:shadow-md transition-shadow">
-          <div className="p-3 lg:p-4 xl:p-5">
-            <div className="flex items-center justify-between">
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-medium text-yellow-700 truncate">
-                  Pending
-                </p>
-                <p className="text-xl lg:text-2xl xl:text-3xl font-bold text-yellow-900">
-                  {stats.pending}
-                </p>
-              </div>
-              <div className="p-2 bg-yellow-500 rounded-full ml-2 flex-shrink-0">
-                <AlertCircle className="w-4 h-4 lg:w-5 lg:h-5 xl:w-6 xl:h-6 text-white" />
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200 hover:shadow-md transition-shadow">
-          <div className="p-3 lg:p-4 xl:p-5">
-            <div className="flex items-center justify-between">
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-medium text-orange-700 truncate">
-                  Upcoming
-                </p>
-                <p className="text-xl lg:text-2xl xl:text-3xl font-bold text-orange-900">
-                  {stats.upcoming}
-                </p>
-              </div>
-              <div className="p-2 bg-orange-500 rounded-full ml-2 flex-shrink-0">
-                <Clock className="w-4 h-4 lg:w-5 lg:h-5 xl:w-6 xl:h-6 text-white" />
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-red-50 to-red-100 border-red-200 hover:shadow-md transition-shadow">
-          <div className="p-3 lg:p-4 xl:p-5">
-            <div className="flex items-center justify-between">
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-medium text-red-700 truncate">
-                  Cancelled
-                </p>
-                <p className="text-xl lg:text-2xl xl:text-3xl font-bold text-red-900">
-                  {stats.cancelled}
-                </p>
-              </div>
-              <div className="p-2 bg-red-500 rounded-full ml-2 flex-shrink-0">
-                <XCircle className="w-4 h-4 lg:w-5 lg:h-5 xl:w-6 xl:h-6 text-white" />
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200 hover:shadow-md transition-shadow">
-          <div className="p-3 lg:p-4 xl:p-5">
-            <div className="flex items-center justify-between">
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-medium text-purple-700 truncate">
-                  Total Revenue
-                </p>
-                <p className="text-lg lg:text-xl xl:text-2xl font-bold text-purple-900">
-                  $
-                  {stats.totalRevenue > 1000
-                    ? `${Math.round(stats.totalRevenue / 1000)}K`
-                    : stats.totalRevenue.toLocaleString()}
-                </p>
-              </div>
-              <div className="p-2 bg-purple-500 rounded-full ml-2 flex-shrink-0">
-                <DollarSign className="w-4 h-4 lg:w-5 lg:h-5 xl:w-6 xl:h-6 text-white" />
-              </div>
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      {/* Filters and Search */}
-      <Card>
-        <div className="p-4">
+          {/* Second Row: Filters and Search */}
           <div className="flex flex-col lg:flex-row gap-4">
             {/* Search Bar */}
             <div className="flex-1">
@@ -620,9 +484,7 @@ export const EventBookingsOverview: React.FC<
                 }
                 options={[
                   { value: "all", label: "All Statuses" },
-                  { value: "pending", label: "Pending" },
                   { value: "confirmed", label: "Confirmed" },
-                  { value: "completed", label: "Completed" },
                   { value: "cancelled", label: "Cancelled" },
                 ]}
               />
@@ -675,29 +537,6 @@ export const EventBookingsOverview: React.FC<
                 Clear Filters
               </Button>
             </div>
-          </div>
-        </div>
-      </Card>
-
-      {/* Events Content */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-            Event Bookings ({filteredEvents.length})
-            {viewType === "calendar" && (
-              <span className="ml-2 text-lg font-normal text-gray-600 dark:text-gray-400">
-                -{" "}
-                {currentDate.toLocaleDateString("en-US", {
-                  month: "long",
-                  year: "numeric",
-                })}
-              </span>
-            )}
-          </h2>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-500">
-              {filteredEvents.length} of {allEvents.length} events
-            </span>
           </div>
         </div>
 

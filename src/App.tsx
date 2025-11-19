@@ -23,7 +23,6 @@ import { EventManagement } from "./pages/events/EventManagement";
 import { HallManagement } from "./pages/events/HallManagement";
 import { EventBookingWorkflow } from "./pages/events/EventBooking";
 import { EventBookingsOverview } from "./pages/events/EventBookingsOverview";
-import { EventReporting } from "./pages/events/EventReporting";
 
 // Invoicing
 import { Bill } from "./pages/invoicing/Bill";
@@ -65,10 +64,6 @@ import { Seasonal } from "./pages/channels/Seasonal";
 import { ChannelPricingGrid } from "./pages/channels/ChannelPricingGrid";
 import { SeasonalType } from "./pages/channels/SeasonalType";
 import { StayTypes } from "./pages/rooms/StayTypes";
-
-// Pricing
-import { ChannelPricing } from "./pages/pricing/ChannelPricing";
-import { SeasonalPricing } from "./pages/pricing/SeasonalPricing";
 
 // Other
 import { Tax } from "./pages/tax/Tax";
@@ -132,10 +127,6 @@ function App() {
                     <Route
                       path="/events/overview"
                       element={<EventBookingsOverview />}
-                    />
-                    <Route
-                      path="/events/reporting"
-                      element={<EventReporting />}
                     />
                     <Route
                       path="/invoicing/invoices"
@@ -247,14 +238,6 @@ function App() {
                     <Route
                       path="/channels/price-grid"
                       element={<ChannelPricingGrid />}
-                    />
-                    <Route
-                      path="/pricing/channel"
-                      element={<ChannelPricing />}
-                    />
-                    <Route
-                      path="/pricing/seasonal"
-                      element={<SeasonalPricing />}
                     />
                     <Route path="/tax" element={<Tax />} />
                     <Route path="/policies" element={<Policies />} />

@@ -13,7 +13,6 @@ import {
   Building,
   ClipboardList,
   Globe,
-  TrendingUp,
   Receipt,
   Shield,
   FileCheck,
@@ -99,11 +98,6 @@ const navItems: NavItem[] = [
         path: "/events/packages",
         label: "Event Packages",
         icon: <FileText className="w-4 h-4" />,
-      },
-      {
-        path: "/events/reporting",
-        label: "Reports & Analytics",
-        icon: <TrendingUp className="w-4 h-4" />,
       },
     ],
   },
@@ -242,23 +236,6 @@ const navItems: NavItem[] = [
         path: "/channels/price-grid",
         label: "Channel Price",
         icon: <DollarSign className="w-4 h-4" />,
-      },
-    ],
-  },
-  {
-    path: "/pricing",
-    label: "Pricing",
-    icon: <TrendingUp className="w-5 h-5" />,
-    children: [
-      {
-        path: "/pricing/channel",
-        label: "Channel Pricing",
-        icon: <DollarSign className="w-4 h-4" />,
-      },
-      {
-        path: "/pricing/seasonal",
-        label: "Seasonal Pricing",
-        icon: <Calendar className="w-4 h-4" />,
       },
     ],
   },

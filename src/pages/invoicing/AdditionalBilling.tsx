@@ -277,26 +277,26 @@ export const AdditionalBilling: React.FC = () => {
   const getStatusIcon = (status: InvoiceStatus) => {
     switch (status) {
       case "Paid":
-        return <CheckCircle className="w-5 h-5 text-green-400" />;
+        return <CheckCircle className="w-5 h-5 text-green-600" />;
       case "Pending":
-        return <Clock className="w-5 h-5 text-yellow-400" />;
+        return <Clock className="w-5 h-5 text-yellow-600" />;
       case "Posted":
-        return <CheckCircle className="w-5 h-5 text-blue-400" />;
+        return <CheckCircle className="w-5 h-5 text-blue-600" />;
       case "Voided":
-        return <XCircle className="w-5 h-5 text-red-400" />;
+        return <XCircle className="w-5 h-5 text-red-600" />;
     }
   };
 
   const getStatusColor = (status: InvoiceStatus) => {
     switch (status) {
       case "Paid":
-        return "bg-green-500/20 text-green-400 border-green-500/30";
+        return "bg-green-100 text-green-700 border-green-300";
       case "Pending":
-        return "bg-yellow-500/20 text-yellow-400 border-yellow-500/30";
+        return "bg-yellow-100 text-yellow-700 border-yellow-300";
       case "Posted":
-        return "bg-blue-500/20 text-blue-400 border-blue-500/30";
+        return "bg-blue-100 text-blue-700 border-blue-300";
       case "Voided":
-        return "bg-red-500/20 text-red-400 border-red-500/30";
+        return "bg-red-100 text-red-700 border-red-300";
     }
   };
 
@@ -314,11 +314,11 @@ export const AdditionalBilling: React.FC = () => {
   const getBillingModeColor = (mode: BillingModeType) => {
     switch (mode) {
       case "Cash":
-        return "bg-blue-500/20 text-blue-400 border-blue-500/30";
+        return "bg-blue-100 text-blue-700 border-blue-300";
       case "Room":
-        return "bg-purple-500/20 text-purple-400 border-purple-500/30";
+        return "bg-purple-100 text-purple-700 border-purple-300";
       case "Reference No.":
-        return "bg-orange-500/20 text-orange-400 border-orange-500/30";
+        return "bg-orange-100 text-orange-700 border-orange-300";
     }
   };
 
@@ -339,7 +339,7 @@ export const AdditionalBilling: React.FC = () => {
               placeholder="Search by invoice no, guest name, or service..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <select
@@ -347,7 +347,7 @@ export const AdditionalBilling: React.FC = () => {
             onChange={(e) =>
               setStatusFilter(e.target.value as "All" | InvoiceStatus)
             }
-            className="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="All">All Status</option>
             <option value="Pending">Pending</option>
@@ -360,7 +360,7 @@ export const AdditionalBilling: React.FC = () => {
             onChange={(e) =>
               setBillingModeFilter(e.target.value as "All" | BillingModeType)
             }
-            className="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="All">All Billing Modes</option>
             <option value="Cash">Cash</option>
@@ -372,57 +372,59 @@ export const AdditionalBilling: React.FC = () => {
 
       {/* Invoices Table */}
       <Card className="overflow-hidden">
-        <div className="px-6 py-4 bg-gray-700/30 border-b border-gray-700">
-          <h3 className="text-lg font-semibold text-white">Service Invoices</h3>
-          <p className="text-sm text-gray-400 mt-1">
+        <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900">
+            Service Invoices
+          </h3>
+          <p className="text-sm text-gray-600 mt-1">
             {filteredInvoices.length} invoice
             {filteredInvoices.length !== 1 ? "s" : ""} found
           </p>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-700/50">
+            <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                   Invoice
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                   Guest / Service
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                   Billing Details
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                   Date / Time
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider text-right">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider text-right">
                   Amount
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider text-center">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider text-center">
                   Mode
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider text-center">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider text-center">
                   Status
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider text-center">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider text-center">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-700">
+            <tbody className="divide-y divide-gray-200 bg-white">
               {filteredInvoices.map((invoice) => (
                 <tr
                   key={invoice.id}
-                  className="hover:bg-gray-700/20 transition-all duration-200"
+                  className="hover:bg-gray-50 transition-all duration-200"
                 >
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-blue-400" />
+                      <FileText className="w-4 h-4 text-blue-600" />
                       <div>
-                        <p className="text-sm font-semibold text-white">
+                        <p className="text-sm font-semibold text-gray-900">
                           {invoice.invoiceNumber}
                         </p>
-                        <p className="text-xs text-gray-400">
+                        <p className="text-xs text-gray-500">
                           {new Date(invoice.invoiceDate).toLocaleDateString()}
                         </p>
                       </div>
@@ -430,12 +432,12 @@ export const AdditionalBilling: React.FC = () => {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      <User className="w-4 h-4 text-gray-400" />
+                      <User className="w-4 h-4 text-gray-500" />
                       <div>
-                        <p className="text-sm font-semibold text-white">
+                        <p className="text-sm font-semibold text-gray-900">
                           {invoice.guestName}
                         </p>
-                        <p className="text-xs text-gray-400">
+                        <p className="text-xs text-gray-600">
                           {invoice.serviceName}
                         </p>
                       </div>
@@ -444,19 +446,19 @@ export const AdditionalBilling: React.FC = () => {
                   <td className="px-6 py-4">
                     <div>
                       {invoice.roomNo && (
-                        <p className="text-sm text-white">
+                        <p className="text-sm text-gray-900">
                           Room: {invoice.roomNo}
                         </p>
                       )}
                       {invoice.referenceNumber && (
-                        <p className="text-sm text-white">
+                        <p className="text-sm text-gray-900">
                           Ref: {invoice.referenceNumber}
                         </p>
                       )}
                       {invoice.billingMode === "Cash" && (
-                        <p className="text-sm text-blue-400">Cash Payment</p>
+                        <p className="text-sm text-blue-600">Cash Payment</p>
                       )}
-                      <p className="text-xs text-gray-400 mt-1">
+                      <p className="text-xs text-gray-600 mt-1">
                         Qty: {invoice.quantity} × LKR{" "}
                         {invoice.unitPrice.toLocaleString()}
                       </p>
@@ -464,12 +466,12 @@ export const AdditionalBilling: React.FC = () => {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-start gap-1.5">
-                      <Calendar className="w-4 h-4 text-gray-400 mt-0.5" />
+                      <Calendar className="w-4 h-4 text-gray-500 mt-0.5" />
                       <div>
-                        <p className="text-sm text-white">
+                        <p className="text-sm text-gray-900">
                           {invoice.serviceDate}
                         </p>
-                        <p className="text-xs text-gray-400">
+                        <p className="text-xs text-gray-600">
                           {invoice.serviceTime}
                         </p>
                       </div>
@@ -477,13 +479,13 @@ export const AdditionalBilling: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right">
                     <div>
-                      <p className="text-sm text-gray-400">
+                      <p className="text-sm text-gray-600">
                         Sub: {invoice.subtotal.toLocaleString()}
                       </p>
-                      <p className="text-sm text-gray-400">
+                      <p className="text-sm text-gray-600">
                         Tax: {invoice.taxAmount.toLocaleString()}
                       </p>
-                      <p className="text-base font-bold text-green-400">
+                      <p className="text-base font-bold text-green-600">
                         {invoice.totalAmount.toLocaleString()}
                       </p>
                     </div>
@@ -512,14 +514,14 @@ export const AdditionalBilling: React.FC = () => {
                     <div className="flex items-center justify-center gap-2">
                       <button
                         onClick={() => handleViewInvoice(invoice)}
-                        className="p-2 rounded-lg text-blue-400 hover:bg-blue-500/20 transition-all"
+                        className="p-2 rounded-lg text-blue-600 hover:bg-blue-100 transition-all"
                         title="View Details"
                       >
                         <FileText className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handlePrintInvoice(invoice)}
-                        className="p-2 rounded-lg text-purple-400 hover:bg-purple-500/20 transition-all"
+                        className="p-2 rounded-lg text-purple-600 hover:bg-purple-100 transition-all"
                         title="Print Invoice"
                       >
                         <Printer className="w-4 h-4" />
@@ -532,11 +534,11 @@ export const AdditionalBilling: React.FC = () => {
           </table>
 
           {filteredInvoices.length === 0 && (
-            <div className="text-center py-16">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-700/50 mb-4">
-                <FileText className="w-8 h-8 text-gray-500" />
+            <div className="text-center py-16 bg-white">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
+                <FileText className="w-8 h-8 text-gray-400" />
               </div>
-              <p className="text-gray-400 text-base font-medium">
+              <p className="text-gray-700 text-base font-medium">
                 No invoices found
               </p>
               <p className="text-gray-500 text-sm mt-2">
