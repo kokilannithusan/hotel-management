@@ -265,6 +265,7 @@ function App() {
                     />
                     <Route path="/currency" element={<CurrencyRate />} />
                     <Route path="/settings" element={<Settings />} />
+                    <Route path="/settings/:section" element={<Settings />} />
                     <Route
                       path="/"
                       element={<Navigate to="/dashboard" replace />}

@@ -235,7 +235,7 @@ const navItems: NavItem[] = [
       },
       {
         path: "/channels/seasonal-type",
-        label: "Seasonal Type",
+        label: "Seasonal Price",
         icon: <Calendar className="w-4 h-4" />,
       },
       {
@@ -289,6 +289,43 @@ const navItems: NavItem[] = [
     path: "/settings",
     label: "Settings",
     icon: <Settings className="w-5 h-5" />,
+    children: [
+      {
+        path: "/settings/hotel",
+        label: "Hotel",
+        icon: <Building className="w-4 h-4" />,
+      },
+      {
+        path: "/settings/role",
+        label: "Role",
+        icon: <Users className="w-4 h-4" />,
+      },
+      {
+        path: "/settings/hotelAssignRole",
+        label: "Hotel Assign Role",
+        icon: <Users className="w-4 h-4" />,
+      },
+      {
+        path: "/settings/hotelPrivileges",
+        label: "Hotel Privileges",
+        icon: <ClipboardList className="w-4 h-4" />,
+      },
+      {
+        path: "/settings/hotelRolePrivileges",
+        label: "Hotel Role Privileges",
+        icon: <Shield className="w-4 h-4" />,
+      },
+      {
+        path: "/settings/user",
+        label: "User",
+        icon: <Users className="w-4 h-4" />,
+      },
+      {
+        path: "/settings/userPrivileges",
+        label: "User Privileges",
+        icon: <Shield className="w-4 h-4" />,
+      },
+    ],
   },
 ];
 
