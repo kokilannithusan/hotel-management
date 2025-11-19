@@ -110,6 +110,8 @@ export const CleaningTaskList: React.FC = () => {
       ],
     }));
     setNewTaskLabel("");
+    setNewTaskCategory("washroom");
+    setShowAddActivityModal(false);
   };
 
   const handleAddMultipleTasks = () => {
@@ -124,6 +126,8 @@ export const CleaningTaskList: React.FC = () => {
       ],
     }));
     setMultipleTasksInput("");
+    setNewTaskCategory("washroom");
+    setShowAddActivityModal(false);
   };
 
   const handleAddCategory = () => {
@@ -233,19 +237,19 @@ export const CleaningTaskList: React.FC = () => {
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
               <Button
                 size="lg"
+                onClick={() => setShowAddActivityModal(true)}
+                className="w-full sm:w-auto"
+              >
+                Add Activities
+              </Button>
+              <Button
+                size="lg"
                 variant="secondary"
                 onClick={() => setShowAddCategoryModal(true)}
                 className="w-full sm:w-auto flex items-center justify-center gap-2"
               >
                 <Plus className="h-4 w-4" />
                 Add Category
-              </Button>
-              <Button
-                size="lg"
-                onClick={() => setShowAddActivityModal(true)}
-                className="w-full sm:w-auto"
-              >
-                Add Activities
               </Button>
             </div>
           </div>

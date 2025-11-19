@@ -1,4 +1,4 @@
-﻿import React, { useMemo, useState, useEffect } from "react";
+﻿import React, { useMemo, useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/Button";
 import { Modal } from "../../components/ui/Modal";
@@ -30,6 +30,8 @@ import {
   History,
   Clock,
   Search,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { useSidebar } from "../../context/SidebarContext";
 
@@ -52,7 +54,7 @@ type ActivityId =
   | "clean-sink"
   | "clean-shower";
 
-type ActivityCategory = "washroom" | "bedroom";
+type ActivityCategory = string;
 
 interface Activity {
   id: ActivityId;
@@ -108,7 +110,7 @@ interface CleaningHistoryRecord {
   housekeeperName: string;
 }
 
-const activityDefinitions: Omit<Activity, "completed">[] = [
+const activityDefinitionsDefaults: Omit<Activity, "completed">[] = [
   // Washroom Activities
   {
     id: "clean-mirror",
@@ -197,8 +199,18 @@ const activityDefinitions: Omit<Activity, "completed">[] = [
   },
 ];
 
-const createRoomActivities = (): Activity[] =>
-  activityDefinitions.map((def) => ({ ...def, completed: false }));
+// Build default cleaning tasks map from activityDefinitionsDefaults
+const defaultCleaningTasks: Record<string, string[]> =
+  activityDefinitionsDefaults.reduce((acc, def) => {
+    const key = def.category;
+    acc[key] = acc[key] || [];
+    acc[key].push(def.label);
+    return acc;
+  }, {} as Record<string, string[]>);
+
+const createRoomActivities = (
+  definitions: Omit<Activity, "completed">[] = activityDefinitionsDefaults
+): Activity[] => definitions.map((def) => ({ ...def, completed: false }));
 
 const initialHousekeepers: HousekeeperProfile[] = [
   {
@@ -404,6 +416,114 @@ interface HousekeepingProps {
 
 export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
   const [rooms, setRooms] = useState<Room[]>(initialRooms);
+
+  // Load cleaning categories/tasks created by manager (persisted in CleaningTaskList)
+  const [cleaningTasks, setCleaningTasks] = useState<Record<string, string[]>>(
+    () => {
+      try {
+        const saved = localStorage.getItem("cleaning_task_list");
+        if (saved) return JSON.parse(saved);
+      } catch (e) {
+        // ignore
+      }
+      return defaultCleaningTasks;
+    }
+  );
+
+  // Ensure rooms include activities for any manager-added categories
+  useEffect(() => {
+    setRooms((prevRooms) =>
+      prevRooms.map((room) => {
+        const existingLabels = new Set(room.activities.map((a) => a.label));
+        const merged = [...room.activities];
+        Object.keys(cleaningTasks).forEach((category) => {
+          cleaningTasks[category].forEach((label) => {
+            if (!existingLabels.has(label)) {
+              // create a simple activity id from label
+              const id = (label.toLowerCase().replace(/[^a-z0-9]+/g, "-") ||
+                `act-${Date.now()}`) as ActivityId;
+              merged.push({
+                id,
+                label,
+                icon: Square,
+                category,
+                completed: false,
+              });
+              existingLabels.add(label);
+            }
+          });
+        });
+        return { ...room, activities: merged };
+      })
+    );
+  }, [cleaningTasks]);
+
+  // Listen for storage updates so manager changes reflect for housekeeper in other tabs
+  useEffect(() => {
+    const handler = (e: StorageEvent) => {
+      if (e.key === "cleaning_task_list") {
+        try {
+          const parsed = e.newValue
+            ? JSON.parse(e.newValue)
+            : defaultCleaningTasks;
+          setCleaningTasks(parsed);
+        } catch (err) {
+          // ignore
+        }
+      }
+    };
+    window.addEventListener("storage", handler);
+    const localHandler = (ev: Event) => {
+      try {
+        // @ts-ignore -- CustomEvent detail
+        const parsed =
+          (ev as CustomEvent).detail ||
+          JSON.parse(localStorage.getItem("cleaning_task_list") || "{}");
+        setCleaningTasks(parsed);
+      } catch (err) {}
+    };
+    window.addEventListener(
+      "cleaning_tasks_updated",
+      localHandler as EventListener
+    );
+    return () => {
+      window.removeEventListener("storage", handler);
+      window.removeEventListener(
+        "cleaning_tasks_updated",
+        localHandler as EventListener
+      );
+    };
+  }, []);
+
+  // Category scroll controls
+  const catScrollRef = useRef<HTMLDivElement | null>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const updateCatNav = () => {
+    const el = catScrollRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 0);
+    setCanScrollRight(el.scrollWidth > el.clientWidth + el.scrollLeft + 1);
+  };
+
+  const scrollCategories = (delta: number) => {
+    const el = catScrollRef.current;
+    if (el) {
+      el.scrollBy({ left: delta, behavior: "smooth" });
+      setTimeout(updateCatNav, 300);
+    }
+  };
+
+  useEffect(() => {
+    updateCatNav();
+    const el = catScrollRef.current;
+    if (el) {
+      el.addEventListener("scroll", updateCatNav);
+      return () => el.removeEventListener("scroll", updateCatNav);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [housekeepers, setHousekeepers] =
     useState<HousekeeperProfile[]>(initialHousekeepers);
   const navigate = useNavigate();
@@ -426,7 +546,7 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
   const [currentCleanerName] = useState("Housekeeper"); // In real app, get from auth context
   const [currentCleanerId] = useState("hk-1"); // In real app, get from auth context
   const [activeActivityView, setActiveActivityView] = useState<
-    Record<string, "bedroom" | "washroom" | null>
+    Record<string, string | null>
   >({}); // Room ID -> active activity view
   const [cleaningHistory, setCleaningHistory] = useState<
     CleaningHistoryRecord[]
@@ -1503,11 +1623,8 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
     setMessageNote("");
   };
 
-  // Toggle activity view for a room (Bedroom/Washroom)
-  const toggleActivityView = (
-    roomId: string,
-    category: "bedroom" | "washroom"
-  ) => {
+  // Toggle activity view for a room (supports dynamic categories)
+  const toggleActivityView = (roomId: string, category: string) => {
     setActiveActivityView((prev) => {
       const current = prev[roomId];
       // If clicking the same category, hide it. Otherwise, show the clicked category

@@ -56,6 +56,7 @@ import { RoomChecklist } from "./pages/rooms/RoomChecklist";
 
 // Room Status
 import { Housekeeping } from "./pages/houseKeeping/Housekeeping";
+import { CleaningTaskList } from "./pages/houseKeeping/CleaningTaskList";
 
 // Channels
 import { ChannelsWrapper } from "./pages/channels/ChannelsWrapper";
@@ -211,6 +212,10 @@ function App() {
                       element={
                         <Housekeeping key="housekeeper" mode="housekeeper" />
                       }
+                    />
+                    <Route
+                      path="/housekeeping/cleaning-task-list"
+                      element={<CleaningTaskList />}
                     />
                     <Route
                       path="/housekeeping"
