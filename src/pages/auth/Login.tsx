@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import { validateEmail, validateRequired } from "../../utils/validators";
 import {
@@ -282,12 +282,12 @@ export const Login: React.FC = () => {
                 </label>
               </div>
               <div className="text-sm">
-                <a
-                  href="#"
+                <Link
+                  to="/forgot-password"
                   className="font-semibold text-blue-600 hover:text-blue-700"
                 >
                   Forgot?
-                </a>
+                </Link>
               </div>
             </div>
 

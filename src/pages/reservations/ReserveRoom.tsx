@@ -1547,12 +1547,23 @@ export const ReserveRoom: React.FC = () => {
                       );
                       const roomsOfType = roomsByType[typeId];
 
+                      // Get unique meal plans for this room type
+                      const roomCombinations = stayTypeCombinations.filter(
+                        (combo) =>
+                          combo.roomTypeId === typeId &&
+                          combo.adults >= formData.adults
+                      );
+
+                      const uniqueMealPlanIds = [
+                        ...new Set(roomCombinations.map((c) => c.mealPlanId)),
+                      ];
+
                       return (
                         <div key={typeId} className="space-y-4">
                           {/* Room Type Header */}
                           <div className="flex items-center gap-3">
                             <h3 className="text-xl font-bold text-slate-800">
-                              {roomType?.name} Rooms
+                              {roomType?.name}
                             </h3>
                             <div className="flex-1 h-px bg-gradient-to-r from-slate-300 to-transparent"></div>
                             <span className="text-sm text-slate-500 font-medium">
@@ -1560,45 +1571,44 @@ export const ReserveRoom: React.FC = () => {
                             </span>
                           </div>
 
-                          {/* Rooms Grid for this type */}
+                          {/* Cards Grid - One card per meal plan */}
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {roomsOfType.map((room) => {
-                              const roomType = state.roomTypes.find(
-                                (rt) => rt.id === room.roomTypeId
-                              );
+                            {uniqueMealPlanIds.map((mealPlanId) => {
+                              // Pick first available room of this type
+                              const representativeRoom = roomsOfType[0];
                               const isSelected = selectedRooms.some(
-                                (r) => r.roomId === room.id
+                                (r) => r.roomId === representativeRoom.id
                               );
                               const roomImage =
                                 ROOM_IMAGES[roomType?.name || "Standard"] ||
                                 ROOM_IMAGES["Standard"];
 
-                              // Get matching stay type combinations for this room
-                              const roomCombinations =
-                                stayTypeCombinations.filter(
-                                  (combo) =>
-                                    combo.roomTypeId === room.roomTypeId &&
-                                    combo.adults >= formData.adults
-                                );
+                              const mealPlan = state.mealPlans.find(
+                                (mp) => mp.id === mealPlanId
+                              );
 
                               return (
                                 <div
+                                  key={`${typeId}-${mealPlanId}`}
                                   className="cursor-pointer"
                                   onClick={() => {
                                     if (isSelected) {
                                       setSelectedRooms((prev) =>
-                                        prev.filter((r) => r.roomId !== room.id)
+                                        prev.filter(
+                                          (r) =>
+                                            r.roomId !== representativeRoom.id
+                                        )
                                       );
                                     } else {
                                       setSelectedRooms((prev) => [
                                         ...prev,
-                                        { roomId: room.id },
+                                        { roomId: representativeRoom.id },
                                       ]);
                                     }
                                   }}
                                 >
                                   <Card
-                                    key={room.id}
+                                    key={`${typeId}-card`}
                                     className={`group transition-all duration-300 overflow-hidden flex flex-col h-full rounded-xl ${
                                       isSelected
                                         ? "ring-4 ring-green-500 ring-offset-2 shadow-2xl transform scale-[1.02]"
@@ -1626,13 +1636,6 @@ export const ReserveRoom: React.FC = () => {
                                             </div>
                                           </div>
                                         )}
-
-                                        {/* Room Number Badge */}
-                                        <div className="absolute top-3 left-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-3 py-1.5 rounded-lg shadow-lg">
-                                          <span className="text-xs font-bold">
-                                            Room {room.roomNumber}
-                                          </span>
-                                        </div>
 
                                         {/* Price Badge */}
                                         <div className="absolute bottom-3 right-3 bg-white rounded-xl px-4 py-2 shadow-2xl">
@@ -1662,34 +1665,15 @@ export const ReserveRoom: React.FC = () => {
                                           </div>
                                         </div>
 
-                                        {/* Meal Plans Section */}
-                                        {roomCombinations.length > 0 && (
+                                        {/* Meal Plan Section */}
+                                        {mealPlan && (
                                           <div className="space-y-2">
                                             <h4 className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                                              Available Meal Plans
+                                              Meal Plan
                                             </h4>
-                                            <div className="flex flex-wrap gap-2">
-                                              {[
-                                                ...new Set(
-                                                  roomCombinations.map(
-                                                    (c) => c.mealPlanId
-                                                  )
-                                                ),
-                                              ].map((mealPlanId) => {
-                                                const mealPlan =
-                                                  state.mealPlans.find(
-                                                    (mp) => mp.id === mealPlanId
-                                                  );
-                                                return mealPlan ? (
-                                                  <div
-                                                    key={mealPlanId}
-                                                    className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-full text-xs font-semibold border border-emerald-200"
-                                                  >
-                                                    <Coffee className="h-3.5 w-3.5" />
-                                                    {mealPlan.code}
-                                                  </div>
-                                                ) : null;
-                                              })}
+                                            <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-3 py-2 rounded-full text-sm font-semibold border border-emerald-200 justify-center">
+                                              <Coffee className="h-4 w-4" />
+                                              {mealPlan.code}
                                             </div>
                                           </div>
                                         )}
@@ -1713,7 +1697,7 @@ export const ReserveRoom: React.FC = () => {
                                               onClick={(e) => {
                                                 e.stopPropagation();
                                                 setSelectedRoomForAmenities(
-                                                  room.id
+                                                  representativeRoom.id
                                                 );
                                                 setShowAmenitiesModal(true);
                                               }}
@@ -1738,13 +1722,17 @@ export const ReserveRoom: React.FC = () => {
                                             if (isSelected) {
                                               setSelectedRooms((prev) =>
                                                 prev.filter(
-                                                  (r) => r.roomId !== room.id
+                                                  (r) =>
+                                                    r.roomId !==
+                                                    representativeRoom.id
                                                 )
                                               );
                                             } else {
                                               setSelectedRooms((prev) => [
                                                 ...prev,
-                                                { roomId: room.id },
+                                                {
+                                                  roomId: representativeRoom.id,
+                                                },
                                               ]);
                                             }
                                           }}
