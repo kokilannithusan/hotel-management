@@ -37,7 +37,6 @@ import {
   Shield,
   Flag,
   Waves as Jacuzzi,
-  ChefHat,
   Shirt,
 } from "lucide-react";
 

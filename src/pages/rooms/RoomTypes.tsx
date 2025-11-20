@@ -5,7 +5,6 @@ import { Table } from "../../components/ui/Table";
 import { Button } from "../../components/ui/Button";
 import { Modal } from "../../components/ui/Modal";
 import { Input } from "../../components/ui/Input";
-import { Select } from "../../components/ui/Select";
 import { generateId } from "../../utils/formatters";
 import { RoomType } from "../../types/entities";
 import { Edit, Trash2, Plus, X, Check } from "lucide-react";

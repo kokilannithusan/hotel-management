@@ -199,7 +199,7 @@ export const CreateReceipt: React.FC = () => {
                       invoices
                         .filter(
                           (inv) =>
-                            inv.status !== "Paid" && inv.status !== "Cancelled"
+                            inv.status !== "Paid" && inv.status !== "cancelled"
                         )
                         .map((invoice) => (
                           <option key={invoice.id} value={invoice.id}>

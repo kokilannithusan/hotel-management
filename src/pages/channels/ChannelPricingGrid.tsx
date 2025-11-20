@@ -70,7 +70,7 @@ export const ChannelPricingGrid: React.FC = () => {
           },
         ];
   // Multi-level adjustment states
-  const [adjustmentScope, setAdjustmentScope] = useState<
+  const [adjustmentScope] = useState<
     | "all-channels"
     | "all-subchannels"
     | "selected-subchannels"
@@ -87,6 +87,7 @@ export const ChannelPricingGrid: React.FC = () => {
   const [adjustmentOperation, setAdjustmentOperation] = useState<
     "increase" | "decrease" | "reset"
   >("increase");
+  // @ts-ignore - feedback is set but not read
   const [feedback, setFeedback] = useState<null | {
     type: "error" | "success";
     message: string;
@@ -127,13 +128,6 @@ export const ChannelPricingGrid: React.FC = () => {
   const [filterChannelType, setFilterChannelType] = useState<string>("");
 
   // Helper functions for Reservation Type and Channels
-  const reservationTypes: Array<"DIRECT" | "WEB" | "OTA" | "TA"> = [
-    "DIRECT",
-    "WEB",
-    "OTA",
-    "TA",
-  ];
-
   const getChannelsForReservationType = (
     type: "DIRECT" | "WEB" | "OTA" | "TA"
   ) => {

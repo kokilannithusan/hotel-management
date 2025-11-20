@@ -4,33 +4,45 @@ import { Button } from "../../components/ui/Button";
 import { Modal } from "../../components/ui/Modal";
 import { Input } from "../../components/ui/Input";
 import { Select } from "../../components/ui/Select";
-import { Trash2, ArrowLeft, Plus } from "lucide-react";
+import { Trash2, ArrowLeft } from "lucide-react";
+import { mockRoomTypes } from "../../data/mockData";
 
 type CleaningCategory = string;
 
+interface CategoryData {
+  tasks: string[];
+  roomTypes: string[]; // assigned room type names (e.g., Deluxe, Suite)
+}
+
 interface CleaningTaskState {
-  [key: string]: string[];
+  [key: string]: CategoryData;
 }
 
 const defaultTasks: CleaningTaskState = {
-  washroom: [
-    "Cleaning mirror",
-    "Scrub toilet",
-    "Clean sink",
-    "Clean shower/bathtub",
-    "Replace towels",
-    "Sanitize surface",
-  ],
-  bedroom: [
-    "Change bed sheets",
-    "Vacuum floor",
-    "Pick up trash",
-    "Restock amenities",
-    "Check mini bar",
-    "Check electricals",
-    "Replace water bottles",
-    "Final inspection",
-  ],
+  washroom: {
+    tasks: [
+      "Cleaning mirror",
+      "Scrub toilet",
+      "Clean sink",
+      "Clean shower/bathtub",
+      "Replace towels",
+      "Sanitize surface",
+    ],
+    roomTypes: [],
+  },
+  bedroom: {
+    tasks: [
+      "Change bed sheets",
+      "Vacuum floor",
+      "Pick up trash",
+      "Restock amenities",
+      "Check mini bar",
+      "Check electricals",
+      "Replace water bottles",
+      "Final inspection",
+    ],
+    roomTypes: [],
+  },
 };
 
 const getSelectOptions = (categories: string[]) => {
@@ -50,10 +62,22 @@ export const CleaningTaskList: React.FC = () => {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
+        // If parsed is old format (category -> string[]), convert
+        const converted: CleaningTaskState = {};
+        Object.entries(parsed).forEach(([k, v]) => {
+          if (Array.isArray(v)) {
+            converted[k] = { tasks: v as string[], roomTypes: [] };
+          } else if (v && typeof v === "object") {
+            converted[k] = {
+              tasks: (v as any).tasks || [],
+              roomTypes: (v as any).roomTypes || [],
+            };
+          }
+        });
         // Ensure default categories exist
         return {
           ...defaultTasks,
-          ...parsed,
+          ...converted,
         };
       } catch {
         return defaultTasks;
@@ -96,10 +120,14 @@ export const CleaningTaskList: React.FC = () => {
     if (isAddActivityDisabled) return;
     setTasks((prev) => ({
       ...prev,
-      [newTaskCategory]: [
-        ...(prev[newTaskCategory] || []),
-        newTaskLabel.trim(),
-      ],
+      [newTaskCategory]: {
+        tasks: [
+          ...((prev[newTaskCategory] && prev[newTaskCategory].tasks) || []),
+          newTaskLabel.trim(),
+        ],
+        roomTypes:
+          (prev[newTaskCategory] && prev[newTaskCategory].roomTypes) || [],
+      },
     }));
     setNewTaskLabel("");
     setNewTaskCategory("washroom");
@@ -109,17 +137,32 @@ export const CleaningTaskList: React.FC = () => {
   const handleAddMultipleTasks = () => {
     const lines = multipleTasksInput.split("\n").filter((line) => line.trim());
     if (lines.length === 0) return;
-
     setTasks((prev) => ({
       ...prev,
-      [newTaskCategory]: [
-        ...(prev[newTaskCategory] || []),
-        ...lines.map((line) => line.trim()),
-      ],
+      [newTaskCategory]: {
+        tasks: [
+          ...((prev[newTaskCategory] && prev[newTaskCategory].tasks) || []),
+          ...lines.map((line) => line.trim()),
+        ],
+        roomTypes:
+          (prev[newTaskCategory] && prev[newTaskCategory].roomTypes) || [],
+      },
     }));
     setMultipleTasksInput("");
     setNewTaskCategory("washroom");
-    setShowAddMultipleModal(false);
+    setShowAddActivityModal(false);
+  };
+
+  const [newCategoryRoomTypes, setNewCategoryRoomTypes] = useState<string[]>(
+    []
+  );
+
+  const handleToggleNewCategoryRoomType = (typeName: string) => {
+    setNewCategoryRoomTypes((prev) =>
+      prev.includes(typeName)
+        ? prev.filter((t) => t !== typeName)
+        : [...prev, typeName]
+    );
   };
 
   const handleAddCategory = () => {
@@ -130,16 +173,20 @@ export const CleaningTaskList: React.FC = () => {
       .replace(/\s+/g, "-");
     setTasks((prev) => ({
       ...prev,
-      [categoryKey]: [],
+      [categoryKey]: { tasks: [], roomTypes: newCategoryRoomTypes },
     }));
     setNewCategoryName("");
+    setNewCategoryRoomTypes([]);
     setShowAddCategoryModal(false);
   };
 
   const handleDeleteTask = (category: CleaningCategory, index: number) => {
     setTasks((prev) => ({
       ...prev,
-      [category]: prev[category].filter((_, idx) => idx !== index),
+      [category]: {
+        ...prev[category],
+        tasks: prev[category].tasks.filter((_, idx) => idx !== index),
+      },
     }));
   };
 
@@ -180,7 +227,10 @@ export const CleaningTaskList: React.FC = () => {
         )}
       </div>
       <ul className="space-y-3">
-        {tasks[category].map((task, idx) => (
+        {(tasks[category] && tasks[category].tasks
+          ? tasks[category].tasks
+          : []
+        ).map((task, idx) => (
           <li
             key={`${category}-${idx}-${task}`}
             className="flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-slate-700"
@@ -229,19 +279,18 @@ export const CleaningTaskList: React.FC = () => {
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
               <Button
                 size="lg"
-                onClick={() => setShowAddActivityModal(true)}
-                className="w-full sm:w-auto"
-              >
-                Add Activities
-              </Button>
-              <Button
-                size="lg"
                 variant="secondary"
                 onClick={() => setShowAddCategoryModal(true)}
                 className="w-full sm:w-auto flex items-center justify-center gap-2"
               >
-                <Plus className="h-4 w-4" />
                 Add Category
+              </Button>
+              <Button
+                size="lg"
+                onClick={() => setShowAddActivityModal(true)}
+                className="w-full sm:w-auto"
+              >
+                Add Activities
               </Button>
             </div>
           </div>
@@ -374,6 +423,24 @@ export const CleaningTaskList: React.FC = () => {
             value={newCategoryName}
             onChange={(e) => setNewCategoryName(e.target.value)}
           />
+          <div className="mt-3">
+            <p className="text-sm font-medium text-slate-700 mb-2">
+              Assign to room types
+            </p>
+            <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto pr-2">
+              {mockRoomTypes.map((rt) => (
+                <label key={rt.id} className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={newCategoryRoomTypes.includes(rt.name)}
+                    onChange={() => handleToggleNewCategoryRoomType(rt.name)}
+                    className="w-4 h-4"
+                  />
+                  <span>{rt.name}</span>
+                </label>
+              ))}
+            </div>
+          </div>
           {categories.includes(newCategoryName.toLowerCase()) && (
             <p className="text-sm text-rose-500">Category already exists</p>
           )}

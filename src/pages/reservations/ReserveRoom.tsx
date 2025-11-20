@@ -116,9 +116,7 @@ export const ReserveRoom: React.FC = () => {
     pricing: Array<{ currency: string; price: number }>;
   };
 
-  const [stayTypeCombinations, setStayTypeCombinations] = useState<
-    StayTypeCombination[]
-  >(() => {
+  const [stayTypeCombinations] = useState<StayTypeCombination[]>(() => {
     try {
       const saved = localStorage.getItem("hotel-stay-type-combinations");
       return saved ? JSON.parse(saved) : [];

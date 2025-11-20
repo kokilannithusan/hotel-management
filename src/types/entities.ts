@@ -184,6 +184,8 @@ export interface Refund {
   createdAt: string;
   processedAt?: string;
   processedBy?: string;
+  approvedBy?: string;
+  approvedAt?: string;
   notes?: string;
 }
 
@@ -278,6 +280,7 @@ export interface PaymentReceipt {
   paymentDate: string;
   issuedBy: string;
   createdAt: string;
+  notes?: string;
 }
 
 export interface CreditNote {

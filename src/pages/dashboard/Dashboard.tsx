@@ -321,37 +321,6 @@ export function Dashboard() {
       );
   }, [rooms, reservations, normalizedToday, state.rooms]);
 
-  const stats = useMemo(() => {
-    // Today's total reservations (check-ins or check-outs happening today)
-    const todayTotalReservations = reservations.filter((r) => {
-      const isCheckInToday = sameDay(r.checkIn, normalizedToday);
-      const isCheckOutToday = sameDay(r.checkOut, normalizedToday);
-      return (isCheckInToday || isCheckOutToday) && r.status !== "Cancelled";
-    }).length;
-
-    // Today's check-ins
-    const todayCheckIn = reservations.filter((r) => {
-      return sameDay(r.checkIn, normalizedToday) && r.status !== "Cancelled";
-    }).length;
-
-    // Today's check-outs
-    const todayCheckOut = reservations.filter((r) => {
-      return sameDay(r.checkOut, normalizedToday) && r.status !== "Cancelled";
-    }).length;
-
-    // Occupied rooms (currently checked in)
-    const occupied = reservations.filter(
-      (r) => r.status === "Checked in"
-    ).length;
-
-    return [
-      { label: "Today Total Reservations", value: todayTotalReservations },
-      { label: "Today Check In", value: todayCheckIn },
-      { label: "Today Check Out", value: todayCheckOut },
-      { label: "Occupied", value: occupied },
-    ];
-  }, [reservations, normalizedToday]);
-
   const formatHumanDate = (value: string) => {
     if (!value) return "—";
     const date = new Date(value);

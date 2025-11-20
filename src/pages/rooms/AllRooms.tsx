@@ -37,16 +37,6 @@ export const AllRooms: React.FC = () => {
     { id: string; name: string; price?: number }[]
   >([]);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
-  const [selectedRoomDetails, setSelectedRoomDetails] = useState<Room | null>(
-    null
-  );
-  const [calendarRoom, setCalendarRoom] = useState<Room | null>(null);
-  const [calendarMonthForRoom, setCalendarMonthForRoom] = useState<Date>(
-    new Date()
-  );
-  const [showViewTypeModal, setShowViewTypeModal] = useState(false);
-  const [selectedRoomForViewType, setSelectedRoomForViewType] =
-    useState<Room | null>(null);
   const [pricingRows, setPricingRows] = useState<
     Array<{ currency: string; price: number }>
   >([{ currency: "", price: 0 }]);
@@ -189,20 +179,7 @@ export const AllRooms: React.FC = () => {
     }
   };
 
-  const toggleAmenity = (amenityId: string) => {
-    if (formData.amenities.includes(amenityId)) {
-      setFormData({
-        ...formData,
-        amenities: formData.amenities.filter((id) => id !== amenityId),
-      });
-    } else {
-      setFormData({
-        ...formData,
-        amenities: [...formData.amenities, amenityId],
-      });
-    }
-  };
-
+  // @ts-ignore - handleShowAmenities may be used in the future
   const handleShowAmenities = (room: Room) => {
     const roomAmenities = room.amenities
       .map((id) => {
@@ -237,32 +214,6 @@ export const AllRooms: React.FC = () => {
     return iconMap[key] || <ImageIcon className="w-4 h-4" />;
   };
 
-  // Get room image URL (placeholder for now)
-  const getRoomImage = (room: Room) => {
-    // Use room's custom image if available
-    if (room.image) {
-      return room.image;
-    }
-    // Otherwise use default based on room type
-    const roomType = state.roomTypes.find((rt) => rt.id === room.roomTypeId);
-    const imageMap: Record<string, string> = {
-      Standard:
-        "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=400&h=300&fit=crop",
-      Deluxe:
-        "https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=400&h=300&fit=crop",
-      Suite:
-        "https://images.unsplash.com/photo-1590490360182-c33d57733427?w=400&h=300&fit=crop",
-      Presidential:
-        "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=400&h=300&fit=crop",
-      Family:
-        "https://images.unsplash.com/photo-1566665797739-1674de7a421a?w=400&h=300&fit=crop",
-    };
-    return (
-      imageMap[roomType?.name || "Standard"] ||
-      "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=400&h=300&fit=crop"
-    );
-  };
-
   // Map view type name to a Tailwind color / gradient class for a small badge
   const getViewTypeColor = (viewTypeName?: string) => {
     const name = (viewTypeName || "").toLowerCase();
@@ -279,40 +230,6 @@ export const AllRooms: React.FC = () => {
       return "bg-gradient-to-r from-gray-400 to-slate-600";
     return "bg-gradient-to-r from-slate-400 to-slate-600";
   };
-
-  const getDaysInMonth = (date: Date) => {
-    const year = date.getFullYear();
-    const month = date.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const days: Date[] = [];
-    for (let d = new Date(firstDay); d <= lastDay; d.setDate(d.getDate() + 1)) {
-      days.push(new Date(d));
-    }
-    return days;
-  };
-
-  const getCustomerName = (customerId: string) => {
-    const customer = state.customers.find((c) => c.id === customerId);
-    return customer?.name || "Guest";
-  };
-
-  const monthNames = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-  ];
-
-  const closeRoomCalendar = () => setCalendarRoom(null);
 
   return (
     <div className="space-y-6">
@@ -436,12 +353,6 @@ export const AllRooms: React.FC = () => {
                     : roomType?.viewTypeId
                     ? state.viewTypes.find((v) => v.id === roomType.viewTypeId)
                     : undefined;
-                  const roomAmenities = room.amenities
-                    .map((id) => state.amenities.find((a) => a.id === id))
-                    .filter(Boolean) as any[];
-                  const reservationsForRoom = state.reservations.filter(
-                    (r) => r.roomId === room.id && r.status !== "canceled"
-                  );
                   const displayStatus = getDisplayStatus(room.status);
 
                   const statusColors: Record<string, string> = {
@@ -474,15 +385,6 @@ export const AllRooms: React.FC = () => {
                             {displayStatus.charAt(0).toUpperCase() +
                               displayStatus.slice(1)}
                           </span>
-                          {reservationsForRoom.length > 0 && (
-                            <button
-                              onClick={() => setSelectedRoomDetails(room)}
-                              className="text-xs underline text-blue-600 hover:text-blue-800 font-medium flex-shrink-0"
-                              title={`${reservationsForRoom.length} reservation(s)`}
-                            >
-                              ({reservationsForRoom.length})
-                            </button>
-                          )}
                         </div>
                       </td>
                       <td className="px-4 py-3 text-slate-700">

@@ -6,7 +6,6 @@ import {
   FileText,
   Home,
   Settings,
-  LogOut,
   ChevronLeft,
   ChevronRight,
   DollarSign,
@@ -329,7 +328,6 @@ export const Sidebar: React.FC = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
   const location = useLocation();
-  const { logout } = useAuth();
 
   // keep a CSS variable in sync so layout can react to sidebar width
   React.useEffect(() => {
@@ -458,17 +456,6 @@ export const Sidebar: React.FC = () => {
             {navItems.map((item) => renderNavItem(item))}
           </div>
         </nav>
-        <div className="p-4 border-t border-gray-700/50">
-          <button
-            onClick={logout}
-            className={`flex items-center w-full ${
-              isCollapsed ? "justify-center px-2" : "px-4"
-            } py-2 text-sm font-medium text-red-400 rounded-lg hover:bg-red-900/20 transition-colors`}
-          >
-            <LogOut className={`w-5 h-5 ${isCollapsed ? "" : "mr-3"}`} />
-            {!isCollapsed && <span>Logout</span>}
-          </button>
-        </div>
       </div>
     </div>
   );
