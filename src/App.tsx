@@ -66,6 +66,11 @@ import { ChannelPricingGrid } from "./pages/channels/ChannelPricingGrid";
 import { SeasonalType } from "./pages/channels/SeasonalType";
 import { StayTypes } from "./pages/rooms/StayTypes";
 
+// Additional Service
+import ManageServiceItems from "./pages/additionalService/ManageServiceItems";
+import ReservationAddonService from "./pages/additionalService/ReservationAddonService";
+import EventAddonService from "./pages/additionalService/EventAddonService";
+
 // Other
 import { Tax } from "./pages/tax/Tax";
 import { Policies } from "./pages/policies/Policies";
@@ -243,6 +248,18 @@ function App() {
                     <Route
                       path="/channels/price-grid"
                       element={<ChannelPricingGrid />}
+                    />
+                    <Route
+                      path="/additional-service/manage-items"
+                      element={<ManageServiceItems />}
+                    />
+                    <Route
+                      path="/additional-service/reservation-addon"
+                      element={<ReservationAddonService />}
+                    />
+                    <Route
+                      path="/additional-service/event-addon"
+                      element={<EventAddonService />}
                     />
                     <Route path="/tax" element={<Tax />} />
                     <Route path="/policies" element={<Policies />} />

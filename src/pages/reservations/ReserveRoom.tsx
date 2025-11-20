@@ -20,6 +20,8 @@ import {
   Info,
   ChevronLeft,
   ChevronRight,
+  SignalHigh,
+  DollarSign,
 } from "lucide-react";
 
 import {
@@ -52,6 +54,17 @@ const ROOM_IMAGES: Record<string, string> = {
 
 const WEEK_DAYS = ["S", "M", "T", "W", "T", "F", "S"];
 type CalendarMode = "checkIn" | "checkOut";
+type AdultProfile = {
+  id: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  idNumber: string;
+  country: string;
+  address: string;
+  documentName: string;
+  documentUrl: string;
+};
 
 export const ReserveRoom: React.FC = () => {
   const { state, dispatch } = useHotel();
@@ -118,6 +131,11 @@ export const ReserveRoom: React.FC = () => {
     balance: number;
     mode: string;
   } | null>(null);
+  const [selectedCurrencyCode, setSelectedCurrencyCode] = useState(() =>
+    state.settings?.currency ||
+    state.currencyRates[0]?.code ||
+    "USD"
+  );
 
   const initialChildAges = Array.from(
     { length: extendingReservation?.children ?? 0 },
@@ -143,6 +161,125 @@ export const ReserveRoom: React.FC = () => {
     guestDocumentUrl: "",
     childAges: initialChildAges,
   });
+
+  const createAdultProfile = (seed: Partial<AdultProfile> = {}): AdultProfile => ({
+    id: generateId(),
+    fullName: seed.fullName || "",
+    email: seed.email || "",
+    phone: seed.phone || "",
+    idNumber: seed.idNumber || "",
+    country: seed.country || "",
+    address: seed.address || "",
+    documentName: seed.documentName || "",
+    documentUrl: seed.documentUrl || "",
+  });
+
+  const [adultProfiles, setAdultProfiles] = useState<AdultProfile[]>(() => [
+    createAdultProfile({
+      fullName: formData.guestName,
+      email: formData.guestEmail,
+      phone: formData.guestPhone,
+      idNumber: formData.guestIdNumber,
+      country: formData.guestCountry,
+      address: formData.guestAddressLine2,
+      documentName: formData.guestDocumentName,
+      documentUrl: formData.guestDocumentUrl,
+    }),
+  ]);
+  useEffect(() => {
+    setAdultProfiles((prev) => {
+      if (prev.length === formData.adults) return prev;
+      if (prev.length < formData.adults) {
+        const additions = Array.from(
+          { length: formData.adults - prev.length },
+          () => createAdultProfile()
+        );
+        return [...prev, ...additions];
+      }
+      return prev.slice(0, formData.adults);
+    });
+  }, [formData.adults]);
+
+  useEffect(() => {
+    setAdultProfiles((prev) => {
+      if (prev.length === 0) return [createAdultProfile()];
+      const first = prev[0];
+      if (
+        first.fullName === formData.guestName &&
+        first.email === formData.guestEmail &&
+        first.phone === formData.guestPhone &&
+        first.idNumber === formData.guestIdNumber &&
+        first.country === formData.guestCountry &&
+        first.address === formData.guestAddressLine2 &&
+        first.documentName === formData.guestDocumentName &&
+        first.documentUrl === formData.guestDocumentUrl
+      ) {
+        return prev;
+      }
+      const next = [...prev];
+      next[0] = {
+        ...first,
+        fullName: formData.guestName,
+        email: formData.guestEmail,
+        phone: formData.guestPhone,
+        idNumber: formData.guestIdNumber,
+        country: formData.guestCountry,
+        address: formData.guestAddressLine2,
+        documentName: formData.guestDocumentName,
+        documentUrl: formData.guestDocumentUrl,
+      };
+      return next;
+    });
+  }, [
+    formData.guestName,
+    formData.guestEmail,
+    formData.guestPhone,
+    formData.guestIdNumber,
+    formData.guestCountry,
+    formData.guestAddressLine2,
+    formData.guestDocumentName,
+    formData.guestDocumentUrl,
+  ]);
+
+  const updateAdultProfile = (
+    index: number,
+    field: keyof AdultProfile,
+    value: string
+  ) => {
+    setAdultProfiles((prev) => {
+      const next = [...prev];
+      next[index] = { ...next[index], [field]: value };
+      return next;
+    });
+    if (index === 0) {
+      const updates: Partial<typeof formData> = {};
+      if (field === "fullName") updates.guestName = value;
+      if (field === "email") updates.guestEmail = value;
+      if (field === "phone") updates.guestPhone = value;
+      if (field === "idNumber") updates.guestIdNumber = value;
+      if (field === "country") updates.guestCountry = value;
+      if (field === "address") updates.guestAddressLine2 = value;
+      if (field === "documentName") updates.guestDocumentName = value;
+      if (field === "documentUrl") updates.guestDocumentUrl = value;
+      setFormData((prev) => ({ ...prev, ...updates }));
+    }
+  };
+
+  const handleAdultDocumentUpload = (
+    index: number,
+    event: ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const data = reader.result as string;
+      updateAdultProfile(index, "documentName", file.name);
+      updateAdultProfile(index, "documentUrl", data);
+    };
+    reader.readAsDataURL(file);
+    event.currentTarget.value = "";
+  };
 
   const [errors, setErrors] = useState<{
     checkIn?: string;
@@ -177,6 +314,24 @@ export const ReserveRoom: React.FC = () => {
 
     return true;
   };
+
+  useEffect(() => {
+    if (
+      state.settings?.currency &&
+      state.settings.currency !== selectedCurrencyCode
+    ) {
+      setSelectedCurrencyCode(state.settings.currency);
+    }
+  }, [state.settings?.currency, selectedCurrencyCode]);
+
+  useEffect(() => {
+    if (
+      state.currencyRates.length > 0 &&
+      !state.currencyRates.some((rate) => rate.code === selectedCurrencyCode)
+    ) {
+      setSelectedCurrencyCode(state.currencyRates[0].code);
+    }
+  }, [selectedCurrencyCode, state.currencyRates]);
 
   const validateDates = () => {
     const newErrors: typeof errors = {};
@@ -342,7 +497,7 @@ export const ReserveRoom: React.FC = () => {
     };
 
     dispatch({ type: "ADD_RESERVATION", payload: newReservation });
-    navigate("/reservations/overview");
+    navigate("/dashboard");
   };
 
   const handleChange = (
@@ -398,24 +553,6 @@ export const ReserveRoom: React.FC = () => {
     if (name === "checkIn" || name === "checkOut") {
       setErrors((prev) => ({ ...prev, [name]: undefined }));
     }
-  };
-
-  const handleDocumentUpload = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) {
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      setFormData((prev) => ({
-        ...prev,
-        guestDocumentName: file.name,
-        guestDocumentUrl: reader.result as string,
-      }));
-    };
-    reader.readAsDataURL(file);
-    event.currentTarget.value = "";
   };
 
   const applyCustomerDetails = (customer: Customer) => {
@@ -784,6 +921,21 @@ export const ReserveRoom: React.FC = () => {
     ? formatDate(formData.checkOut, "EEE, MMM dd, yyyy")
     : "Add date";
 
+  const guestDetailLabel = `${formData.adults} Adult${
+    formData.adults > 1 ? "s" : ""
+  }${formData.children > 0 ? `, ${formData.children} Child${formData.children > 1 ? "ren" : ""}` : ""}`;
+  const channelLabel =
+    formData.bookingChannel?.replace(/_/g, " ") || "Direct";
+  const selectedCurrencyRate =
+    state.currencyRates.find((rate) => rate.code === selectedCurrencyCode) ||
+    state.currencyRates[0];
+  const currencyLabel = selectedCurrencyRate
+    ? `${selectedCurrencyRate.currency} (${selectedCurrencyRate.code})`
+    : selectedCurrencyCode || state.settings?.currency || "USD";
+
+;
+
+
   return (
     <>
       <div className="flex h-screen bg-white overflow-hidden">
@@ -910,11 +1062,11 @@ export const ReserveRoom: React.FC = () => {
                 )}
 
                 <div className="relative mb-6" ref={calendarRef}>
-                  <div className="grid gap-3 md:grid-cols-3">
+                  <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                     <button
                       type="button"
                       onClick={() => openCalendarPopover("checkIn")}
-                      className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition hover:shadow-lg"
+                      className="text-left rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                     >
                       <div className="flex items-center gap-3">
                         <div className="rounded-full bg-slate-50 p-2">
@@ -933,7 +1085,7 @@ export const ReserveRoom: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => openCalendarPopover("checkOut")}
-                      className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 transition hover:shadow-lg"
+                      className="text-left rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500"
                     >
                       <div className="flex items-center gap-3">
                         <div className="rounded-full bg-slate-50 p-2">
@@ -969,6 +1121,59 @@ export const ReserveRoom: React.FC = () => {
                         </div>
                       </div>
                     </button>
+                    {!isExtendMode && (
+                      <div className="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                        <div className="flex items-center gap-2">
+                          <SignalHigh className="h-4 w-4 text-blue-600" />
+                          <span className="text-[10px] uppercase tracking-[0.3em] text-slate-500">
+                            Booking Channel
+                          </span>
+                        </div>
+                        <select
+                          name="bookingChannel"
+                          value={formData.bookingChannel}
+                          onChange={handleChange}
+                          required
+                          className="w-full appearance-none rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-900 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 transition hover:border-slate-400"
+                        >
+                          <option value="">Select booking channel</option>
+                          <option value="direct">Direct Booking</option>
+                          <option value="phone">Phone</option>
+                          <option value="email">Email</option>
+                          <option value="website">Website</option>
+                          <option value="booking_com">Booking.com</option>
+                          <option value="expedia">Expedia</option>
+                        </select>
+                      </div>
+                    )}
+                    <div className="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                      <div className="flex items-center gap-2">
+                        <DollarSign className="h-4 w-4 text-emerald-600" />
+                        <span className="text-[10px] uppercase tracking-[0.3em] text-slate-500">
+                          Currency
+                        </span>
+                      </div>
+                      <select
+                        value={selectedCurrencyCode}
+                        onChange={(e) => setSelectedCurrencyCode(e.target.value)}
+                        className="w-full appearance-none rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-900 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-400 transition hover:border-slate-400"
+                      >
+                        {state.currencyRates.length > 0
+                          ? state.currencyRates.map((rate) => (
+                              <option key={rate.id} value={rate.code}>
+                                {rate.currency} ({rate.code})
+                              </option>
+                            ))
+                          : (
+                              <option value={selectedCurrencyCode}>
+                                {currencyLabel}
+                              </option>
+                            )}
+                      </select>
+                      <p className="text-[11px] text-slate-400">
+                        Hotel base currency
+                      </p>
+                    </div>
                   </div>
                   {isCalendarOpen && (
                     <div className="absolute inset-x-4 top-full z-30 mt-4 mx-auto w-[min(580px,100%)] rounded-3xl border border-slate-200 bg-white shadow-2xl">
@@ -1151,35 +1356,6 @@ export const ReserveRoom: React.FC = () => {
                   </div>
                 )}
 
-                {!isExtendMode && (
-                  <>
-                    {/* Booking Channel */}
-                    <Card>
-                      <div className="p-6">
-                        <label className="block text-sm font-medium text-slate-900 mb-2">
-                          Booking Channel{" "}
-                          <span className="text-red-500">*</span>
-                        </label>
-                        <select
-                          name="bookingChannel"
-                          value={formData.bookingChannel}
-                          onChange={handleChange}
-                          required
-                          className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-slate-400"
-                        >
-                          <option value="">Select booking channel</option>
-                          <option value="direct">Direct Booking</option>
-                          <option value="phone">Phone</option>
-                          <option value="email">Email</option>
-                          <option value="website">Website</option>
-                          <option value="booking_com">Booking.com</option>
-                          <option value="expedia">Expedia</option>
-                        </select>
-                      </div>
-                    </Card>
-                  </>
-                )}
-
                 {/* Action Buttons */}
                 <div className="flex justify-end gap-3 pt-8 border-t border-slate-200">
                   <Button
@@ -1207,34 +1383,6 @@ export const ReserveRoom: React.FC = () => {
             {/* Step 2: Room Selection */}
             {currentStep === 2 && (
               <div className="space-y-6">
-                {/* Header with Selected Count */}
-                <div className="flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl border-2 border-blue-200">
-                  <div>
-                    <h2 className="text-3xl font-bold text-slate-900 mb-2">
-                      Select Your Rooms
-                    </h2>
-                    <p className="text-sm text-slate-600">
-                      Choose one or more rooms •{" "}
-                      {
-                        state.rooms.filter(
-                          (room) => room.status === "available"
-                        ).length
-                      }{" "}
-                      rooms available
-                    </p>
-                  </div>
-                  {selectedRooms.length > 0 && (
-                    <div className="text-center">
-                      <div className="bg-blue-600 text-white text-3xl font-bold rounded-full w-16 h-16 flex items-center justify-center shadow-lg">
-                        {selectedRooms.length}
-                      </div>
-                      <p className="text-xs text-slate-600 mt-1 font-medium">
-                        Selected
-                      </p>
-                    </div>
-                  )}
-                </div>
-
                 {/* Filters */}
                 <div className="flex gap-4 items-center bg-white p-4 rounded-lg border border-slate-200">
                   <div className="flex items-center gap-2">
@@ -1994,125 +2142,157 @@ export const ReserveRoom: React.FC = () => {
                   )}
                 </div>
 
+                
                 <div className="space-y-6">
-                  {/* Full Name */}
-                  <div>
-                    <label className="block text-sm font-medium text-slate-900 mb-2">
-                      Full Name <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="guestName"
-                      value={formData.guestName}
-                      onChange={handleChange}
-                      required
-                      placeholder="John Smith"
-                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
+                  <div className="space-y-4">
+                    {adultProfiles.map((profile, index) => (
+                      <div
+                        key={profile.id}
+                        className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 space-y-4"
+                      >
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-base font-semibold text-slate-800">
+                            Adult {index + 1}
+                          </h3>
+                          {index === 0 && (
+                            <span className="text-xs font-semibold text-red-500">
+                              Required
+                            </span>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-1 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-slate-900 mb-2">
+                              Full Name{" "}
+                              {index === 0 && (
+                                <span className="text-red-500">*</span>
+                              )}
+                            </label>
+                            <input
+                              type="text"
+                              value={profile.fullName}
+                              required={index === 0}
+                              onChange={(e) =>
+                                updateAdultProfile(index, "fullName", e.target.value)
+                              }
+                              placeholder="John Smith"
+                              className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-slate-900 mb-2">
+                                Email Address{" "}
+                                {index === 0 && (
+                                  <span className="text-red-500">*</span>
+                                )}
+                              </label>
+                              <input
+                                type="email"
+                                value={profile.email}
+                                required={index === 0}
+                                onChange={(e) =>
+                                  updateAdultProfile(index, "email", e.target.value)
+                                }
+                                placeholder="john.smith@email.com"
+                                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-slate-900 mb-2">
+                                Phone Number{" "}
+                                {index === 0 && (
+                                  <span className="text-red-500">*</span>
+                                )}
+                              </label>
+                              <input
+                                type="tel"
+                                value={profile.phone}
+                                required={index === 0}
+                                onChange={(e) =>
+                                  updateAdultProfile(index, "phone", e.target.value)
+                                }
+                                placeholder="+1 234 567 8900"
+                                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-slate-900 mb-2">
+                                ID/passport Number{" "}
+                                {index === 0 && (
+                                  <span className="text-red-500">*</span>
+                                )}
+                              </label>
+                              <input
+                                type="text"
+                                value={profile.idNumber}
+                                required={index === 0}
+                                onChange={(e) =>
+                                  updateAdultProfile(index, "idNumber", e.target.value)
+                                }
+                                placeholder="e.g., AB123456789"
+                                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-slate-900 mb-2">
+                                Country
+                              </label>
+                              <input
+                                type="text"
+                                value={profile.country}
+                                onChange={(e) =>
+                                  updateAdultProfile(index, "country", e.target.value)
+                                }
+                                placeholder="Country"
+                                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-slate-900 mb-2">
+                              Address line 2
+                            </label>
+                            <input
+                              type="text"
+                              value={profile.address}
+                              onChange={(e) =>
+                                updateAdultProfile(index, "address", e.target.value)
+                              }
+                              placeholder="Apt, suite, building, etc."
+                              className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-slate-900 mb-2">
+                              NIC / Passport document
+                            </label>
+                            <label className="inline-flex items-center gap-3 rounded-lg border border-dashed border-slate-300 px-4 py-3 text-sm font-semibold text-slate-600 cursor-pointer transition hover:border-blue-400 hover:text-blue-600">
+                              <input
+                                type="file"
+                                accept="image/*,application/pdf"
+                                className="hidden"
+                                onChange={(event) =>
+                                  handleAdultDocumentUpload(index, event)
+                                }
+                              />
+                              Upload document
+                            </label>
+                            {profile.documentName && (
+                              <p className="mt-2 text-xs text-slate-500">
+                                Uploaded:{" "}
+                                <span className="font-medium">
+                                  {profile.documentName}
+                                </span>
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-
-                  {/* Email and Phone */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-slate-900 mb-2">
-                        Email Address <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="email"
-                        name="guestEmail"
-                        value={formData.guestEmail}
-                        onChange={handleChange}
-                        required
-                        placeholder="john.smith@email.com"
-                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-slate-900 mb-2">
-                        Phone Number <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="tel"
-                        name="guestPhone"
-                        value={formData.guestPhone}
-                        onChange={handleChange}
-                        required
-                        placeholder="+1 234 567 8900"
-                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-                  </div>
-
-                  {/* ID/Passport Number */}
-                  <div>
-                    <label className="block text-sm font-medium text-slate-900 mb-2">
-                      ID/Passport Number <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="guestIdNumber"
-                      value={formData.guestIdNumber}
-                      onChange={handleChange}
-                      required
-                      placeholder="e.g., AB123456789"
-                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-slate-900 mb-2">
-                        Country
-                      </label>
-                      <input
-                        type="text"
-                        name="guestCountry"
-                        value={formData.guestCountry}
-                        onChange={handleChange}
-                        placeholder="Country"
-                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-900 mb-2">
-                        Address line 2
-                      </label>
-                      <input
-                        type="text"
-                        name="guestAddressLine2"
-                        value={formData.guestAddressLine2}
-                        onChange={handleChange}
-                        placeholder="Apt, suite, building, etc."
-                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-slate-900 mb-2">
-                      NIC / Passport document
-                    </label>
-                    <label className="inline-flex items-center gap-3 rounded-lg border border-dashed border-slate-300 px-4 py-3 text-sm font-semibold text-slate-600 cursor-pointer transition hover:border-blue-400 hover:text-blue-600">
-                      <input
-                        type="file"
-                        accept="image/*,application/pdf"
-                        className="hidden"
-                        onChange={handleDocumentUpload}
-                      />
-                      Upload document
-                    </label>
-                    {formData.guestDocumentName && (
-                      <p className="mt-2 text-xs text-slate-500">
-                        Uploaded:{" "}
-                        <span className="font-medium">
-                          {formData.guestDocumentName}
-                        </span>
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Special Requests */}
                   <div>
                     <label className="block text-sm font-medium text-slate-900 mb-2">
                       Special Requests (Optional)
@@ -2664,45 +2844,51 @@ export const ReserveRoom: React.FC = () => {
                   <h3 className="text-sm font-semibold text-slate-600 uppercase tracking-wider">
                     Stay Details
                   </h3>
-                  <div className="space-y-2 bg-slate-50 rounded-lg p-4 border border-slate-200">
-                    {formData.checkIn && (
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">Check-in</span>
-                        <span className="font-medium text-slate-900">
-                          {new Date(formData.checkIn).toLocaleDateString()}
+                  <div className="rounded-lg border border-slate-200 bg-white/90 shadow-sm">
+                    <div className="space-y-2 px-5 py-4 text-sm text-slate-600">
+                      {formData.checkIn && (
+                        <div className="flex items-center justify-between">
+                          <span>Check-in</span>
+                          <span className="text-slate-900 font-semibold">
+                            {new Date(formData.checkIn).toLocaleDateString()}
+                          </span>
+                        </div>
+                      )}
+                      {formData.checkOut && (
+                        <div className="flex items-center justify-between">
+                          <span>Check-out</span>
+                          <span className="text-slate-900 font-semibold">
+                            {new Date(formData.checkOut).toLocaleDateString()}
+                          </span>
+                        </div>
+                      )}
+                      {invoice.nights > 0 && (
+                        <div className="flex items-center justify-between">
+                          <span>Duration</span>
+                          <span className="text-blue-600 font-semibold">
+                            {invoice.nights} night{invoice.nights > 1 ? "s" : ""}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between">
+                        <span>Guests</span>
+                        <span className="text-slate-900 font-semibold">
+                          {guestDetailLabel}
                         </span>
                       </div>
-                    )}
-                    {formData.checkOut && (
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">Check-out</span>
-                        <span className="font-medium text-slate-900">
-                          {new Date(formData.checkOut).toLocaleDateString()}
+                      <div className="flex items-center justify-between">
+                        <span>Booking Channel</span>
+                        <span className="text-slate-900 font-semibold">
+                          {channelLabel}
                         </span>
                       </div>
-                    )}
-                    {invoice.nights > 0 && (
-                      <div className="flex justify-between pt-2 border-t border-slate-200">
-                        <span className="text-slate-500">Duration</span>
-                        <span className="font-bold text-blue-600">
-                          {invoice.nights} night{invoice.nights > 1 ? "s" : ""}
+                      <div className="flex items-center justify-between">
+                        <span>Currency</span>
+                        <span className="text-slate-900 font-semibold">
+                          {currencyLabel}
                         </span>
                       </div>
-                    )}
-                    {formData.adults > 0 && (
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">Guests</span>
-                        <span className="text-slate-900">
-                          {formData.adults} Adult
-                          {formData.adults > 1 ? "s" : ""}
-                          {formData.children > 0
-                            ? `, ${formData.children} Child${
-                                formData.children > 1 ? "ren" : ""
-                              }`
-                            : ""}
-                        </span>
-                      </div>
-                    )}
+                    </div>
                   </div>
                 </div>
               )}

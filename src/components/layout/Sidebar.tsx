@@ -19,6 +19,8 @@ import {
   Coins,
   PartyPopper,
   Plus,
+  Package,
+  Sparkles,
 } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 
@@ -236,6 +238,28 @@ const navItems: NavItem[] = [
         path: "/channels/price-grid",
         label: "Channel Price",
         icon: <DollarSign className="w-4 h-4" />,
+      },
+    ],
+  },
+  {
+    path: "/additional-service",
+    label: "Additional Service",
+    icon: <Package className="w-5 h-5" />,
+    children: [
+      {
+        path: "/additional-service/manage-items",
+        label: "Manage Service Items",
+        icon: <Package className="w-4 h-4" />,
+      },
+      {
+        path: "/additional-service/reservation-addon",
+        label: "Reservation Add-on Service",
+        icon: <Calendar className="w-4 h-4" />,
+      },
+      {
+        path: "/additional-service/event-addon",
+        label: "Event Add-on Service",
+        icon: <Sparkles className="w-4 h-4" />,
       },
     ],
   },

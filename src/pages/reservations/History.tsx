@@ -6,6 +6,8 @@ import { Input } from "../../components/ui/Input";
 import { Select } from "../../components/ui/Select";
 import { Button } from "../../components/ui/Button";
 import { Modal } from "../../components/ui/Modal";
+import { CheckInDialog } from "../../components/dialogs/CheckInDialog";
+import { CheckOutDialog } from "../../components/dialogs/CheckOutDialog";
 import {
   formatDate,
   formatCurrency,
@@ -73,6 +75,10 @@ export const ReservationsHistory: React.FC = () => {
   const [invoiceReservationId, setInvoiceReservationId] = useState<
     string | null
   >(null);
+  const [checkInDialogOpen, setCheckInDialogOpen] = useState(false);
+  const [checkOutDialogOpen, setCheckOutDialogOpen] = useState(false);
+  const [activeReservation, setActiveReservation] =
+    useState<Reservation | null>(null);
   const currencyCode = state.settings?.currency ?? "USD";
 
   const customerById = useMemo(() => {
@@ -263,18 +269,13 @@ export const ReservationsHistory: React.FC = () => {
   };
 
   const handleCheckIn = (reservation: Reservation) => {
-    if (window.confirm("Check in this guest?")) {
-      dispatch({
-        type: "UPDATE_RESERVATION",
-        payload: { ...reservation, status: "checked-in" },
-      });
-    }
+    setActiveReservation(reservation);
+    setCheckInDialogOpen(true);
   };
 
   const handleCheckOut = (reservation: Reservation) => {
-    // Show invoice modal instead of direct checkout
-    setInvoiceReservationId(reservation.id);
-    setInvoiceOpen(true);
+    setActiveReservation(reservation);
+    setCheckOutDialogOpen(true);
   };
 
   const confirmCheckOut = (reservationId: string) => {
@@ -1154,6 +1155,36 @@ export const ReservationsHistory: React.FC = () => {
             );
           })()}
         </Modal>
+      )}
+
+      {/* Check-In Dialog */}
+      {checkInDialogOpen && activeReservation && (
+        <CheckInDialog
+          reservation={activeReservation}
+          onClose={() => {
+            setCheckInDialogOpen(false);
+            setActiveReservation(null);
+          }}
+          onCheckInComplete={() => {
+            setCheckInDialogOpen(false);
+            setActiveReservation(null);
+          }}
+        />
+      )}
+
+      {/* Check-Out Dialog */}
+      {checkOutDialogOpen && activeReservation && (
+        <CheckOutDialog
+          reservation={activeReservation}
+          onClose={() => {
+            setCheckOutDialogOpen(false);
+            setActiveReservation(null);
+          }}
+          onCheckOutComplete={() => {
+            setCheckOutDialogOpen(false);
+            setActiveReservation(null);
+          }}
+        />
       )}
     </div>
   );

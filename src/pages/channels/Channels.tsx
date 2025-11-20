@@ -27,9 +27,11 @@ export const Channels: React.FC<ChannelsProps> = ({ customTypes = [] }) => {
   const [channelFormData, setChannelFormData] = useState<{
     name: string;
     status: ChannelStatus;
+    reservationType: string;
   }>({
     name: "",
     status: "active",
+    reservationType: "DIRECT",
   });
 
   const defaultReservationTypes: ReservationType[] = [
@@ -51,13 +53,21 @@ export const Channels: React.FC<ChannelsProps> = ({ customTypes = [] }) => {
   // Channel CRUD operations
   const handleAddChannel = () => {
     setEditingChannel(null);
-    setChannelFormData({ name: "", status: "active" });
+    setChannelFormData({
+      name: "",
+      status: "active",
+      reservationType: activeTab,
+    });
     setShowChannelModal(true);
   };
 
   const handleEditChannel = (channel: Channel) => {
     setEditingChannel(channel);
-    setChannelFormData({ name: channel.name, status: channel.status });
+    setChannelFormData({
+      name: channel.name,
+      status: channel.status,
+      reservationType: (channel as any).reservationType || activeTab,
+    });
     setShowChannelModal(true);
   };
 
@@ -74,7 +84,8 @@ export const Channels: React.FC<ChannelsProps> = ({ customTypes = [] }) => {
           ...editingChannel,
           name: channelFormData.name,
           status: channelFormData.status,
-        },
+          reservationType: channelFormData.reservationType,
+        } as any,
       });
     } else {
       dispatch({
@@ -82,9 +93,9 @@ export const Channels: React.FC<ChannelsProps> = ({ customTypes = [] }) => {
         payload: {
           id: generateId(),
           name: channelFormData.name,
-          type: activeTab,
+          type: channelFormData.reservationType,
           status: channelFormData.status,
-          reservationType: activeTab,
+          reservationType: channelFormData.reservationType,
         } as any,
       });
     }
@@ -309,6 +320,32 @@ export const Channels: React.FC<ChannelsProps> = ({ customTypes = [] }) => {
         title={editingChannel ? "Edit Channel" : "Add Channel"}
       >
         <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-2">
+              Reservation Type
+            </label>
+            <select
+              value={channelFormData.reservationType}
+              onChange={(e) =>
+                setChannelFormData({
+                  ...channelFormData,
+                  reservationType: e.target.value,
+                })
+              }
+              className="w-full px-4 py-2.5 border-2 border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-medium text-slate-700 bg-white transition-all"
+            >
+              {defaultReservationTypes.map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+              {customTypes.map((type) => (
+                <option key={type.id} value={type.code}>
+                  {type.code}
+                </option>
+              ))}
+            </select>
+          </div>
           <Input
             label="Channel Name"
             value={channelFormData.name}
