@@ -58,38 +58,28 @@ export const navItems: NavItem[] = [
   },
   {
     path: "/events",
-    label: "Events",
+    label: "Event Management",
     icon: <PartyPopper className="w-5 h-5" />,
     children: [
       {
-        path: "/events/overview",
-        label: "Bookings Overview",
-        icon: <ClipboardList className="w-4 h-4" />,
-      },
-      {
-        path: "/events/booking",
-        label: "Book Event",
-        icon: <Plus className="w-4 h-4" />,
-      },
-      {
-        path: "/events/create",
-        label: "Create Event",
-        icon: <FileText className="w-4 h-4" />,
-      },
-      {
-        path: "/events/hall-management",
-        label: "Hall Management",
-        icon: <Building className="w-4 h-4" />,
+        path: "/events",
+        label: "Events",
+        icon: <Calendar className="w-4 h-4" />,
       },
       {
         path: "/events/packages",
-        label: "Event Packages",
-        icon: <FileText className="w-4 h-4" />,
+        label: "Packages",
+        icon: <Package className="w-4 h-4" />,
       },
       {
-        path: "/events/reporting",
-        label: "Reports & Analytics",
-        icon: <TrendingUp className="w-4 h-4" />,
+        path: "/events/bookings",
+        label: "Bookings",
+        icon: <ClipboardList className="w-4 h-4" />,
+      },
+      {
+        path: "/events/create-booking",
+        label: "Create Booking",
+        icon: <Plus className="w-4 h-4" />,
       },
     ],
   },

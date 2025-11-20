@@ -444,7 +444,8 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
     } catch (e) {
       return {} as Record<string, string[]>;
     }
-  }, []);  const globalActivityDefs = useMemo(() => {
+  }, []);
+  const globalActivityDefs = useMemo(() => {
     const defs: Omit<Activity, "completed">[] = [
       ...activityDefinitionsDefaults,
     ];
@@ -470,7 +471,7 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
         : value && (value as any).tasks
         ? (value as any).tasks
         : [];
-      labels.forEach((label) => {
+      labels.forEach((label: string) => {
         const baseId = slugify(label);
         let id = baseId;
         let suffix = 1;
@@ -1646,7 +1647,30 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
   const handleFinishCleaning = (roomId: string) => {
     const room = rooms.find((r) => r.id === roomId);
     if (!room) return;
-    const allComplete = room.activities.every((a) => a.completed);
+
+    // Get visible categories for this room
+    const visibleCategories = Array.from(
+      new Set([
+        ...globalActivityDefs.map((d) => d.category),
+        ...room.activities.map((a) => a.category || "general"),
+      ])
+    ).filter((c) => {
+      const category = (c as string) || "general";
+      const assigned = categoryAssignments[category] || [];
+      if (assigned.length === 0) return true;
+      return assigned.some((t) =>
+        room.type.toLowerCase().includes(t.toLowerCase())
+      );
+    });
+
+    // Only check visible activities
+    const visibleActivities = room.activities.filter((a) =>
+      visibleCategories.includes(a.category || "general")
+    );
+    const allComplete =
+      visibleActivities.length > 0 &&
+      visibleActivities.every((a) => a.completed);
+
     if (allComplete) {
       const endTime = Date.now();
       const startTime = room.startTime || endTime;
@@ -1665,7 +1689,7 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
         endTime,
         duration,
         status: "completed",
-        completedTasks: room.activities.map((act) => ({ ...act })), // Snapshot of completed activities
+        completedTasks: visibleActivities.map((act) => ({ ...act })), // Snapshot of visible completed activities
         housekeeperId: currentCleanerId,
         housekeeperName: currentCleanerName,
       };
@@ -2057,11 +2081,32 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
                   {/* Room List */}
                   {selectedRooms.map((room, index) => {
                     const isActive = index === currentActivityRoomIndex;
-                    const completedCount = room.activities.filter(
+
+                    // Get visible categories for this room
+                    const visibleCategories = Array.from(
+                      new Set([
+                        ...globalActivityDefs.map((d) => d.category),
+                        ...room.activities.map((a) => a.category || "general"),
+                      ])
+                    ).filter((c) => {
+                      const category = (c as string) || "general";
+                      const assigned = categoryAssignments[category] || [];
+                      if (assigned.length === 0) return true;
+                      return assigned.some((t) =>
+                        room.type.toLowerCase().includes(t.toLowerCase())
+                      );
+                    });
+
+                    // Only count activities from visible categories
+                    const visibleActivities = room.activities.filter((a) =>
+                      visibleCategories.includes(a.category || "general")
+                    );
+                    const completedCount = visibleActivities.filter(
                       (a) => a.completed
                     ).length;
-                    const totalCount = room.activities.length;
-                    const isComplete = completedCount === totalCount;
+                    const totalCount = visibleActivities.length;
+                    const isComplete =
+                      completedCount === totalCount && totalCount > 0;
 
                     return (
                       <button
@@ -2109,7 +2154,11 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
                               isComplete ? "bg-emerald-500" : "bg-blue-500"
                             }`}
                             style={{
-                              width: `${(completedCount / totalCount) * 100}%`,
+                              width: `${
+                                totalCount > 0
+                                  ? (completedCount / totalCount) * 100
+                                  : 0
+                              }%`,
                             }}
                           />
                         </div>
@@ -2123,10 +2172,29 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
                   (() => {
                     const room = selectedRooms[currentActivityRoomIndex];
 
-                    const completedCount = room.activities.filter(
+                    // Get visible categories based on room type assignments
+                    const visibleCategories = Array.from(
+                      new Set([
+                        ...globalActivityDefs.map((d) => d.category),
+                        ...room.activities.map((a) => a.category || "general"),
+                      ])
+                    ).filter((c) => {
+                      const category = (c as string) || "general";
+                      const assigned = categoryAssignments[category] || [];
+                      if (assigned.length === 0) return true;
+                      return assigned.some((t) =>
+                        room.type.toLowerCase().includes(t.toLowerCase())
+                      );
+                    });
+
+                    // Only count activities from visible categories
+                    const visibleActivities = room.activities.filter((a) =>
+                      visibleCategories.includes(a.category || "general")
+                    );
+                    const completedCount = visibleActivities.filter(
                       (a) => a.completed
                     ).length;
-                    const totalCount = room.activities.length;
+                    const totalCount = visibleActivities.length;
 
                     return (
                       <div className="flex flex-col gap-6">
@@ -2145,14 +2213,15 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
                               </p>
                             </div>
                             <div className="flex flex-col items-end gap-3">
-                              {room.activities.every((a) => a.completed) && (
-                                <div className="rounded-full bg-emerald-100 px-4 py-2 flex items-center gap-2">
-                                  <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                                  <span className="text-sm font-semibold text-emerald-700">
-                                    All Complete
-                                  </span>
-                                </div>
-                              )}
+                              {visibleActivities.length > 0 &&
+                                visibleActivities.every((a) => a.completed) && (
+                                  <div className="rounded-full bg-emerald-100 px-4 py-2 flex items-center gap-2">
+                                    <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                                    <span className="text-sm font-semibold text-emerald-700">
+                                      All Complete
+                                    </span>
+                                  </div>
+                                )}
                               {/* Remove Room Button */}
                               <Button
                                 size="sm"
@@ -2215,9 +2284,11 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
                                 Overall Progress
                               </span>
                               <span className="text-lg font-bold text-slate-900">
-                                {Math.round(
-                                  (completedCount / totalCount) * 100
-                                )}
+                                {totalCount > 0
+                                  ? Math.round(
+                                      (completedCount / totalCount) * 100
+                                    )
+                                  : 0}
                                 %
                               </span>
                             </div>
@@ -2226,7 +2297,9 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
                                 className="bg-gradient-to-r from-blue-500 to-cyan-500 h-3 rounded-full transition-all"
                                 style={{
                                   width: `${
-                                    (completedCount / totalCount) * 100
+                                    totalCount > 0
+                                      ? (completedCount / totalCount) * 100
+                                      : 0
                                   }%`,
                                 }}
                               />
@@ -2267,48 +2340,51 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
                             )
                               .filter((c) => {
                                 const category = (c as string) || "general";
-                                const assigned = categoryAssignments[category] || [];
+                                const assigned =
+                                  categoryAssignments[category] || [];
                                 // if assigned is empty => visible for all room types
                                 if (assigned.length === 0) return true;
                                 // otherwise check if any assigned room type is part of room.type
                                 return assigned.some((t) =>
-                                  room.type.toLowerCase().includes(t.toLowerCase())
+                                  room.type
+                                    .toLowerCase()
+                                    .includes(t.toLowerCase())
                                 );
                               })
                               .map((cat) => {
-                              const category = (cat as string) || "general";
-                              // pick an icon for common categories
-                              const CatIcon =
-                                category === "washroom" ||
-                                category === "bathroom"
-                                  ? Bath
-                                  : category === "bedroom"
-                                  ? BedDouble
-                                  : ClipboardCheck;
-                              const isActiveCat =
-                                activeActivityView[room.id] === category;
-                              return (
-                                <Button
-                                  key={category}
-                                  variant={
-                                    isActiveCat ? "primary" : "secondary"
-                                  }
-                                  size="sm"
-                                  onClick={() =>
-                                    toggleActivityView(room.id, category)
-                                  }
-                                  className={`min-w-[120px] flex-shrink-0 flex items-center justify-center gap-2 cursor-pointer transition-all whitespace-nowrap ${
-                                    isActiveCat
-                                      ? "!bg-blue-600 !text-white !border-blue-600"
-                                      : "bg-white text-slate-700 border-slate-300 hover:border-slate-400"
-                                  }`}
-                                >
-                                  <CatIcon className="h-4 w-4" />
-                                  {category.charAt(0).toUpperCase() +
-                                    category.slice(1)}
-                                </Button>
-                              );
-                            })}
+                                const category = (cat as string) || "general";
+                                // pick an icon for common categories
+                                const CatIcon =
+                                  category === "washroom" ||
+                                  category === "bathroom"
+                                    ? Bath
+                                    : category === "bedroom"
+                                    ? BedDouble
+                                    : ClipboardCheck;
+                                const isActiveCat =
+                                  activeActivityView[room.id] === category;
+                                return (
+                                  <Button
+                                    key={category}
+                                    variant={
+                                      isActiveCat ? "primary" : "secondary"
+                                    }
+                                    size="sm"
+                                    onClick={() =>
+                                      toggleActivityView(room.id, category)
+                                    }
+                                    className={`min-w-[120px] flex-shrink-0 flex items-center justify-center gap-2 cursor-pointer transition-all whitespace-nowrap ${
+                                      isActiveCat
+                                        ? "!bg-blue-600 !text-white !border-blue-600"
+                                        : "bg-white text-slate-700 border-slate-300 hover:border-slate-400"
+                                    }`}
+                                  >
+                                    <CatIcon className="h-4 w-4" />
+                                    {category.charAt(0).toUpperCase() +
+                                      category.slice(1)}
+                                  </Button>
+                                );
+                              })}
                           </div>
 
                           <button
@@ -2450,7 +2526,10 @@ export const Housekeeping: React.FC<HousekeepingProps> = ({ mode }) => {
                         {/* Finish Room Button */}
                         <Button
                           onClick={() => handleFinishCleaning(room.id)}
-                          disabled={!room.activities.every((a) => a.completed)}
+                          disabled={
+                            visibleActivities.length === 0 ||
+                            !visibleActivities.every((a) => a.completed)
+                          }
                           className="w-full bg-gradient-to-r from-emerald-500 to-green-500 cursor-pointer disabled:cursor-not-allowed"
                         >
                           <CheckCircle2 className="mr-2 h-4 w-4" />

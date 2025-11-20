@@ -17,13 +17,13 @@ import { ReservationsHistory } from "./pages/reservations/History";
 import { ManageCustomer } from "./pages/customers/ManageCustomer";
 
 // Events
-import { EventPackages } from "./pages/events/EventPackages";
-import { CreateEvent } from "./pages/events/CreateEvent";
-import { CreateEventForm } from "./pages/events/CreateEventForm";
-import { EventManagement } from "./pages/events/EventManagement";
-import { HallManagement } from "./pages/events/HallManagement";
-import { EventBookingWorkflow } from "./pages/events/EventBooking";
-import { EventBookingsOverview } from "./pages/events/EventBookingsOverview";
+import {
+  Events,
+  Packages,
+  Bookings,
+  BookingDetails,
+  CreateBooking,
+} from "./pages/eventManagement";
 
 // Invoicing
 import { Bill } from "./pages/invoicing/Bill";
@@ -113,27 +113,16 @@ function App() {
                       element={<ReservationsHistory />}
                     />
                     <Route path="/customers" element={<ManageCustomer />} />
+                    <Route path="/events/management" element={<Events />} />
+                    <Route path="/events/packages" element={<Packages />} />
+                    <Route path="/events/bookings" element={<Bookings />} />
                     <Route
-                      path="/events/packages"
-                      element={<EventPackages />}
-                    />
-                    <Route path="/events/create" element={<CreateEvent />} />
-                    <Route path="/events/form" element={<CreateEventForm />} />
-                    <Route
-                      path="/events/management"
-                      element={<EventManagement />}
+                      path="/events/bookings/:id"
+                      element={<BookingDetails />}
                     />
                     <Route
-                      path="/events/hall-management"
-                      element={<HallManagement />}
-                    />
-                    <Route
-                      path="/events/booking"
-                      element={<EventBookingWorkflow />}
-                    />
-                    <Route
-                      path="/events/overview"
-                      element={<EventBookingsOverview />}
+                      path="/events/create-booking"
+                      element={<CreateBooking />}
                     />
                     <Route
                       path="/invoicing/invoices"

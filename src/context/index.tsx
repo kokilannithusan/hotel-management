@@ -6,6 +6,7 @@ import { ReservationTypeProvider } from "./ReservationTypeContext";
 import { AdditionalServiceProvider } from "./AdditionalServiceContext";
 import { EventInvoiceProvider } from "./EventInvoiceContext";
 import { InvoiceProvider } from "./InvoiceContext";
+import { EventManagementProvider } from "./EventManagementContext";
 
 export const AppProviders: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -14,13 +15,15 @@ export const AppProviders: React.FC<{ children: React.ReactNode }> = ({
     <AuthProvider>
       <HotelProvider>
         <AdditionalServiceProvider>
-          <EventInvoiceProvider>
-            <InvoiceProvider>
-              <ReservationTypeProvider>
-                <SidebarProvider>{children}</SidebarProvider>
-              </ReservationTypeProvider>
-            </InvoiceProvider>
-          </EventInvoiceProvider>
+          <EventManagementProvider>
+            <EventInvoiceProvider>
+              <InvoiceProvider>
+                <ReservationTypeProvider>
+                  <SidebarProvider>{children}</SidebarProvider>
+                </ReservationTypeProvider>
+              </InvoiceProvider>
+            </EventInvoiceProvider>
+          </EventManagementProvider>
         </AdditionalServiceProvider>
       </HotelProvider>
     </AuthProvider>
