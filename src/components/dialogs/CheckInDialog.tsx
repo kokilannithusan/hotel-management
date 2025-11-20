@@ -1,8 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, ChangeEvent } from "react";
 import { Button } from "../ui/Button";
 import { useHotel } from "../../context/HotelContext";
 import { formatCurrency } from "../../utils/formatters";
-import type { Reservation, Room } from "../../types/entities";
+import type { Reservation, Room, Customer } from "../../types/entities";
 
 interface CheckInDialogProps {
   reservation: Reservation;
@@ -32,6 +32,16 @@ export function CheckInDialog({
   const [adults, setAdults] = useState(reservation.adults);
   const [children, setChildren] = useState(reservation.children);
   const [notes, setNotes] = useState(reservation.notes || "");
+  const [identificationNumber, setIdentificationNumber] = useState("");
+  const [identificationDocumentName, setIdentificationDocumentName] =
+    useState("");
+  const [identificationDocumentUrl, setIdentificationDocumentUrl] =
+    useState("");
+  const [keyTag, setKeyTag] = useState("");
+  const [handoverNotes, setHandoverNotes] = useState("");
+  const [handoverStatus, setHandoverStatus] = useState<"handed" | "pending">(
+    "handed"
+  );
 
   const currentRoom = state.rooms.find((r) => r.id === reservation.roomId);
   const currentRoomType = state.roomTypes.find(
@@ -42,6 +52,16 @@ export function CheckInDialog({
   const selectedRoomType = state.roomTypes.find(
     (rt) => rt.id === selectedRoom?.roomTypeId
   );
+
+  useEffect(() => {
+    setIdentificationNumber(customer?.identificationNumber ?? "");
+    setIdentificationDocumentName(customer?.identificationDocumentName ?? "");
+    setIdentificationDocumentUrl(customer?.identificationDocumentUrl ?? "");
+  }, [
+    customer?.identificationNumber,
+    customer?.identificationDocumentName,
+    customer?.identificationDocumentUrl,
+  ]);
 
   // Calculate nights
   const nights = useMemo(() => {
@@ -83,7 +103,31 @@ export function CheckInDialog({
     return basePrice * nights;
   };
 
+  const handleDocumentUpload = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setIdentificationDocumentName(file.name);
+      setIdentificationDocumentUrl(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+    event.currentTarget.value = "";
+  };
+
+  const persistIdentificationToCustomer = () => {
+    if (!customer) return;
+    const updatedCustomer: Customer = {
+      ...customer,
+      identificationNumber: identificationNumber.trim() || undefined,
+      identificationDocumentName: identificationDocumentName || undefined,
+      identificationDocumentUrl: identificationDocumentUrl || undefined,
+    };
+    dispatch({ type: "UPDATE_CUSTOMER", payload: updatedCustomer });
+  };
+
   const handleConfirmCheckIn = () => {
+    persistIdentificationToCustomer();
     // Update reservation status and room
     const updatedReservation = {
       ...reservation,
@@ -196,6 +240,43 @@ export function CheckInDialog({
               <p className="text-sm text-slate-700 mt-1">{reservation.notes}</p>
             </div>
           )}
+
+          <div className="bg-white border border-slate-200 rounded-lg p-4 space-y-3">
+            <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+              Guest Identification
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="flex flex-col text-sm text-slate-600 gap-1">
+                NIC / Passport number
+                <input
+                  type="text"
+                  value={identificationNumber}
+                  onChange={(event) =>
+                    setIdentificationNumber(event.target.value)
+                  }
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="Enter NIC or passport"
+                />
+              </label>
+              <div className="flex flex-col gap-2 text-sm">
+                <div className="flex items-center justify-between text-xs text-slate-500">
+                  <span>ID Document</span>
+                  <span className="font-semibold text-slate-900">
+                    {identificationDocumentName || "No file uploaded"}
+                  </span>
+                </div>
+                <label className="inline-flex cursor-pointer items-center rounded-lg border border-dashed border-slate-300 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:border-slate-500 hover:shadow-sm">
+                  <input
+                    type="file"
+                    accept="image/*,.pdf"
+                    className="hidden"
+                    onChange={handleDocumentUpload}
+                  />
+                  Upload document
+                </label>
+              </div>
+            </div>
+          </div>
 
           <div className="pt-4 border-t border-slate-200">
             <div className="flex justify-between items-center">
@@ -578,6 +659,67 @@ export function CheckInDialog({
             <strong>Checked In</strong>
             <br />✓ Check-in timestamp will be recorded
           </p>
+        </div>
+
+        <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-4">
+          <div>
+            <label className="text-xs font-medium text-slate-500 uppercase">
+              Room Key Handover
+            </label>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-slate-500 uppercase">
+              Key Tag / Number
+            </label>
+            <input
+              type="text"
+              value={keyTag}
+              onChange={(event) => setKeyTag(event.target.value)}
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              placeholder="Record the key or card number"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-slate-500 uppercase">
+              Notes
+            </label>
+            <textarea
+              value={handoverNotes}
+              onChange={(event) => setHandoverNotes(event.target.value)}
+              rows={3}
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              placeholder="Optional notes about the handover"
+            />
+          </div>
+          <div className="space-y-1">
+            <div className="text-xs font-medium text-slate-500 uppercase">
+              Key Handover Status
+            </div>
+            <div className="flex flex-wrap gap-3 text-sm text-slate-700">
+              <label className="inline-flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="handoverStatus"
+                  value="handed"
+                  checked={handoverStatus === "handed"}
+                  onChange={() => setHandoverStatus("handed")}
+                  className="text-emerald-600"
+                />
+                Key handed to guest
+              </label>
+              <label className="inline-flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="handoverStatus"
+                  value="pending"
+                  checked={handoverStatus === "pending"}
+                  onChange={() => setHandoverStatus("pending")}
+                  className="text-emerald-600"
+                />
+                Pending / left at front desk
+              </label>
+            </div>
+          </div>
         </div>
 
         <div className="flex gap-3 justify-end">

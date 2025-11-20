@@ -105,6 +105,29 @@ export const ReserveRoom: React.FC = () => {
   const [filterRoomType, setFilterRoomType] = useState<string>("");
   const [filterViewType, setFilterViewType] = useState<string>("");
 
+  // Load stay type combinations from localStorage
+  type StayTypeCombination = {
+    id: string;
+    roomTypeId: string;
+    adults: number;
+    children: number;
+    mealPlanId: string;
+    viewTypeId: string;
+    pricing: Array<{ currency: string; price: number }>;
+  };
+
+  const [stayTypeCombinations, setStayTypeCombinations] = useState<
+    StayTypeCombination[]
+  >(() => {
+    try {
+      const saved = localStorage.getItem("hotel-stay-type-combinations");
+      return saved ? JSON.parse(saved) : [];
+    } catch (error) {
+      console.error("Error loading stay type combinations:", error);
+      return [];
+    }
+  });
+
   const [showAmenitiesModal, setShowAmenitiesModal] = useState(false);
   const [selectedRoomForAmenities, setSelectedRoomForAmenities] = useState<
     string | null
@@ -131,10 +154,8 @@ export const ReserveRoom: React.FC = () => {
     balance: number;
     mode: string;
   } | null>(null);
-  const [selectedCurrencyCode, setSelectedCurrencyCode] = useState(() =>
-    state.settings?.currency ||
-    state.currencyRates[0]?.code ||
-    "USD"
+  const [selectedCurrencyCode, setSelectedCurrencyCode] = useState(
+    () => state.settings?.currency || state.currencyRates[0]?.code || "USD"
   );
 
   const initialChildAges = Array.from(
@@ -162,7 +183,9 @@ export const ReserveRoom: React.FC = () => {
     childAges: initialChildAges,
   });
 
-  const createAdultProfile = (seed: Partial<AdultProfile> = {}): AdultProfile => ({
+  const createAdultProfile = (
+    seed: Partial<AdultProfile> = {}
+  ): AdultProfile => ({
     id: generateId(),
     fullName: seed.fullName || "",
     email: seed.email || "",
@@ -766,10 +789,12 @@ export const ReserveRoom: React.FC = () => {
   };
 
   const renderGuestDetailsContent = () => (
-    <div className="space-y-4">
-      <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-center">
-        <p className="text-sm font-semibold text-slate-900">Room {roomCount}</p>
-        <p className="text-xs text-slate-500">
+    <div className="space-y-2">
+      <div className="bg-slate-50 border border-slate-200 rounded-md p-2 text-center">
+        <p className="text-[10px] font-semibold text-slate-900">
+          Room {roomCount}
+        </p>
+        <p className="text-[9px] text-slate-500">
           {formData.adults} Adult{formData.adults > 1 ? "s" : ""}
           {formData.children > 0
             ? `, ${formData.children} Child${
@@ -779,14 +804,14 @@ export const ReserveRoom: React.FC = () => {
         </p>
       </div>
 
-      <div className="space-y-4">
-        <div className="border border-slate-200 rounded-2xl p-4 space-y-2">
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-[0.4em]">
+      <div className="space-y-2">
+        <div className="border border-slate-200 rounded-md p-2 space-y-1">
+          <p className="text-[9px] font-semibold text-slate-500 uppercase tracking-[0.1em]">
             Adults
           </p>
-          <div className="flex items-center justify-between text-lg font-semibold">
+          <div className="flex items-center justify-between text-sm font-semibold">
             <span>{formData.adults}</span>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               <button
                 type="button"
                 onClick={() =>
@@ -797,7 +822,7 @@ export const ReserveRoom: React.FC = () => {
                   )
                 }
                 disabled={formData.adults <= 1}
-                className="w-10 h-10 rounded-full border border-slate-300 text-slate-600 disabled:opacity-40"
+                className="w-7 h-7 rounded-full border border-slate-300 text-slate-600 disabled:opacity-40 hover:bg-slate-50 transition text-sm"
               >
                 –
               </button>
@@ -811,7 +836,7 @@ export const ReserveRoom: React.FC = () => {
                   )
                 }
                 disabled={formData.adults >= 10}
-                className="w-10 h-10 rounded-full border border-slate-300 text-slate-600 disabled:opacity-40"
+                className="w-7 h-7 rounded-full border border-slate-300 text-slate-600 disabled:opacity-40 hover:bg-slate-50 transition text-sm"
               >
                 +
               </button>
@@ -819,13 +844,13 @@ export const ReserveRoom: React.FC = () => {
           </div>
         </div>
 
-        <div className="border border-slate-200 rounded-2xl p-4 space-y-2">
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-[0.4em]">
+        <div className="border border-slate-200 rounded-md p-2 space-y-1">
+          <p className="text-[9px] font-semibold text-slate-500 uppercase tracking-[0.1em]">
             Children
           </p>
-          <div className="flex items-center justify-between text-lg font-semibold">
+          <div className="flex items-center justify-between text-sm font-semibold">
             <span>{formData.children}</span>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               <button
                 type="button"
                 onClick={() =>
@@ -840,7 +865,7 @@ export const ReserveRoom: React.FC = () => {
                   })
                 }
                 disabled={formData.children <= 0}
-                className="w-10 h-10 rounded-full border border-slate-300 text-slate-600 disabled:opacity-40"
+                className="w-7 h-7 rounded-full border border-slate-300 text-slate-600 disabled:opacity-40 hover:bg-slate-50 transition text-sm"
               >
                 -
               </button>
@@ -857,7 +882,7 @@ export const ReserveRoom: React.FC = () => {
                   })
                 }
                 disabled={formData.children >= 10}
-                className="w-10 h-10 rounded-full border border-slate-300 text-slate-600 disabled:opacity-40"
+                className="w-7 h-7 rounded-full border border-slate-300 text-slate-600 disabled:opacity-40 hover:bg-slate-50 transition text-sm"
               >
                 +
               </button>
@@ -866,13 +891,13 @@ export const ReserveRoom: React.FC = () => {
         </div>
 
         {formData.children > 0 && (
-          <div className="space-y-3">
+          <div className="space-y-1.5">
             {formData.childAges.map((age, index) => (
               <div
                 key={index}
-                className="border border-slate-200 rounded-2xl p-3 space-y-2 inline-flex flex-col gap-1"
+                className="border border-slate-200 rounded-md p-1.5 flex items-center justify-between"
               >
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-[0.4em]">
+                <label className="text-[9px] font-semibold text-slate-500 uppercase tracking-[0.1em]">
                   Child {index + 1} Age*
                 </label>
                 <select
@@ -884,7 +909,7 @@ export const ReserveRoom: React.FC = () => {
                       return { ...prev, childAges: nextAges };
                     })
                   }
-                  className="max-w-[140px] rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                  className="w-14 rounded border border-slate-300 px-1.5 py-0.5 text-[11px] focus:border-blue-500 focus:outline-none"
                 >
                   {Array.from({ length: 12 }, (_, i) => i + 1).map((value) => (
                     <option key={value} value={value}>
@@ -896,10 +921,6 @@ export const ReserveRoom: React.FC = () => {
             ))}
           </div>
         )}
-      </div>
-
-      <div className="text-sm text-purple-700 font-semibold cursor-pointer">
-        Add another room
       </div>
     </div>
   );
@@ -923,9 +944,12 @@ export const ReserveRoom: React.FC = () => {
 
   const guestDetailLabel = `${formData.adults} Adult${
     formData.adults > 1 ? "s" : ""
-  }${formData.children > 0 ? `, ${formData.children} Child${formData.children > 1 ? "ren" : ""}` : ""}`;
-  const channelLabel =
-    formData.bookingChannel?.replace(/_/g, " ") || "Direct";
+  }${
+    formData.children > 0
+      ? `, ${formData.children} Child${formData.children > 1 ? "ren" : ""}`
+      : ""
+  }`;
+  const channelLabel = formData.bookingChannel?.replace(/_/g, " ") || "Direct";
   const selectedCurrencyRate =
     state.currencyRates.find((rate) => rate.code === selectedCurrencyCode) ||
     state.currencyRates[0];
@@ -933,24 +957,21 @@ export const ReserveRoom: React.FC = () => {
     ? `${selectedCurrencyRate.currency} (${selectedCurrencyRate.code})`
     : selectedCurrencyCode || state.settings?.currency || "USD";
 
-;
-
-
   return (
     <>
-      <div className="flex h-screen bg-white overflow-hidden">
+      <div className="flex h-screen bg-white">
         {/* Two Column Layout: Form (Center) + Invoice (Right) - Sidebar shows naturally from Layout */}
         {/* Center - Form Content (Takes remaining space between sidebar and invoice) */}
         <div className="flex-1 overflow-y-auto bg-gradient-to-br from-slate-50 via-white to-blue-50">
-          <div className="max-w-7xl mx-auto px-8 py-8">
+          <div className="max-w-7xl mx-auto px-8 py-4">
             {/* Header */}
-            <div className="mb-8 pb-6 border-b border-slate-200">
-              <div className="flex items-center justify-between mb-6">
+            <div className="mb-6 pb-4 border-b border-slate-200">
+              <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
+                  <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
                     {isExtendMode ? "Extend Reservation" : "Booking Details"}
                   </h1>
-                  <p className="text-sm text-slate-500 mt-2">
+                  <p className="text-sm text-slate-500 mt-1">
                     {isExtendMode
                       ? "Update your stay with extended checkout date"
                       : "Enter your check-in details and preferences"}
@@ -1061,263 +1082,295 @@ export const ReserveRoom: React.FC = () => {
                   </Card>
                 )}
 
-                <div className="relative mb-6" ref={calendarRef}>
-                  <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-                    <button
-                      type="button"
-                      onClick={() => openCalendarPopover("checkIn")}
-                      className="text-left rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="rounded-full bg-slate-50 p-2">
-                          <Calendar className="h-4 w-4 text-blue-600" />
-                        </div>
-                        <div>
-                          <p className="text-[10px] uppercase tracking-[0.3em] text-slate-500">
-                            Check-in
-                          </p>
-                          <p className="text-sm font-semibold text-slate-900">
-                            {checkInDisplay}
-                          </p>
-                        </div>
-                      </div>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => openCalendarPopover("checkOut")}
-                      className="text-left rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="rounded-full bg-slate-50 p-2">
-                          <Calendar className="h-4 w-4 text-purple-600" />
-                        </div>
-                        <div>
-                          <p className="text-[10px] uppercase tracking-[0.3em] text-slate-500">
-                            Check-out
-                          </p>
-                          <p className="text-sm font-semibold text-slate-900">
-                            {checkOutDisplay}
-                          </p>
-                        </div>
-                      </div>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={toggleGuestPanel}
-                      ref={guestButtonRef}
-                      className="text-left rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="rounded-full bg-gradient-to-br from-blue-600 to-blue-700 p-2 text-white shadow">
-                          <Users className="h-5 w-5" />
-                        </div>
-                        <div>
-                          <p className="text-[10px] uppercase tracking-[0.3em] text-slate-500">
-                            Guests
-                          </p>
-                          <p className="text-sm font-semibold text-slate-900">
-                            {guestSummaryLabel}
-                          </p>
-                        </div>
-                      </div>
-                    </button>
-                    {!isExtendMode && (
-                      <div className="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                        <div className="flex items-center gap-2">
-                          <SignalHigh className="h-4 w-4 text-blue-600" />
-                          <span className="text-[10px] uppercase tracking-[0.3em] text-slate-500">
-                            Booking Channel
-                          </span>
-                        </div>
-                        <select
-                          name="bookingChannel"
-                          value={formData.bookingChannel}
-                          onChange={handleChange}
-                          required
-                          className="w-full appearance-none rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-900 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 transition hover:border-slate-400"
+                <div className="relative mb-[500px]" ref={calendarRef}>
+                  <Card className="shadow-lg border border-slate-200">
+                    <div className="p-4">
+                      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 divide-x divide-slate-200">
+                        <button
+                          type="button"
+                          onClick={() => openCalendarPopover("checkIn")}
+                          className={`text-left px-3 py-1.5 transition focus:outline-none ${
+                            isCalendarOpen &&
+                            calendarSelectionMode === "checkIn"
+                              ? "bg-blue-50"
+                              : ""
+                          }`}
                         >
-                          <option value="">Select booking channel</option>
-                          <option value="direct">Direct Booking</option>
-                          <option value="phone">Phone</option>
-                          <option value="email">Email</option>
-                          <option value="website">Website</option>
-                          <option value="booking_com">Booking.com</option>
-                          <option value="expedia">Expedia</option>
-                        </select>
-                      </div>
-                    )}
-                    <div className="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                      <div className="flex items-center gap-2">
-                        <DollarSign className="h-4 w-4 text-emerald-600" />
-                        <span className="text-[10px] uppercase tracking-[0.3em] text-slate-500">
-                          Currency
-                        </span>
-                      </div>
-                      <select
-                        value={selectedCurrencyCode}
-                        onChange={(e) => setSelectedCurrencyCode(e.target.value)}
-                        className="w-full appearance-none rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-900 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-400 transition hover:border-slate-400"
-                      >
-                        {state.currencyRates.length > 0
-                          ? state.currencyRates.map((rate) => (
-                              <option key={rate.id} value={rate.code}>
-                                {rate.currency} ({rate.code})
-                              </option>
-                            ))
-                          : (
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4 text-blue-600" />
+                            <div>
+                              <p className="text-[10px] uppercase tracking-wider text-slate-500 font-medium">
+                                Check-in
+                              </p>
+                              <p className="text-sm font-semibold text-slate-900">
+                                {checkInDisplay}
+                              </p>
+                            </div>
+                          </div>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => openCalendarPopover("checkOut")}
+                          className={`text-left px-3 py-1.5 transition focus:outline-none ${
+                            isCalendarOpen &&
+                            calendarSelectionMode === "checkOut"
+                              ? "bg-blue-50"
+                              : ""
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4 text-blue-600" />
+                            <div>
+                              <p className="text-[10px] uppercase tracking-wider text-slate-500 font-medium">
+                                Check-out
+                              </p>
+                              <p className="text-sm font-semibold text-slate-900">
+                                {checkOutDisplay}
+                              </p>
+                            </div>
+                          </div>
+                        </button>
+                        <div className="relative w-full">
+                          <button
+                            type="button"
+                            onClick={toggleGuestPanel}
+                            ref={guestButtonRef}
+                            className={`text-left px-3 py-1.5 transition focus:outline-none h-full w-full ${
+                              showGuestPanel ? "bg-blue-50" : ""
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 h-full">
+                              <Users className="h-4 w-4 text-blue-600" />
+                              <div className="flex-1">
+                                <p className="text-[10px] uppercase tracking-wider text-slate-500 font-medium">
+                                  Guests
+                                </p>
+                                <p className="text-sm font-semibold text-slate-900">
+                                  {guestSummaryLabel}
+                                </p>
+                              </div>
+                            </div>
+                          </button>
+                          {showGuestPanel && !isExtendMode && (
+                            <div
+                              ref={guestDropdownRef}
+                              className="absolute left-0 top-full z-50 mt-1.5 w-full min-w-[240px] rounded-md border border-blue-200 bg-white shadow-lg"
+                            >
+                              <div className="flex items-center justify-between border-b border-slate-100 bg-gradient-to-r from-blue-50 to-indigo-50 px-2.5 py-1.5 rounded-t-md">
+                                <p className="text-[8px] font-bold tracking-[0.15em] text-blue-700">
+                                  GUESTS
+                                </p>
+                                <button
+                                  type="button"
+                                  onClick={() => setShowGuestPanel(false)}
+                                  className="rounded-full p-0.5 text-blue-600 transition hover:bg-white"
+                                >
+                                  <X className="h-2.5 w-2.5" />
+                                </button>
+                              </div>
+                              <div className="space-y-2 p-2.5">
+                                {renderGuestDetailsContent()}
+                                <Button
+                                  type="button"
+                                  variant="primary"
+                                  className="w-full"
+                                  onClick={() => setShowGuestPanel(false)}
+                                >
+                                  Done
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        {!isExtendMode && (
+                          <div className="flex flex-col gap-1 px-3 py-1.5">
+                            <div className="flex items-center gap-2">
+                              <SignalHigh className="h-4 w-4 text-blue-600" />
+                              <span className="text-[10px] uppercase tracking-wider text-slate-500 font-medium">
+                                Booking Channel
+                              </span>
+                            </div>
+                            <select
+                              name="bookingChannel"
+                              value={formData.bookingChannel}
+                              onChange={handleChange}
+                              required
+                              className="w-full appearance-none rounded-lg border border-slate-300 px-2 py-1 text-sm font-semibold text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition hover:border-slate-400 bg-white"
+                            >
+                              <option value="">Select booking channel</option>
+                              <option value="direct">Direct Booking</option>
+                              <option value="phone">Phone</option>
+                              <option value="email">Email</option>
+                              <option value="website">Website</option>
+                              <option value="booking_com">Booking.com</option>
+                              <option value="expedia">Expedia</option>
+                            </select>
+                          </div>
+                        )}
+                        <div className="flex flex-col gap-1 px-3 py-1.5">
+                          <div className="flex items-center gap-2">
+                            <DollarSign className="h-4 w-4 text-emerald-600" />
+                            <span className="text-[10px] uppercase tracking-wider text-slate-500 font-medium">
+                              Currency
+                            </span>
+                          </div>
+                          <select
+                            value={selectedCurrencyCode}
+                            onChange={(e) =>
+                              setSelectedCurrencyCode(e.target.value)
+                            }
+                            className="w-full appearance-none rounded-lg border border-slate-300 bg-white px-2 py-1 text-sm font-semibold text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400 transition hover:border-slate-400"
+                          >
+                            {state.currencyRates.length > 0 ? (
+                              state.currencyRates.map((rate) => (
+                                <option key={rate.id} value={rate.code}>
+                                  {rate.currency} ({rate.code})
+                                </option>
+                              ))
+                            ) : (
                               <option value={selectedCurrencyCode}>
                                 {currencyLabel}
                               </option>
                             )}
-                      </select>
-                      <p className="text-[11px] text-slate-400">
-                        Hotel base currency
-                      </p>
-                    </div>
-                  </div>
-                  {isCalendarOpen && (
-                    <div className="absolute inset-x-4 top-full z-30 mt-4 mx-auto w-[min(580px,100%)] rounded-3xl border border-slate-200 bg-white shadow-2xl">
-                      <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
-                        <p className="text-xs font-semibold tracking-[0.4em] text-slate-500">
-                          {calendarSelectionMode === "checkIn"
-                            ? "SELECT CHECK-IN"
-                            : "SELECT CHECK-OUT"}
-                        </p>
-                        <div className="flex items-center gap-1">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setCalendarBaseMonth((prev) =>
-                                addMonths(prev, -1)
-                              )
-                            }
-                            className="rounded-full p-1 text-slate-600 transition hover:bg-slate-100"
+                          </select>
+                          <p className="text-[11px] text-slate-400">
+                            Hotel base currency
+                          </p>
+                        </div>
+
+                        {/* Search Button inline */}
+                        <div className="flex items-center justify-center px-3 py-1.5">
+                          <Button
+                            type="submit"
+                            className="px-6 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-md hover:shadow-lg transition-all duration-200"
                           >
-                            <ChevronLeft className="h-5 w-5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setCalendarBaseMonth((prev) => addMonths(prev, 1))
-                            }
-                            className="rounded-full p-1 text-slate-600 transition hover:bg-slate-100"
-                          >
-                            <ChevronRight className="h-5 w-5" />
-                          </button>
+                            {isExtendMode
+                              ? isRoomUnavailable()
+                                ? "Check Out"
+                                : "Proceed to Summary"
+                              : "Search"}
+                          </Button>
                         </div>
                       </div>
-                      <div className="grid gap-4 px-5 py-4 md:grid-cols-2">
-                        {[0, 1].map((offset) => {
-                          const monthDate = addMonths(
-                            calendarBaseMonth,
-                            offset
-                          );
-                          const days = generateMonthDays(monthDate);
-                          return (
-                            <div key={offset} className="space-y-3">
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm font-semibold text-slate-700">
-                                  {formatDateFns(monthDate, "MMMM yyyy")}
-                                </span>
-                              </div>
-                              <div className="grid grid-cols-7 gap-1 text-[9px] font-semibold uppercase tracking-[0.4em] text-slate-400">
-                                {WEEK_DAYS.map((dayAbbrev) => (
-                                  <span key={`${offset}-${dayAbbrev}`}>
-                                    {dayAbbrev}
-                                  </span>
-                                ))}
-                              </div>
-                              <div className="grid grid-cols-7 gap-1">
-                                {days.map((day) => {
-                                  const isCurrentMonth =
-                                    day.getMonth() === monthDate.getMonth();
-                                  const isDisabled =
-                                    isBefore(day, today) ||
-                                    (calendarSelectionMode === "checkOut" &&
-                                      Boolean(
-                                        checkInDateValue &&
-                                          !isAfter(day, checkInDateValue)
-                                      ));
-                                  const isStart = Boolean(
-                                    checkInDateValue &&
-                                      isSameDay(day, checkInDateValue)
-                                  );
-                                  const isEnd = Boolean(
-                                    checkOutDateValue &&
-                                      isSameDay(day, checkOutDateValue)
-                                  );
-                                  const hasRange = Boolean(
-                                    checkInDateValue && checkOutDateValue
-                                  );
-                                  const isInRange =
-                                    hasRange &&
-                                    isWithinInterval(day, {
-                                      start: checkInDateValue!,
-                                      end: checkOutDateValue!,
-                                    });
-                                  const highlightClass =
-                                    isStart || isEnd
-                                      ? "bg-gradient-to-br from-blue-600 to-blue-500 text-white shadow-lg"
-                                      : isInRange
-                                      ? "bg-blue-100 text-blue-700"
-                                      : isCurrentMonth
-                                      ? "text-slate-700 hover:bg-blue-50"
-                                      : "text-slate-300";
-                                  return (
-                                    <button
-                                      key={day.toISOString()}
-                                      type="button"
-                                      disabled={isDisabled}
-                                      onClick={() =>
-                                        handleCalendarDayClick(day)
-                                      }
-                                      className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold transition ${highlightClass} ${
-                                        isDisabled
-                                          ? "cursor-not-allowed opacity-60"
-                                          : ""
-                                      }`}
-                                    >
-                                      {day.getDate()}
-                                    </button>
-                                  );
-                                })}
-                              </div>
+
+                      {/* Calendar positioned below the card */}
+                      {isCalendarOpen && (
+                        <div className="mt-2 rounded-lg border border-blue-200 bg-white shadow-md max-w-lg">
+                          <div className="flex items-center justify-between border-b border-slate-100 bg-gradient-to-r from-blue-50 to-indigo-50 px-2.5 py-1.5 rounded-t-lg">
+                            <p className="text-[8px] font-bold tracking-wide text-blue-700">
+                              {calendarSelectionMode === "checkIn"
+                                ? "SELECT CHECK-IN"
+                                : "SELECT CHECK-OUT"}
+                            </p>
+                            <div className="flex items-center gap-0.5">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setCalendarBaseMonth((prev) =>
+                                    addMonths(prev, -1)
+                                  )
+                                }
+                                className="rounded-full p-0.5 text-blue-600 transition hover:bg-white"
+                              >
+                                <ChevronLeft className="h-2.5 w-2.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setCalendarBaseMonth((prev) =>
+                                    addMonths(prev, 1)
+                                  )
+                                }
+                                className="rounded-full p-0.5 text-blue-600 transition hover:bg-white"
+                              >
+                                <ChevronRight className="h-2.5 w-2.5" />
+                              </button>
                             </div>
-                          );
-                        })}
-                      </div>
+                          </div>
+                          <div className="grid gap-2 px-2.5 py-2 md:grid-cols-2">
+                            {[0, 1].map((offset) => {
+                              const monthDate = addMonths(
+                                calendarBaseMonth,
+                                offset
+                              );
+                              const days = generateMonthDays(monthDate);
+                              return (
+                                <div key={offset} className="space-y-1.5">
+                                  <div className="flex items-center justify-center pb-0.5 border-b border-slate-100">
+                                    <span className="text-[10px] font-bold text-blue-700">
+                                      {formatDateFns(monthDate, "MMMM yyyy")}
+                                    </span>
+                                  </div>
+                                  <div className="grid grid-cols-7 gap-0.5 text-[7px] font-bold uppercase tracking-wide text-slate-500 text-center">
+                                    {WEEK_DAYS.map((dayAbbrev) => (
+                                      <span key={`${offset}-${dayAbbrev}`}>
+                                        {dayAbbrev}
+                                      </span>
+                                    ))}
+                                  </div>
+                                  <div className="grid grid-cols-7 gap-0.5">
+                                    {days.map((day) => {
+                                      const isCurrentMonth =
+                                        day.getMonth() === monthDate.getMonth();
+                                      const isDisabled =
+                                        isBefore(day, today) ||
+                                        (calendarSelectionMode === "checkOut" &&
+                                          Boolean(
+                                            checkInDateValue &&
+                                              !isAfter(day, checkInDateValue)
+                                          ));
+                                      const isStart = Boolean(
+                                        checkInDateValue &&
+                                          isSameDay(day, checkInDateValue)
+                                      );
+                                      const isEnd = Boolean(
+                                        checkOutDateValue &&
+                                          isSameDay(day, checkOutDateValue)
+                                      );
+                                      const hasRange = Boolean(
+                                        checkInDateValue && checkOutDateValue
+                                      );
+                                      const isInRange =
+                                        hasRange &&
+                                        isWithinInterval(day, {
+                                          start: checkInDateValue!,
+                                          end: checkOutDateValue!,
+                                        });
+                                      const highlightClass =
+                                        isStart || isEnd
+                                          ? "bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-sm scale-105"
+                                          : isInRange
+                                          ? "bg-blue-100 text-blue-800 font-semibold"
+                                          : isCurrentMonth
+                                          ? "text-slate-700 hover:bg-blue-50 hover:text-blue-600"
+                                          : "text-slate-300";
+                                      return (
+                                        <button
+                                          key={day.toISOString()}
+                                          type="button"
+                                          disabled={isDisabled}
+                                          onClick={() =>
+                                            handleCalendarDayClick(day)
+                                          }
+                                          className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-semibold transition-all duration-150 ${highlightClass} ${
+                                            isDisabled
+                                              ? "cursor-not-allowed opacity-40"
+                                              : ""
+                                          }`}
+                                        >
+                                          {day.getDate()}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  )}
-                  {showGuestPanel && !isExtendMode && (
-                    <div
-                      ref={guestDropdownRef}
-                      className="absolute right-0 top-full z-30 mt-4 w-[min(360px,100%)] rounded-3xl border border-slate-200 bg-white shadow-2xl"
-                    >
-                      <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
-                        <p className="text-xs font-semibold tracking-[0.4em] text-slate-500">
-                          GUESTS
-                        </p>
-                        <button
-                          type="button"
-                          onClick={() => setShowGuestPanel(false)}
-                          className="rounded-full p-1 text-slate-500 transition hover:bg-slate-100"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-                      <div className="space-y-4 p-5">
-                        {renderGuestDetailsContent()}
-                        <Button
-                          type="button"
-                          variant="primary"
-                          className="w-full"
-                          onClick={() => setShowGuestPanel(false)}
-                        >
-                          Done
-                        </Button>
-                      </div>
-                    </div>
-                  )}
+                  </Card>
                 </div>
 
                 {/* Error Messages */}
@@ -1355,28 +1408,6 @@ export const ReserveRoom: React.FC = () => {
                     </div>
                   </div>
                 )}
-
-                {/* Action Buttons */}
-                <div className="flex justify-end gap-3 pt-8 border-t border-slate-200">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    className="px-6 hover:bg-slate-100 transition-all duration-200"
-                    onClick={() => navigate("/reservations/overview")}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    className="px-8 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
-                  >
-                    {isExtendMode
-                      ? isRoomUnavailable()
-                        ? "Check Out"
-                        : "Proceed to Summary"
-                      : "Next Step"}
-                  </Button>
-                </div>
               </form>
             )}
 
@@ -1441,12 +1472,27 @@ export const ReserveRoom: React.FC = () => {
                   )}
                 </div>
 
-                {/* Room Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {state.rooms
-                    .filter((room) => {
+                {/* Room Grid - Grouped by Room Type */}
+                <div className="space-y-8">
+                  {(() => {
+                    // Filter rooms based on availability and stay type combinations
+                    const filteredRooms = state.rooms.filter((room) => {
                       // Only show available rooms
                       if (room.status !== "available") return false;
+
+                      // Filter by stay type combinations only if combinations exist
+                      if (stayTypeCombinations.length > 0) {
+                        // Find combinations for this room type that can accommodate the selected number of adults
+                        const matchingCombinations =
+                          stayTypeCombinations.filter(
+                            (combo) =>
+                              combo.roomTypeId === room.roomTypeId &&
+                              combo.adults >= formData.adults
+                          );
+
+                        // If no matching combinations found, don't show this room
+                        if (matchingCombinations.length === 0) return false;
+                      }
 
                       // Filter by room type
                       if (filterRoomType && room.roomTypeId !== filterRoomType)
@@ -1462,142 +1508,83 @@ export const ReserveRoom: React.FC = () => {
                       }
 
                       return true;
-                    })
-                    .slice(
-                      (currentPage - 1) * roomsPerPage,
-                      currentPage * roomsPerPage
-                    )
-                    .map((room) => {
+                    });
+
+                    // Group rooms by room type
+                    const roomsByType = filteredRooms.reduce((acc, room) => {
+                      const typeId = room.roomTypeId;
+                      if (!acc[typeId]) {
+                        acc[typeId] = [];
+                      }
+                      acc[typeId].push(room);
+                      return acc;
+                    }, {} as Record<string, typeof state.rooms>);
+
+                    // Sort room types (Suite, Executive, Deluxe, Standard, etc.)
+                    const typeOrder = [
+                      "Suite",
+                      "Executive",
+                      "Deluxe",
+                      "Standard",
+                    ];
+                    const sortedTypeIds = Object.keys(roomsByType).sort(
+                      (a, b) => {
+                        const typeA = state.roomTypes.find((rt) => rt.id === a);
+                        const typeB = state.roomTypes.find((rt) => rt.id === b);
+                        const indexA = typeOrder.indexOf(typeA?.name || "");
+                        const indexB = typeOrder.indexOf(typeB?.name || "");
+
+                        if (indexA === -1 && indexB === -1) return 0;
+                        if (indexA === -1) return 1;
+                        if (indexB === -1) return -1;
+                        return indexA - indexB;
+                      }
+                    );
+
+                    return sortedTypeIds.map((typeId) => {
                       const roomType = state.roomTypes.find(
-                        (rt) => rt.id === room.roomTypeId
+                        (rt) => rt.id === typeId
                       );
-                      const isSelected = selectedRooms.some(
-                        (r) => r.roomId === room.id
-                      );
-                      const roomImage =
-                        ROOM_IMAGES[roomType?.name || "Standard"] ||
-                        ROOM_IMAGES["Standard"];
+                      const roomsOfType = roomsByType[typeId];
 
                       return (
-                        <div
-                          className="cursor-pointer"
-                          onClick={() => {
-                            if (isSelected) {
-                              setSelectedRooms((prev) =>
-                                prev.filter((r) => r.roomId !== room.id)
+                        <div key={typeId} className="space-y-4">
+                          {/* Room Type Header */}
+                          <div className="flex items-center gap-3">
+                            <h3 className="text-xl font-bold text-slate-800">
+                              {roomType?.name} Rooms
+                            </h3>
+                            <div className="flex-1 h-px bg-gradient-to-r from-slate-300 to-transparent"></div>
+                            <span className="text-sm text-slate-500 font-medium">
+                              {roomsOfType.length} available
+                            </span>
+                          </div>
+
+                          {/* Rooms Grid for this type */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {roomsOfType.map((room) => {
+                              const roomType = state.roomTypes.find(
+                                (rt) => rt.id === room.roomTypeId
                               );
-                            } else {
-                              setSelectedRooms((prev) => [
-                                ...prev,
-                                { roomId: room.id },
-                              ]);
-                            }
-                          }}
-                        >
-                          <Card
-                            key={room.id}
-                            className={`group transition-all duration-300 overflow-hidden flex flex-col h-full rounded-xl ${
-                              isSelected
-                                ? "ring-4 ring-green-500 ring-offset-2 shadow-2xl transform scale-[1.02]"
-                                : "hover:shadow-2xl hover:-translate-y-1 border-2 border-slate-200 hover:border-blue-300"
-                            }`}
-                          >
-                            <div className="relative flex flex-col h-full">
-                              {/* Room Image */}
-                              <div className="relative h-48 overflow-hidden">
-                                <img
-                                  src={roomImage}
-                                  alt={`${roomType?.name} Room`}
-                                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"></div>
+                              const isSelected = selectedRooms.some(
+                                (r) => r.roomId === room.id
+                              );
+                              const roomImage =
+                                ROOM_IMAGES[roomType?.name || "Standard"] ||
+                                ROOM_IMAGES["Standard"];
 
-                                {/* Selected Badge Overlay */}
-                                {isSelected && (
-                                  <div className="absolute inset-0 bg-green-500/20 backdrop-blur-[1px] flex items-center justify-center">
-                                    <div className="bg-green-500 text-white px-4 py-2 rounded-full shadow-xl flex items-center gap-2 animate-in zoom-in duration-200">
-                                      <Check className="h-5 w-5" />
-                                      <span className="font-bold">
-                                        SELECTED
-                                      </span>
-                                    </div>
-                                  </div>
-                                )}
+                              // Get matching stay type combinations for this room
+                              const roomCombinations =
+                                stayTypeCombinations.filter(
+                                  (combo) =>
+                                    combo.roomTypeId === room.roomTypeId &&
+                                    combo.adults >= formData.adults
+                                );
 
-                                {/* Room Number Badge */}
-                                <div className="absolute top-3 left-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-3 py-1.5 rounded-lg shadow-lg">
-                                  <span className="text-xs font-bold">
-                                    Room {room.roomNumber}
-                                  </span>
-                                </div>
-
-                                {/* Price Badge */}
-                                <div className="absolute bottom-3 right-3 bg-white rounded-xl px-4 py-2 shadow-2xl">
-                                  <div className="flex items-baseline gap-1">
-                                    <span className="text-2xl font-bold text-blue-600">
-                                      ${roomType?.basePrice || 0}
-                                    </span>
-                                    <span className="text-xs text-slate-500 font-medium">
-                                      /night
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* Room Details */}
-                              <div className="p-5 space-y-3 bg-gradient-to-b from-white to-slate-50 flex-1 flex flex-col">
-                                {/* Header */}
-                                <div>
-                                  <h3 className="text-xl font-bold text-slate-900 mb-1">
-                                    {roomType?.name || "Standard"}
-                                  </h3>
-                                  <div className="flex items-center gap-3 text-sm text-slate-600">
-                                    <div className="flex items-center gap-1">
-                                      <Users className="h-4 w-4 text-blue-600" />
-                                      <span>Up to 4 guests</span>
-                                    </div>
-                                  </div>
-                                </div>
-
-                                {/* Amenities Section */}
-                                <div className="flex-1">
-                                  <div className="flex flex-wrap gap-2">
-                                    <div className="flex items-center gap-1.5 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full text-xs font-medium">
-                                      <Wifi className="h-3.5 w-3.5" />
-                                      WiFi
-                                    </div>
-                                    <div className="flex items-center gap-1.5 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full text-xs font-medium">
-                                      <Wind className="h-3.5 w-3.5" />
-                                      A/C
-                                    </div>
-                                    <div className="flex items-center gap-1.5 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full text-xs font-medium">
-                                      <Tv className="h-3.5 w-3.5" />
-                                      TV
-                                    </div>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setSelectedRoomForAmenities(room.id);
-                                        setShowAmenitiesModal(true);
-                                      }}
-                                      className="flex items-center gap-1 text-blue-600 hover:text-blue-700 text-xs font-semibold hover:underline"
-                                    >
-                                      <Info className="h-3.5 w-3.5" />
-                                      View All
-                                    </button>
-                                  </div>
-                                </div>
-
-                                {/* Select/Deselect Room Button */}
-                                <Button
-                                  type="button"
-                                  className={`w-full text-sm font-bold py-3 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg ${
-                                    isSelected
-                                      ? "bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white"
-                                      : "bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white"
-                                  }`}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
+                              return (
+                                <div
+                                  className="cursor-pointer"
+                                  onClick={() => {
                                     if (isSelected) {
                                       setSelectedRooms((prev) =>
                                         prev.filter((r) => r.roomId !== room.id)
@@ -1610,102 +1597,214 @@ export const ReserveRoom: React.FC = () => {
                                     }
                                   }}
                                 >
-                                  {isSelected ? (
-                                    <span className="flex items-center justify-center gap-2">
-                                      <Check className="h-4 w-4" />
-                                      Selected
-                                    </span>
-                                  ) : (
-                                    "Select Room"
-                                  )}
-                                </Button>
-                              </div>
-                            </div>
-                          </Card>
+                                  <Card
+                                    key={room.id}
+                                    className={`group transition-all duration-300 overflow-hidden flex flex-col h-full rounded-xl ${
+                                      isSelected
+                                        ? "ring-4 ring-green-500 ring-offset-2 shadow-2xl transform scale-[1.02]"
+                                        : "hover:shadow-2xl hover:-translate-y-1 border-2 border-slate-200 hover:border-blue-300"
+                                    }`}
+                                  >
+                                    <div className="relative flex flex-col h-full">
+                                      {/* Room Image */}
+                                      <div className="relative h-48 overflow-hidden">
+                                        <img
+                                          src={roomImage}
+                                          alt={`${roomType?.name} Room`}
+                                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                        />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"></div>
+
+                                        {/* Selected Badge Overlay */}
+                                        {isSelected && (
+                                          <div className="absolute inset-0 bg-green-500/20 backdrop-blur-[1px] flex items-center justify-center">
+                                            <div className="bg-green-500 text-white px-4 py-2 rounded-full shadow-xl flex items-center gap-2 animate-in zoom-in duration-200">
+                                              <Check className="h-5 w-5" />
+                                              <span className="font-bold">
+                                                SELECTED
+                                              </span>
+                                            </div>
+                                          </div>
+                                        )}
+
+                                        {/* Room Number Badge */}
+                                        <div className="absolute top-3 left-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-3 py-1.5 rounded-lg shadow-lg">
+                                          <span className="text-xs font-bold">
+                                            Room {room.roomNumber}
+                                          </span>
+                                        </div>
+
+                                        {/* Price Badge */}
+                                        <div className="absolute bottom-3 right-3 bg-white rounded-xl px-4 py-2 shadow-2xl">
+                                          <div className="flex items-baseline gap-1">
+                                            <span className="text-2xl font-bold text-blue-600">
+                                              ${roomType?.basePrice || 0}
+                                            </span>
+                                            <span className="text-xs text-slate-500 font-medium">
+                                              /night
+                                            </span>
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      {/* Room Details */}
+                                      <div className="p-5 space-y-3 bg-gradient-to-b from-white to-slate-50 flex-1 flex flex-col">
+                                        {/* Header */}
+                                        <div>
+                                          <h3 className="text-xl font-bold text-slate-900 mb-1">
+                                            {roomType?.name || "Standard"}
+                                          </h3>
+                                          <div className="flex items-center gap-3 text-sm text-slate-600">
+                                            <div className="flex items-center gap-1">
+                                              <Users className="h-4 w-4 text-blue-600" />
+                                              <span>Up to 4 guests</span>
+                                            </div>
+                                          </div>
+                                        </div>
+
+                                        {/* Meal Plans Section */}
+                                        {roomCombinations.length > 0 && (
+                                          <div className="space-y-2">
+                                            <h4 className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                                              Available Meal Plans
+                                            </h4>
+                                            <div className="flex flex-wrap gap-2">
+                                              {[
+                                                ...new Set(
+                                                  roomCombinations.map(
+                                                    (c) => c.mealPlanId
+                                                  )
+                                                ),
+                                              ].map((mealPlanId) => {
+                                                const mealPlan =
+                                                  state.mealPlans.find(
+                                                    (mp) => mp.id === mealPlanId
+                                                  );
+                                                return mealPlan ? (
+                                                  <div
+                                                    key={mealPlanId}
+                                                    className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-full text-xs font-semibold border border-emerald-200"
+                                                  >
+                                                    <Coffee className="h-3.5 w-3.5" />
+                                                    {mealPlan.code}
+                                                  </div>
+                                                ) : null;
+                                              })}
+                                            </div>
+                                          </div>
+                                        )}
+
+                                        {/* Amenities Section */}
+                                        <div className="flex-1">
+                                          <div className="flex flex-wrap gap-2">
+                                            <div className="flex items-center gap-1.5 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full text-xs font-medium">
+                                              <Wifi className="h-3.5 w-3.5" />
+                                              WiFi
+                                            </div>
+                                            <div className="flex items-center gap-1.5 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full text-xs font-medium">
+                                              <Wind className="h-3.5 w-3.5" />
+                                              A/C
+                                            </div>
+                                            <div className="flex items-center gap-1.5 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full text-xs font-medium">
+                                              <Tv className="h-3.5 w-3.5" />
+                                              TV
+                                            </div>
+                                            <button
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                setSelectedRoomForAmenities(
+                                                  room.id
+                                                );
+                                                setShowAmenitiesModal(true);
+                                              }}
+                                              className="flex items-center gap-1 text-blue-600 hover:text-blue-700 text-xs font-semibold hover:underline"
+                                            >
+                                              <Info className="h-3.5 w-3.5" />
+                                              View All
+                                            </button>
+                                          </div>
+                                        </div>
+
+                                        {/* Select/Deselect Room Button */}
+                                        <Button
+                                          type="button"
+                                          className={`w-full text-sm font-bold py-3 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg ${
+                                            isSelected
+                                              ? "bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white"
+                                              : "bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white"
+                                          }`}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (isSelected) {
+                                              setSelectedRooms((prev) =>
+                                                prev.filter(
+                                                  (r) => r.roomId !== room.id
+                                                )
+                                              );
+                                            } else {
+                                              setSelectedRooms((prev) => [
+                                                ...prev,
+                                                { roomId: room.id },
+                                              ]);
+                                            }
+                                          }}
+                                        >
+                                          {isSelected ? (
+                                            <span className="flex items-center justify-center gap-2">
+                                              <Check className="h-4 w-4" />
+                                              Selected
+                                            </span>
+                                          ) : (
+                                            "Select Room"
+                                          )}
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  </Card>
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
                       );
-                    })}
+                    });
+                  })()}
                 </div>
 
-                {/* Pagination */}
-                {Math.ceil(
-                  state.rooms.filter((room) => {
-                    if (room.status !== "available") return false;
-                    if (filterRoomType && room.roomTypeId !== filterRoomType)
-                      return false;
-                    if (filterViewType) {
-                      const roomType = state.roomTypes.find(
-                        (rt) => rt.id === room.roomTypeId
-                      );
-                      if (!roomType || roomType.viewTypeId !== filterViewType)
+                {/* Pagination - Removed since we're showing all rooms grouped by type */}
+                {false &&
+                  Math.ceil(
+                    state.rooms.filter((room) => {
+                      if (room.status !== "available") return false;
+                      if (filterRoomType && room.roomTypeId !== filterRoomType)
                         return false;
-                    }
-                    return true;
-                  }).length / roomsPerPage
-                ) > 1 && (
-                  <div className="flex items-center justify-center gap-2 pt-4">
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      onClick={() =>
-                        setCurrentPage((prev) => Math.max(1, prev - 1))
+                      if (filterViewType) {
+                        const roomType = state.roomTypes.find(
+                          (rt) => rt.id === room.roomTypeId
+                        );
+                        if (!roomType || roomType.viewTypeId !== filterViewType)
+                          return false;
                       }
-                      disabled={currentPage === 1}
-                      className="px-4 py-2"
-                    >
-                      ← Previous
-                    </Button>
+                      return true;
+                    }).length / roomsPerPage
+                  ) > 1 && (
+                    <div className="flex items-center justify-center gap-2 pt-4">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={() =>
+                          setCurrentPage((prev) => Math.max(1, prev - 1))
+                        }
+                        disabled={currentPage === 1}
+                        className="px-4 py-2"
+                      >
+                        ← Previous
+                      </Button>
 
-                    <div className="flex gap-2">
-                      {Array.from(
-                        {
-                          length: Math.ceil(
-                            state.rooms.filter((room) => {
-                              if (room.status !== "available") return false;
-                              if (
-                                filterRoomType &&
-                                room.roomTypeId !== filterRoomType
-                              )
-                                return false;
-                              if (filterViewType) {
-                                const roomType = state.roomTypes.find(
-                                  (rt) => rt.id === room.roomTypeId
-                                );
-                                if (
-                                  !roomType ||
-                                  roomType.viewTypeId !== filterViewType
-                                )
-                                  return false;
-                              }
-                              return true;
-                            }).length / roomsPerPage
-                          ),
-                        },
-                        (_, i) => i + 1
-                      ).map((page) => (
-                        <Button
-                          key={page}
-                          type="button"
-                          variant={
-                            currentPage === page ? "primary" : "secondary"
-                          }
-                          onClick={() => setCurrentPage(page)}
-                          className={`w-10 h-10 ${
-                            currentPage === page ? "bg-blue-600 text-white" : ""
-                          }`}
-                        >
-                          {page}
-                        </Button>
-                      ))}
-                    </div>
-
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      onClick={() =>
-                        setCurrentPage((prev) =>
-                          Math.min(
-                            Math.ceil(
+                      <div className="flex gap-2">
+                        {Array.from(
+                          {
+                            length: Math.ceil(
                               state.rooms.filter((room) => {
                                 if (room.status !== "available") return false;
                                 if (
@@ -1726,281 +1825,88 @@ export const ReserveRoom: React.FC = () => {
                                 return true;
                               }).length / roomsPerPage
                             ),
-                            prev + 1
-                          )
-                        )
-                      }
-                      disabled={
-                        currentPage ===
-                        Math.ceil(
-                          state.rooms.filter((room) => {
-                            if (room.status !== "available") return false;
-                            if (
-                              filterRoomType &&
-                              room.roomTypeId !== filterRoomType
+                          },
+                          (_, i) => i + 1
+                        ).map((page) => (
+                          <Button
+                            key={page}
+                            type="button"
+                            variant={
+                              currentPage === page ? "primary" : "secondary"
+                            }
+                            onClick={() => setCurrentPage(page)}
+                            className={`w-10 h-10 ${
+                              currentPage === page
+                                ? "bg-blue-600 text-white"
+                                : ""
+                            }`}
+                          >
+                            {page}
+                          </Button>
+                        ))}
+                      </div>
+
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={() =>
+                          setCurrentPage((prev) =>
+                            Math.min(
+                              Math.ceil(
+                                state.rooms.filter((room) => {
+                                  if (room.status !== "available") return false;
+                                  if (
+                                    filterRoomType &&
+                                    room.roomTypeId !== filterRoomType
+                                  )
+                                    return false;
+                                  if (filterViewType) {
+                                    const roomType = state.roomTypes.find(
+                                      (rt) => rt.id === room.roomTypeId
+                                    );
+                                    if (
+                                      !roomType ||
+                                      roomType.viewTypeId !== filterViewType
+                                    )
+                                      return false;
+                                  }
+                                  return true;
+                                }).length / roomsPerPage
+                              ),
+                              prev + 1
                             )
-                              return false;
-                            if (filterViewType) {
-                              const roomType = state.roomTypes.find(
-                                (rt) => rt.id === room.roomTypeId
-                              );
+                          )
+                        }
+                        disabled={
+                          currentPage ===
+                          Math.ceil(
+                            state.rooms.filter((room) => {
+                              if (room.status !== "available") return false;
                               if (
-                                !roomType ||
-                                roomType.viewTypeId !== filterViewType
+                                filterRoomType &&
+                                room.roomTypeId !== filterRoomType
                               )
                                 return false;
-                            }
-                            return true;
-                          }).length / roomsPerPage
-                        )
-                      }
-                      className="px-4 py-2"
-                    >
-                      Next →
-                    </Button>
-                  </div>
-                )}
-
-                {/* Meal Plan Selection - Show for each selected room */}
-                {selectedRooms.length > 0 && (
-                  <div className="space-y-4">
-                    <h3 className="text-xl font-bold text-slate-900">
-                      Configure Meal Plans
-                    </h3>
-                    {selectedRooms.map((selectedRoom) => {
-                      const room = state.rooms.find(
-                        (r) => r.id === selectedRoom.roomId
-                      );
-                      const roomType = state.roomTypes.find(
-                        (rt) => rt.id === room?.roomTypeId
-                      );
-
-                      return (
-                        <Card key={selectedRoom.roomId}>
-                          <div className="p-6">
-                            <div className="flex items-center justify-between mb-4">
-                              <div>
-                                <h4 className="text-lg font-semibold text-slate-900">
-                                  {roomType?.name || "Standard"} - Room{" "}
-                                  {room?.roomNumber}
-                                </h4>
-                                <p className="text-sm text-slate-500">
-                                  Select meal plan for this room
-                                </p>
-                              </div>
-                              <Button
-                                type="button"
-                                variant="secondary"
-                                className="text-red-600 hover:bg-red-50"
-                                onClick={() => {
-                                  setSelectedRooms((prev) =>
-                                    prev.filter(
-                                      (r) => r.roomId !== selectedRoom.roomId
-                                    )
-                                  );
-                                }}
-                              >
-                                <X className="h-4 w-4 mr-1" />
-                                Remove
-                              </Button>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                              {/* Room Only */}
-                              <label
-                                className={`flex flex-col p-4 border-2 rounded-lg cursor-pointer transition-all hover:border-blue-300 hover:bg-blue-50 ${
-                                  selectedRoom.mealPlanId === "1"
-                                    ? "border-blue-500 bg-blue-50"
-                                    : ""
-                                }`}
-                              >
-                                <div className="flex items-center gap-3">
-                                  <input
-                                    type="radio"
-                                    name={`mealPlan-${selectedRoom.roomId}`}
-                                    value="1"
-                                    checked={selectedRoom.mealPlanId === "1"}
-                                    onChange={(e) => {
-                                      setSelectedRooms((prev) =>
-                                        prev.map((r) =>
-                                          r.roomId === selectedRoom.roomId
-                                            ? {
-                                                ...r,
-                                                mealPlanId: e.target.value,
-                                              }
-                                            : r
-                                        )
-                                      );
-                                    }}
-                                    className="w-5 h-5 text-blue-600"
-                                  />
-                                  <div className="flex-1">
-                                    <div className="font-semibold text-slate-900">
-                                      Room Only
-                                    </div>
-                                    <div className="text-sm text-slate-500">
-                                      No meals included
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="text-right mt-2 text-lg font-bold text-slate-900">
-                                  $0
-                                </div>
-                              </label>
-
-                              {/* Bed & Breakfast */}
-                              <label
-                                className={`flex flex-col p-4 border-2 rounded-lg cursor-pointer transition-all hover:border-blue-300 hover:bg-blue-50 ${
-                                  selectedRoom.mealPlanId === "2"
-                                    ? "border-blue-500 bg-blue-50"
-                                    : ""
-                                }`}
-                              >
-                                <div className="flex items-center gap-3">
-                                  <input
-                                    type="radio"
-                                    name={`mealPlan-${selectedRoom.roomId}`}
-                                    value="2"
-                                    checked={selectedRoom.mealPlanId === "2"}
-                                    onChange={(e) => {
-                                      setSelectedRooms((prev) =>
-                                        prev.map((r) =>
-                                          r.roomId === selectedRoom.roomId
-                                            ? {
-                                                ...r,
-                                                mealPlanId: e.target.value,
-                                              }
-                                            : r
-                                        )
-                                      );
-                                    }}
-                                    className="w-5 h-5 text-blue-600"
-                                  />
-                                  <div className="flex-1">
-                                    <div className="font-semibold text-slate-900">
-                                      Bed & Breakfast
-                                    </div>
-                                    <div className="text-sm text-slate-500">
-                                      Breakfast included
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="text-right mt-2 text-lg font-bold text-slate-900">
-                                  +$
-                                  {15 *
-                                    formData.adults *
-                                    (Math.ceil(
-                                      (new Date(formData.checkOut).getTime() -
-                                        new Date(formData.checkIn).getTime()) /
-                                        (1000 * 60 * 60 * 24)
-                                    ) || 1)}
-                                </div>
-                              </label>
-
-                              {/* Half Board */}
-                              <label
-                                className={`flex flex-col p-4 border-2 rounded-lg cursor-pointer transition-all hover:border-blue-300 hover:bg-blue-50 ${
-                                  selectedRoom.mealPlanId === "3"
-                                    ? "border-blue-500 bg-blue-50"
-                                    : ""
-                                }`}
-                              >
-                                <div className="flex items-center gap-3">
-                                  <input
-                                    type="radio"
-                                    name={`mealPlan-${selectedRoom.roomId}`}
-                                    value="3"
-                                    checked={selectedRoom.mealPlanId === "3"}
-                                    onChange={(e) => {
-                                      setSelectedRooms((prev) =>
-                                        prev.map((r) =>
-                                          r.roomId === selectedRoom.roomId
-                                            ? {
-                                                ...r,
-                                                mealPlanId: e.target.value,
-                                              }
-                                            : r
-                                        )
-                                      );
-                                    }}
-                                    className="w-5 h-5 text-blue-600"
-                                  />
-                                  <div className="flex-1">
-                                    <div className="font-semibold text-slate-900">
-                                      Half Board
-                                    </div>
-                                    <div className="text-sm text-slate-500">
-                                      Breakfast & dinner
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="text-right mt-2 text-lg font-bold text-slate-900">
-                                  +$
-                                  {35 *
-                                    formData.adults *
-                                    (Math.ceil(
-                                      (new Date(formData.checkOut).getTime() -
-                                        new Date(formData.checkIn).getTime()) /
-                                        (1000 * 60 * 60 * 24)
-                                    ) || 1)}
-                                </div>
-                              </label>
-
-                              {/* Full Board */}
-                              <label
-                                className={`flex flex-col p-4 border-2 rounded-lg cursor-pointer transition-all hover:border-blue-300 hover:bg-blue-50 ${
-                                  selectedRoom.mealPlanId === "4"
-                                    ? "border-blue-500 bg-blue-50"
-                                    : ""
-                                }`}
-                              >
-                                <div className="flex items-center gap-3">
-                                  <input
-                                    type="radio"
-                                    name={`mealPlan-${selectedRoom.roomId}`}
-                                    value="4"
-                                    checked={selectedRoom.mealPlanId === "4"}
-                                    onChange={(e) => {
-                                      setSelectedRooms((prev) =>
-                                        prev.map((r) =>
-                                          r.roomId === selectedRoom.roomId
-                                            ? {
-                                                ...r,
-                                                mealPlanId: e.target.value,
-                                              }
-                                            : r
-                                        )
-                                      );
-                                    }}
-                                    className="w-5 h-5 text-blue-600"
-                                  />
-                                  <div className="flex-1">
-                                    <div className="font-semibold text-slate-900">
-                                      Full Board
-                                    </div>
-                                    <div className="text-sm text-slate-500">
-                                      All meals included
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="text-right mt-2 text-lg font-bold text-slate-900">
-                                  +$
-                                  {50 *
-                                    formData.adults *
-                                    (Math.ceil(
-                                      (new Date(formData.checkOut).getTime() -
-                                        new Date(formData.checkIn).getTime()) /
-                                        (1000 * 60 * 60 * 24)
-                                    ) || 1)}
-                                </div>
-                              </label>
-                            </div>
-                          </div>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                )}
+                              if (filterViewType) {
+                                const roomType = state.roomTypes.find(
+                                  (rt) => rt.id === room.roomTypeId
+                                );
+                                if (
+                                  !roomType ||
+                                  roomType.viewTypeId !== filterViewType
+                                )
+                                  return false;
+                              }
+                              return true;
+                            }).length / roomsPerPage
+                          )
+                        }
+                        className="px-4 py-2"
+                      >
+                        Next →
+                      </Button>
+                    </div>
+                  )}
 
                 {/* Amenities Modal */}
                 {showAmenitiesModal && selectedRoomForAmenities && (
@@ -2101,18 +2007,18 @@ export const ReserveRoom: React.FC = () => {
 
             {/* Step 3: Booking Summary */}
             {currentStep === 3 && (
-              <form onSubmit={handleFinalSubmit} className="space-y-6">
+              <form onSubmit={handleFinalSubmit} className="space-y-4">
                 <div>
-                  <h2 className="text-2xl font-bold text-slate-900 mb-2">
+                  <h2 className="text-xl font-bold text-slate-900 mb-1">
                     Guest Information
                   </h2>
-                  <p className="text-sm text-slate-500">
+                  <p className="text-xs text-slate-500">
                     Provide your contact information
                   </p>
                 </div>
 
                 {/* Returning guest helper */}
-                <div className="rounded-xl border border-blue-100 bg-blue-50 p-4 flex flex-col gap-2">
+                <div className="rounded-lg border border-blue-100 bg-blue-50 p-2.5 flex flex-col gap-1.5">
                   {matchedCustomer ? (
                     <>
                       <div className="flex items-center justify-between gap-3">
@@ -2142,16 +2048,15 @@ export const ReserveRoom: React.FC = () => {
                   )}
                 </div>
 
-                
-                <div className="space-y-6">
-                  <div className="space-y-4">
+                <div className="space-y-3">
+                  <div className="space-y-3">
                     {adultProfiles.map((profile, index) => (
                       <div
                         key={profile.id}
-                        className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 space-y-4"
+                        className="rounded-lg border border-slate-200 bg-slate-50/80 p-3 space-y-3"
                       >
                         <div className="flex items-center justify-between">
-                          <h3 className="text-base font-semibold text-slate-800">
+                          <h3 className="text-sm font-semibold text-slate-800">
                             Adult {index + 1}
                           </h3>
                           {index === 0 && (
@@ -2160,9 +2065,9 @@ export const ReserveRoom: React.FC = () => {
                             </span>
                           )}
                         </div>
-                        <div className="grid grid-cols-1 gap-4">
-                          <div>
-                            <label className="block text-sm font-medium text-slate-900 mb-2">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div className="md:col-span-2">
+                            <label className="block text-xs font-medium text-slate-900 mb-1">
                               Full Name{" "}
                               {index === 0 && (
                                 <span className="text-red-500">*</span>
@@ -2173,103 +2078,123 @@ export const ReserveRoom: React.FC = () => {
                               value={profile.fullName}
                               required={index === 0}
                               onChange={(e) =>
-                                updateAdultProfile(index, "fullName", e.target.value)
+                                updateAdultProfile(
+                                  index,
+                                  "fullName",
+                                  e.target.value
+                                )
                               }
                               placeholder="John Smith"
-                              className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             />
                           </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <label className="block text-sm font-medium text-slate-900 mb-2">
-                                Email Address{" "}
-                                {index === 0 && (
-                                  <span className="text-red-500">*</span>
-                                )}
-                              </label>
-                              <input
-                                type="email"
-                                value={profile.email}
-                                required={index === 0}
-                                onChange={(e) =>
-                                  updateAdultProfile(index, "email", e.target.value)
-                                }
-                                placeholder="john.smith@email.com"
-                                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-slate-900 mb-2">
-                                Phone Number{" "}
-                                {index === 0 && (
-                                  <span className="text-red-500">*</span>
-                                )}
-                              </label>
-                              <input
-                                type="tel"
-                                value={profile.phone}
-                                required={index === 0}
-                                onChange={(e) =>
-                                  updateAdultProfile(index, "phone", e.target.value)
-                                }
-                                placeholder="+1 234 567 8900"
-                                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                              />
-                            </div>
-                          </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <label className="block text-sm font-medium text-slate-900 mb-2">
-                                ID/passport Number{" "}
-                                {index === 0 && (
-                                  <span className="text-red-500">*</span>
-                                )}
-                              </label>
-                              <input
-                                type="text"
-                                value={profile.idNumber}
-                                required={index === 0}
-                                onChange={(e) =>
-                                  updateAdultProfile(index, "idNumber", e.target.value)
-                                }
-                                placeholder="e.g., AB123456789"
-                                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-slate-900 mb-2">
-                                Country
-                              </label>
-                              <input
-                                type="text"
-                                value={profile.country}
-                                onChange={(e) =>
-                                  updateAdultProfile(index, "country", e.target.value)
-                                }
-                                placeholder="Country"
-                                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                              />
-                            </div>
+                          <div>
+                            <label className="block text-xs font-medium text-slate-900 mb-1">
+                              Email{" "}
+                              {index === 0 && (
+                                <span className="text-red-500">*</span>
+                              )}
+                            </label>
+                            <input
+                              type="email"
+                              value={profile.email}
+                              required={index === 0}
+                              onChange={(e) =>
+                                updateAdultProfile(
+                                  index,
+                                  "email",
+                                  e.target.value
+                                )
+                              }
+                              placeholder="john.smith@email.com"
+                              className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
                           </div>
                           <div>
-                            <label className="block text-sm font-medium text-slate-900 mb-2">
-                              Address line 2
+                            <label className="block text-xs font-medium text-slate-900 mb-1">
+                              Phone{" "}
+                              {index === 0 && (
+                                <span className="text-red-500">*</span>
+                              )}
+                            </label>
+                            <input
+                              type="tel"
+                              value={profile.phone}
+                              required={index === 0}
+                              onChange={(e) =>
+                                updateAdultProfile(
+                                  index,
+                                  "phone",
+                                  e.target.value
+                                )
+                              }
+                              placeholder="+1 234 567 8900"
+                              className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-slate-900 mb-1">
+                              ID/Passport{" "}
+                              {index === 0 && (
+                                <span className="text-red-500">*</span>
+                              )}
+                            </label>
+                            <input
+                              type="text"
+                              value={profile.idNumber}
+                              required={index === 0}
+                              onChange={(e) =>
+                                updateAdultProfile(
+                                  index,
+                                  "idNumber",
+                                  e.target.value
+                                )
+                              }
+                              placeholder="AB123456789"
+                              className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-slate-900 mb-1">
+                              Country
+                            </label>
+                            <input
+                              type="text"
+                              value={profile.country}
+                              onChange={(e) =>
+                                updateAdultProfile(
+                                  index,
+                                  "country",
+                                  e.target.value
+                                )
+                              }
+                              placeholder="Country"
+                              className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                          </div>
+                          <div className="md:col-span-2">
+                            <label className="block text-xs font-medium text-slate-900 mb-1">
+                              Address
                             </label>
                             <input
                               type="text"
                               value={profile.address}
                               onChange={(e) =>
-                                updateAdultProfile(index, "address", e.target.value)
+                                updateAdultProfile(
+                                  index,
+                                  "address",
+                                  e.target.value
+                                )
                               }
                               placeholder="Apt, suite, building, etc."
-                              className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             />
                           </div>
-                          <div>
-                            <label className="block text-sm font-medium text-slate-900 mb-2">
-                              NIC / Passport document
+                          <div className="md:col-span-2">
+                            <label className="block text-xs font-medium text-slate-900 mb-1">
+                              Document
                             </label>
-                            <label className="inline-flex items-center gap-3 rounded-lg border border-dashed border-slate-300 px-4 py-3 text-sm font-semibold text-slate-600 cursor-pointer transition hover:border-blue-400 hover:text-blue-600">
+                            <label className="inline-flex items-center gap-2 rounded-lg border border-dashed border-slate-300 px-3 py-2 text-xs font-semibold text-slate-600 cursor-pointer transition hover:border-blue-400 hover:text-blue-600">
                               <input
                                 type="file"
                                 accept="image/*,application/pdf"
@@ -2278,11 +2203,10 @@ export const ReserveRoom: React.FC = () => {
                                   handleAdultDocumentUpload(index, event)
                                 }
                               />
-                              Upload document
+                              Upload
                             </label>
                             {profile.documentName && (
-                              <p className="mt-2 text-xs text-slate-500">
-                                Uploaded:{" "}
+                              <p className="mt-1 text-xs text-slate-500">
                                 <span className="font-medium">
                                   {profile.documentName}
                                 </span>
@@ -2294,50 +2218,130 @@ export const ReserveRoom: React.FC = () => {
                     ))}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-900 mb-2">
+                    <label className="block text-xs font-medium text-slate-900 mb-1">
                       Special Requests (Optional)
                     </label>
                     <textarea
                       name="notes"
                       value={formData.notes}
                       onChange={handleChange}
-                      rows={4}
-                      placeholder="Any special requests or requirements..."
-                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                      rows={2}
+                      placeholder="Any special requests..."
+                      className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
                     />
+                  </div>
+
+                  {/* Payment Option Section */}
+                  <div className="rounded-lg border border-slate-200 bg-slate-50/80 p-3 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="h-4 w-4 text-blue-600" />
+                      <h3 className="text-sm font-semibold text-slate-800">
+                        Payment Option
+                      </h3>
+                    </div>
+
+                    <div className="flex gap-2 flex-wrap">
+                      {["full", "half", "custom"].map((mode) => (
+                        <Button
+                          key={mode}
+                          type="button"
+                          variant={paymentMode === mode ? "primary" : "outline"}
+                          onClick={() =>
+                            setPaymentMode(mode as typeof paymentMode)
+                          }
+                        >
+                          {mode === "full"
+                            ? "Full Payment"
+                            : mode === "half"
+                            ? "50% Payment"
+                            : "Custom Amount"}
+                        </Button>
+                      ))}
+                    </div>
+
+                    {paymentMode === "custom" && (
+                      <div>
+                        <label className="block text-xs font-medium text-slate-900 mb-1">
+                          Custom Amount
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={paymentAmount}
+                          onChange={(e) => setPaymentAmount(e.target.value)}
+                          placeholder="Enter amount"
+                          className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+                    )}
+
+                    <div className="rounded-lg border border-slate-200 bg-white p-2.5 space-y-1.5">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-600">Total Amount Due</span>
+                        <span className="font-semibold text-slate-900">
+                          ${invoice.total.toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-600">Paying Now</span>
+                        <span className="font-semibold text-blue-600">
+                          ${computePaymentAmount().toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-xs pt-1.5 border-t border-slate-200">
+                        <span className="text-slate-600">Balance</span>
+                        <span className="font-semibold text-red-600">
+                          $
+                          {Math.max(
+                            0,
+                            invoice.total - computePaymentAmount()
+                          ).toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex justify-between pt-8 border-t border-slate-200">
+                <div className="flex justify-between pt-4 border-t border-slate-200">
                   <Button
                     type="button"
                     variant="secondary"
-                    className="px-6 hover:bg-slate-100 transition-all duration-200"
+                    className="px-4 hover:bg-slate-100 transition-all duration-200"
                     onClick={() => setCurrentStep(2)}
                   >
                     ← Back
                   </Button>
-                  <div className="flex gap-3">
+                  <div className="flex gap-2">
                     <Button
                       type="button"
                       variant="secondary"
-                      className="px-6 hover:bg-slate-100 transition-all duration-200"
+                      className="px-4 hover:bg-slate-100 transition-all duration-200"
                       onClick={() => navigate("/reservations/overview")}
                     >
                       Cancel
                     </Button>
                     <Button
                       type="button"
-                      variant="outline"
-                      className="px-6"
-                      onClick={() => setShowPaymentModal(true)}
-                    >
-                      Payment
-                    </Button>
-                    <Button
-                      type="button"
-                      onClick={() => setCurrentStep(5)}
+                      onClick={() => {
+                        // Set payment summary when proceeding to next step
+                        const paid = Math.max(0, computePaymentAmount());
+                        const balance = Math.max(
+                          0,
+                          Number(invoice.total) - paid
+                        );
+                        setPaymentSummary({
+                          amountPaid: paid,
+                          balance,
+                          mode:
+                            paymentMode === "custom"
+                              ? "Custom"
+                              : paymentMode === "half"
+                              ? "50%"
+                              : "Full",
+                        });
+                        setCurrentStep(5);
+                      }}
                       className="bg-blue-600 hover:bg-blue-700 text-white"
                     >
                       Confirm Booking
@@ -2866,7 +2870,8 @@ export const ReserveRoom: React.FC = () => {
                         <div className="flex items-center justify-between">
                           <span>Duration</span>
                           <span className="text-blue-600 font-semibold">
-                            {invoice.nights} night{invoice.nights > 1 ? "s" : ""}
+                            {invoice.nights} night
+                            {invoice.nights > 1 ? "s" : ""}
                           </span>
                         </div>
                       )}

@@ -894,14 +894,6 @@ export const RoomsOverview: React.FC = () => {
                       </div>
                       <div className="bg-white rounded-lg p-3 shadow-sm border border-slate-200">
                         <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
-                          Floor
-                        </p>
-                        <p className="text-base text-slate-900">
-                          {room.floor ?? "-"}
-                        </p>
-                      </div>
-                      <div className="bg-white rounded-lg p-3 shadow-sm border border-slate-200">
-                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
                           Size
                         </p>
                         <p className="text-base text-slate-900">
@@ -1075,14 +1067,6 @@ export const RoomsOverview: React.FC = () => {
                         </p>
                         <p className="text-lg font-bold text-slate-900">
                           {room.status}
-                        </p>
-                      </div>
-                      <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
-                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
-                          Floor
-                        </p>
-                        <p className="text-lg font-bold text-slate-900">
-                          {room.floor ?? "-"}
                         </p>
                       </div>
                       <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
@@ -1322,14 +1306,6 @@ export const RoomsOverview: React.FC = () => {
                       </p>
                       <p className="text-lg font-bold text-slate-900">
                         {room.status}
-                      </p>
-                    </div>
-                    <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
-                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
-                        Floor
-                      </p>
-                      <p className="text-lg font-bold text-slate-900">
-                        {room.floor ?? "-"}
                       </p>
                     </div>
                     <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">

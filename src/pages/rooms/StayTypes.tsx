@@ -53,6 +53,10 @@ export const StayTypes: React.FC = () => {
   const [selectedPricing, setSelectedPricing] = useState<
     Array<{ currency: string; price: number }>
   >([]);
+  const [editingPricingComboId, setEditingPricingComboId] = useState<
+    string | null
+  >(null);
+  const [isPricingEditMode, setIsPricingEditMode] = useState(false);
 
   // Save to localStorage whenever combinations change
   useEffect(() => {
@@ -298,7 +302,9 @@ export const StayTypes: React.FC = () => {
                             size="sm"
                             variant="outline"
                             onClick={() => {
-                              setSelectedPricing(combo.pricing);
+                              setSelectedPricing([...combo.pricing]);
+                              setEditingPricingComboId(combo.id);
+                              setIsPricingEditMode(false);
                               setShowPricingModal(true);
                             }}
                           >
@@ -517,102 +523,199 @@ export const StayTypes: React.FC = () => {
       {/* Pricing Details Modal */}
       <Modal
         isOpen={showPricingModal}
-        onClose={() => setShowPricingModal(false)}
-        title="Pricing Details"
+        onClose={() => {
+          setShowPricingModal(false);
+          setEditingPricingComboId(null);
+          setIsPricingEditMode(false);
+        }}
+        title={isPricingEditMode ? "Edit Pricing" : "Pricing Details"}
         size="lg"
         footer={
-          <Button
-            variant="secondary"
-            onClick={() => setShowPricingModal(false)}
-          >
-            Close
-          </Button>
+          isPricingEditMode ? (
+            <>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  // Reload original pricing on cancel
+                  const combo = combinations.find(
+                    (c) => c.id === editingPricingComboId
+                  );
+                  if (combo) {
+                    setSelectedPricing([...combo.pricing]);
+                  }
+                  setIsPricingEditMode(false);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  if (!editingPricingComboId) return;
+                  const validPricing = selectedPricing.filter(
+                    (p) => p.currency && p.price > 0
+                  );
+                  if (validPricing.length === 0) {
+                    alert(
+                      "Please add at least one currency and price for this combination"
+                    );
+                    return;
+                  }
+                  setCombinations((s) =>
+                    s.map((c) =>
+                      c.id === editingPricingComboId
+                        ? { ...c, pricing: validPricing }
+                        : c
+                    )
+                  );
+                  setIsPricingEditMode(false);
+                  setShowPricingModal(false);
+                  setEditingPricingComboId(null);
+                }}
+              >
+                Save
+              </Button>
+            </>
+          ) : (
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setShowPricingModal(false);
+                setEditingPricingComboId(null);
+              }}
+            >
+              Close
+            </Button>
+          )
         }
       >
         <div className="space-y-4">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm border-collapse">
-              <thead className="bg-slate-100 border-b border-slate-300">
-                <tr>
-                  <th className="px-4 py-3 text-left font-semibold text-slate-700">
+          {!isPricingEditMode ? (
+            // View Mode - Read-only table
+            <>
+              <div className="flex justify-end mb-4">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setIsPricingEditMode(true)}
+                >
+                  <Edit className="w-4 h-4 mr-2" />
+                  Edit Pricing
+                </Button>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm border-collapse">
+                  <thead className="bg-slate-100 border-b border-slate-300">
+                    <tr>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                        Currency
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                        Price
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedPricing.map((entry, idx) => (
+                      <tr
+                        key={idx}
+                        className={`border-b border-slate-200 ${
+                          idx % 2 === 0 ? "bg-white" : "bg-slate-50"
+                        }`}
+                      >
+                        <td className="px-4 py-3 text-slate-700 font-medium">
+                          {entry.currency}
+                        </td>
+                        <td className="px-4 py-3 text-slate-700 font-semibold">
+                          {entry.price.toFixed(2)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          ) : (
+            // Edit Mode - Editable inputs
+            <div className="space-y-3">
+              <div className="grid grid-cols-3 gap-4 items-start">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
                     Currency
-                  </th>
-                  <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                  </label>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
                     Price
-                  </th>
-                  <th className="px-4 py-3 text-left font-semibold text-slate-700">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {selectedPricing.map((entry, idx) => (
-                  <tr
-                    key={idx}
-                    className={`border-b border-slate-200 ${
-                      idx % 2 === 0 ? "bg-white" : "bg-slate-50"
-                    }`}
-                  >
-                    <td className="px-4 py-3 text-slate-700 font-medium">
-                      {entry.currency}
-                    </td>
-                    <td className="px-4 py-3 text-slate-700 font-semibold">
-                      {entry.price.toFixed(2)}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            // Find the combination being edited
-                            const comboIndex = combinations.findIndex(
-                              (c) => c.pricing === selectedPricing
-                            );
-                            if (comboIndex === -1) return;
-                            // Update pricing rows and show main modal for editing
-                            setPricingRows(combinations[comboIndex].pricing);
-                            setEditingId(combinations[comboIndex].id);
-                            setShowPricingModal(false);
-                            setShowModal(true);
-                          }}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="danger"
-                          onClick={() => {
-                            // Remove the pricing entry from selectedPricing
-                            const updated = selectedPricing.filter(
-                              (_, i) => i !== idx
-                            );
-                            setSelectedPricing(updated);
-
-                            // Also update the combination in the list
-                            const comboIndex = combinations.findIndex(
-                              (c) => c.pricing === selectedPricing
-                            );
-                            if (comboIndex !== -1) {
-                              setCombinations((s) =>
-                                s.map((c, i) =>
-                                  i === comboIndex
-                                    ? { ...c, pricing: updated }
-                                    : c
-                                )
-                              );
-                            }
-                          }}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                  </label>
+                </div>
+                <div className="h-8"></div>
+              </div>
+              {selectedPricing.map((entry, idx) => (
+                <div key={idx} className="grid grid-cols-3 gap-4 items-end">
+                  <Select
+                    label=""
+                    value={entry.currency || ""}
+                    onChange={(e) => {
+                      const updated = [...selectedPricing];
+                      updated[idx].currency = e.target.value;
+                      setSelectedPricing(updated);
+                    }}
+                    options={[
+                      { value: "", label: "Select Currency" },
+                      ...state.currencyRates.map((cr) => ({
+                        value: cr.code,
+                        label: `${cr.code} - ${cr.currency}`,
+                      })),
+                    ]}
+                  />
+                  <Input
+                    label=""
+                    type="number"
+                    step="0.01"
+                    value={entry.price}
+                    onChange={(e) => {
+                      const updated = [...selectedPricing];
+                      updated[idx].price = parseFloat(e.target.value) || 0;
+                      setSelectedPricing(updated);
+                    }}
+                    min={0}
+                    placeholder="0.00"
+                  />
+                  <div className="flex gap-2 justify-end">
+                    {idx === selectedPricing.length - 1 && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setSelectedPricing([
+                            ...selectedPricing,
+                            { currency: "", price: 0 },
+                          ])
+                        }
+                        className="h-10 px-3 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center justify-center flex-shrink-0"
+                        title="Add another pricing row"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    )}
+                    {selectedPricing.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedPricing(
+                            selectedPricing.filter((_, i) => i !== idx)
+                          );
+                        }}
+                        className="h-10 px-3 bg-red-500 text-white rounded hover:bg-red-600 flex items-center justify-center flex-shrink-0"
+                        title="Delete this pricing row"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </Modal>
     </div>

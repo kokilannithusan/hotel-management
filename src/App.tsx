@@ -52,7 +52,6 @@ import { RoomAreas } from "./pages/rooms/RoomAreas";
 import { RoomTypes } from "./pages/rooms/RoomTypes";
 
 import { MealPlan } from "./pages/rooms/MealPlan";
-import { RoomChecklist } from "./pages/rooms/RoomChecklist";
 
 // Room Status
 import { Housekeeping } from "./pages/houseKeeping/Housekeeping";
@@ -198,10 +197,6 @@ function App() {
                     <Route path="/invoicing/bill" element={<Bill />} />
                     <Route path="/rooms/overview" element={<RoomsOverview />} />
                     <Route path="/rooms/all" element={<AllRooms />} />
-                    <Route
-                      path="/rooms/checklist"
-                      element={<RoomChecklist />}
-                    />
                     <Route path="/rooms/view-type" element={<ViewType />} />
                     <Route path="/rooms/amenities" element={<Amenities />} />
                     <Route path="/rooms/areas" element={<RoomAreas />} />

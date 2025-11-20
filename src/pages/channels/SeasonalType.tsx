@@ -863,25 +863,27 @@ export const SeasonalType: React.FC = () => {
               </svg>
               Table Filters
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Calendar Filter */}
               <div className="space-y-1.5">
                 <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
                   <Calendar className="h-3.5 w-3.5 text-blue-600" />
                   Date Range
                 </label>
-                <div className="flex gap-2">
+                <div className="flex gap-1.5">
                   <input
                     type="date"
                     value={filterStartDate}
                     onChange={(e) => setFilterStartDate(e.target.value)}
-                    className="flex-1 rounded-lg border-2 border-slate-300 bg-white px-3 py-2 text-sm shadow-sm transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    placeholder="Start Date"
+                    className="flex-1 rounded-lg border-2 border-slate-300 bg-white px-2 py-2 text-xs shadow-sm transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
                   />
                   <input
                     type="date"
                     value={filterEndDate}
                     onChange={(e) => setFilterEndDate(e.target.value)}
-                    className="flex-1 rounded-lg border-2 border-slate-300 bg-white px-3 py-2 text-sm shadow-sm transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    placeholder="End Date"
+                    className="flex-1 rounded-lg border-2 border-slate-300 bg-white px-2 py-2 text-xs shadow-sm transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
                   />
                 </div>
               </div>

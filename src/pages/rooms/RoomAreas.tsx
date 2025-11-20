@@ -86,10 +86,10 @@ export const RoomAreas: React.FC = () => {
   };
 
   const columns = [
-    { key: "name", header: "Room Number" },
+    { key: "name", header: "Name" },
     {
       key: "description",
-      header: "Room Size (sq ft)",
+      header: "Description",
       render: (room: any) => room.description || "",
     },
     {
@@ -167,12 +167,12 @@ export const RoomAreas: React.FC = () => {
         <div className="space-y-4">
           <div>
             <Input
-              label="Room Number"
+              label="Name"
               value={formData.roomNumber}
               onChange={(e) =>
                 setFormData({ ...formData, roomNumber: e.target.value })
               }
-              placeholder="e.g., 101, 102, 103"
+              placeholder="e.g., East Wing, West Wing, Ground Floor"
               required
             />
             {errors.roomNumber && (
@@ -181,13 +181,12 @@ export const RoomAreas: React.FC = () => {
           </div>
           <div>
             <Input
-              label="Room Size (sq ft)"
-              type="number"
+              label="Description"
               value={formData.size}
               onChange={(e) =>
                 setFormData({ ...formData, size: e.target.value })
               }
-              placeholder="e.g., 250"
+              placeholder="e.g., Rooms with sea view, Easy access rooms"
               required
             />
             {errors.size && (

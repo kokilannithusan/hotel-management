@@ -176,11 +176,6 @@ const navItems: NavItem[] = [
         icon: <Home className="w-4 h-4" />,
       },
       {
-        path: "/rooms/checklist",
-        label: "Room Checklist",
-        icon: <ClipboardList className="w-4 h-4" />,
-      },
-      {
         path: "/rooms/all",
         label: "All Rooms",
         icon: <Building className="w-4 h-4" />,
