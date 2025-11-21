@@ -19,6 +19,7 @@ import {
   Plus,
   Package,
   Sparkles,
+  Mail,
 } from "lucide-react";
 
 export interface NavItem {
@@ -275,12 +276,7 @@ export const navItems: NavItem[] = [
       },
       {
         path: "/settings/role",
-        label: "Role",
-        icon: <Users className="w-4 h-4" />,
-      },
-      {
-        path: "/settings/hotelAssignRole",
-        label: "Hotel Assign Role",
+        label: "Role Management",
         icon: <Users className="w-4 h-4" />,
       },
       {
@@ -302,6 +298,11 @@ export const navItems: NavItem[] = [
         path: "/settings/userPrivileges",
         label: "User Privileges",
         icon: <Shield className="w-4 h-4" />,
+      },
+      {
+        path: "/settings/emailConfig",
+        label: "Email Configuration",
+        icon: <Mail className="w-4 h-4" />,
       },
     ],
   },

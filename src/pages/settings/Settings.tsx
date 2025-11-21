@@ -12,11 +12,11 @@ import { navItems, NavItem } from "../../config/navigation";
 type SettingsTab =
   | "hotel"
   | "role"
-  | "hotelAssignRole"
   | "hotelPrivileges"
   | "hotelRolePrivileges"
   | "userPrivileges"
-  | "user";
+  | "user"
+  | "emailConfig";
 interface PagePrivilege {
   read: boolean;
   write: boolean;
@@ -75,11 +75,13 @@ interface UserForm {
 
 interface RoleForm {
   name: string;
+  hotelId: string;
 }
 
 interface RoleRecord {
   id: string;
   name: string;
+  hotelId: string;
   createdAt: string;
 }
 
@@ -91,6 +93,30 @@ interface UserRecord {
   hotelId: string;
   roleIds: string[];
   createdAt: string;
+}
+
+interface EmailConfigRecord {
+  id: string;
+  hostname: string;
+  email: string;
+  password: string;
+  port: string;
+  protocol: string;
+  sentEmail: string;
+  displayName: string;
+  ccEmail: string;
+  createdAt: string;
+}
+
+interface EmailConfigForm {
+  hostname: string;
+  email: string;
+  password: string;
+  port: string;
+  protocol: string;
+  sentEmail: string;
+  displayName: string;
+  ccEmail: string;
 }
 
 const emptyHotelForm: HotelForm = {
@@ -114,6 +140,18 @@ const emptyUserForm: UserForm = {
 
 const emptyRoleForm: RoleForm = {
   name: "",
+  hotelId: "",
+};
+
+const emptyEmailConfigForm: EmailConfigForm = {
+  hostname: "",
+  email: "",
+  password: "",
+  port: "587",
+  protocol: "SMTP",
+  sentEmail: "",
+  displayName: "",
+  ccEmail: "",
 };
 
 const sections: { id: SettingsTab; label: string; description: string }[] = [
@@ -124,13 +162,8 @@ const sections: { id: SettingsTab; label: string; description: string }[] = [
   },
   {
     id: "role",
-    label: "Role",
-    description: "Create and manage roles for the system",
-  },
-  {
-    id: "hotelAssignRole",
-    label: "Hotel Assign Role",
-    description: "Assign roles to specific hotels",
+    label: "Role Management",
+    description: "Create and manage roles with hotel assignments",
   },
   {
     id: "hotelPrivileges",
@@ -151,6 +184,11 @@ const sections: { id: SettingsTab; label: string; description: string }[] = [
     id: "user",
     label: "User",
     description: "Create and manage users with hotel and role assignments",
+  },
+  {
+    id: "emailConfig",
+    label: "Email Configuration",
+    description: "Configure SMTP email settings for sending notifications",
   },
 ];
 
@@ -186,8 +224,6 @@ const sectionRouteAliases: Record<string, SettingsTab> = {
   hotel: "hotel",
   role: "role",
   roles: "role",
-  hotelAssignRole: "hotelAssignRole",
-  selectRoles: "hotelAssignRole",
   hotelPrivileges: "hotelPrivileges",
   operations: "hotelPrivileges",
   hotelRolePrivileges: "hotelRolePrivileges",
@@ -195,6 +231,8 @@ const sectionRouteAliases: Record<string, SettingsTab> = {
   hotelRolePermissions: "hotelRolePrivileges",
   user: "user",
   addUser: "user",
+  emailConfig: "emailConfig",
+  email: "emailConfig",
 };
 
 // All pages use the same color theme for consistency
@@ -207,10 +245,6 @@ const sectionColors: Record<
     header: "from-blue-600 via-cyan-600 to-emerald-500",
   },
   role: {
-    background: "bg-slate-50",
-    header: "from-blue-600 via-cyan-600 to-emerald-500",
-  },
-  hotelAssignRole: {
     background: "bg-slate-50",
     header: "from-blue-600 via-cyan-600 to-emerald-500",
   },
@@ -230,15 +264,11 @@ const sectionColors: Record<
     background: "bg-slate-50",
     header: "from-blue-600 via-cyan-600 to-emerald-500",
   },
+  emailConfig: {
+    background: "bg-slate-50",
+    header: "from-blue-600 via-cyan-600 to-emerald-500",
+  },
 };
-
-const DEFAULT_ROLES = [
-  "Admin",
-  "Manager",
-  "Receptionist",
-  "Housekeeping Supervisor",
-  "Finance",
-];
 
 const formatDate = (value: string) => {
   const date = new Date(value);
@@ -301,14 +331,7 @@ export const Settings: React.FC = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   // Role management state (new CRUD system)
-  const [roleRecords, setRoleRecords] = useState<RoleRecord[]>(() => {
-    // Initialize with default roles
-    return DEFAULT_ROLES.map((roleName) => ({
-      id: generateId(),
-      name: roleName,
-      createdAt: new Date().toISOString(),
-    }));
-  });
+  const [roleRecords, setRoleRecords] = useState<RoleRecord[]>([]);
   // Role form state
   const [roleForm, setRoleForm] = useState<RoleForm>(emptyRoleForm);
   const [editingRole, setEditingRole] = useState<RoleRecord | null>(null);
@@ -359,6 +382,16 @@ export const Settings: React.FC = () => {
   const [editingUser, setEditingUser] = useState<UserRecord | null>(null);
   const [isRoleDropdownOpen, setIsRoleDropdownOpen] = useState(false);
   const roleDropdownRef = useRef<HTMLDivElement | null>(null);
+
+  // Email Configuration state
+  const [emailConfigs, setEmailConfigs] = useState<EmailConfigRecord[]>([]);
+  const [emailConfigForm, setEmailConfigForm] =
+    useState<EmailConfigForm>(emptyEmailConfigForm);
+  const [showEmailConfigModal, setShowEmailConfigModal] = useState(false);
+  const [editingEmailConfig, setEditingEmailConfig] =
+    useState<EmailConfigRecord | null>(null);
+  const [showEmailPassword, setShowEmailPassword] = useState(false);
+  const [ccEnabled, setCcEnabled] = useState(false);
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
@@ -673,6 +706,7 @@ export const Settings: React.FC = () => {
     const payload: RoleRecord = {
       id: generateId(),
       name: roleForm.name,
+      hotelId: roleForm.hotelId,
       createdAt: new Date().toISOString(),
     };
     setRoleRecords((prev) => [payload, ...prev]);
@@ -682,7 +716,7 @@ export const Settings: React.FC = () => {
 
   const handleOpenEditRole = (role: RoleRecord) => {
     setEditingRole(role);
-    setRoleForm({ name: role.name });
+    setRoleForm({ name: role.name, hotelId: role.hotelId });
     setShowRoleModal(true);
   };
 
@@ -690,7 +724,9 @@ export const Settings: React.FC = () => {
     if (!editingRole) return;
     setRoleRecords((prev) =>
       prev.map((role) =>
-        role.id === editingRole.id ? { ...role, name: roleForm.name } : role
+        role.id === editingRole.id
+          ? { ...role, name: roleForm.name, hotelId: roleForm.hotelId }
+          : role
       )
     );
     setEditingRole(null);
@@ -802,39 +838,52 @@ export const Settings: React.FC = () => {
             <table className="min-w-[600px] w-full text-left">
               <thead>
                 <tr className="text-xs uppercase tracking-widest text-slate-500">
+                  <th className="px-4 py-3">Hotel</th>
                   <th className="px-4 py-3">Role Name</th>
+                  <th className="px-4 py-3">Created</th>
                   <th className="px-4 py-3">Action</th>
                 </tr>
               </thead>
               <tbody className="text-sm text-slate-700">
-                {roleRecords.map((role) => (
-                  <tr
-                    key={role.id}
-                    className="border-t border-slate-100 hover:bg-slate-50/70"
-                  >
-                    <td className="px-4 py-4 font-semibold text-slate-900">
-                      {role.name}
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="flex flex-wrap gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleOpenEditRole(role)}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="danger"
-                          onClick={() => handleDeleteRole(role.id)}
-                        >
-                          Delete
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {roleRecords.map((role) => {
+                  const hotel = hotels.find((h) => h.id === role.hotelId);
+                  return (
+                    <tr
+                      key={role.id}
+                      className="border-t border-slate-100 hover:bg-slate-50/70"
+                    >
+                      <td className="px-4 py-4">
+                        <span className="font-medium text-slate-900">
+                          {hotel?.name || "Unknown Hotel"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4 font-semibold text-slate-900">
+                        {role.name}
+                      </td>
+                      <td className="px-4 py-4 text-xs text-slate-500">
+                        {formatDate(role.createdAt)}
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleOpenEditRole(role)}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="danger"
+                            onClick={() => handleDeleteRole(role.id)}
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -842,159 +891,6 @@ export const Settings: React.FC = () => {
       </Card>
     </div>
   );
-
-  const renderHotelAssignRoleTab = () => {
-    const handleToggleRoleForHotel = (hotelId: string, roleName: string) => {
-      if (!hotelId) {
-        return;
-      }
-
-      setHotelRoles((prev) => {
-        const hotelRolesList = prev[hotelId] || [];
-        const isSelected = hotelRolesList.includes(roleName);
-
-        return {
-          ...prev,
-          [hotelId]: isSelected
-            ? hotelRolesList.filter((role) => role !== roleName)
-            : [...hotelRolesList, roleName],
-        };
-      });
-    };
-
-    const handleSaveRoleAssignments = () => {
-      if (!selectedHotelForAssignRole) {
-        alert("Please select a hotel first.");
-        return;
-      }
-      const selectedRoles = hotelRoles[selectedHotelForAssignRole] || [];
-      if (selectedRoles.length === 0) {
-        alert("Please select at least one role for this hotel.");
-        return;
-      }
-      alert(
-        `Successfully assigned ${selectedRoles.length} role(s) to this hotel!`
-      );
-    };
-
-    const selectedRolesForHotel = selectedHotelForAssignRole
-      ? hotelRoles[selectedHotelForAssignRole] || []
-      : [];
-
-    const disableRoleSelection = !selectedHotelForAssignRole;
-
-    return (
-      <div className="space-y-6">
-        <Card title="Role Assignment">
-          <div className="space-y-6">
-            <div className="flex flex-row flex-wrap gap-4 items-end">
-              <div className="flex-1 min-w-[220px]">
-                <Select
-                  label="Select Hotel"
-                  value={selectedHotelForAssignRole}
-                  onChange={(e) =>
-                    setSelectedHotelForAssignRole(e.target.value)
-                  }
-                  options={[
-                    { value: "", label: "Select a hotel" },
-                    ...hotels.map((hotel) => ({
-                      value: hotel.id,
-                      label: hotel.name,
-                    })),
-                  ]}
-                />
-              </div>
-            </div>
-
-            {roleRecords.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-slate-200 bg-white/70 p-6 text-center text-sm text-slate-500">
-                No roles have been created yet. Please create roles first.
-              </div>
-            ) : (
-              <>
-                <div className="rounded-2xl border border-slate-100 bg-white shadow-sm">
-                  <div className="-mx-6 overflow-x-auto">
-                    <table className="min-w-[520px] w-full table-fixed text-left">
-                      <colgroup>
-                        <col className="w-[70%]" />
-                        <col className="w-[30%]" />
-                      </colgroup>
-                      <thead>
-                        <tr className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">
-                          <th className="px-6 py-4">Role</th>
-                          <th className="px-6 py-4 text-center">Assign</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
-                        {roleRecords.map((role) => {
-                          const isSelected =
-                            !disableRoleSelection &&
-                            selectedRolesForHotel.includes(role.name);
-                          return (
-                            <tr
-                              key={role.id}
-                              className="transition-colors hover:bg-slate-50/70"
-                            >
-                              <td className="px-6 py-4">
-                                <div className="flex items-center gap-3">
-                                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-                                    {role.name.slice(0, 2).toUpperCase()}
-                                  </span>
-                                  <div>
-                                    <p className="font-semibold text-slate-900">
-                                      {role.name}
-                                    </p>
-                                    <p className="text-xs text-slate-500">
-                                      Select this role to assign to the hotel
-                                    </p>
-                                  </div>
-                                </div>
-                              </td>
-                              <td className="px-6 py-4">
-                                <div className="flex items-center justify-center">
-                                  <input
-                                    type="checkbox"
-                                    checked={isSelected}
-                                    disabled={disableRoleSelection}
-                                    onChange={() =>
-                                      handleToggleRoleForHotel(
-                                        selectedHotelForAssignRole,
-                                        role.name
-                                      )
-                                    }
-                                    className="h-5 w-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                                  />
-                                </div>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                {disableRoleSelection && (
-                  <div className="rounded-2xl border border-dashed border-amber-200 bg-amber-50/60 p-6 text-center text-sm text-amber-700">
-                    Select a hotel above to enable role assignment.
-                  </div>
-                )}
-
-                <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-end">
-                  <Button
-                    onClick={handleSaveRoleAssignments}
-                    disabled={disableRoleSelection}
-                  >
-                    Save Changes
-                  </Button>
-                </div>
-              </>
-            )}
-          </div>
-        </Card>
-      </div>
-    );
-  };
 
   const handleTogglePagePrivilege = (
     hotelId: string,
@@ -1222,8 +1118,11 @@ export const Settings: React.FC = () => {
   };
 
   const renderHotelRolePrivilegesTab = () => {
+    // Get roles from Role Management for the selected hotel
     const rolesForHotel = selectedHotelForRolePrivilegesPage
-      ? hotelRoles[selectedHotelForRolePrivilegesPage] || []
+      ? roleRecords
+          .filter((role) => role.hotelId === selectedHotelForRolePrivilegesPage)
+          .map((role) => role.name)
       : [];
 
     const currentPrivileges =
@@ -1800,6 +1699,72 @@ Hotel Management System
     });
   };
 
+  // Email Configuration CRUD handlers
+  const handleCreateEmailConfig = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const payload: EmailConfigRecord = {
+      id: generateId(),
+      createdAt: new Date().toISOString(),
+      ...emailConfigForm,
+    };
+    setEmailConfigs((prev) => [payload, ...prev]);
+    setEmailConfigForm(emptyEmailConfigForm);
+    setShowEmailConfigModal(false);
+  };
+
+  const handleOpenEditEmailConfig = (config: EmailConfigRecord) => {
+    setEditingEmailConfig(config);
+    setEmailConfigForm({
+      hostname: config.hostname,
+      email: config.email,
+      password: config.password,
+      port: config.port,
+      protocol: config.protocol,
+      sentEmail: config.sentEmail,
+      displayName: config.displayName,
+      ccEmail: config.ccEmail,
+    });
+    setCcEnabled(!!config.ccEmail);
+    setShowEmailConfigModal(true);
+  };
+
+  const handleUpdateEmailConfig = () => {
+    if (!editingEmailConfig) return;
+    setEmailConfigs((prev) =>
+      prev.map((config) =>
+        config.id === editingEmailConfig.id
+          ? {
+              ...config,
+              ...emailConfigForm,
+            }
+          : config
+      )
+    );
+    setEditingEmailConfig(null);
+    setEmailConfigForm(emptyEmailConfigForm);
+    setShowEmailConfigModal(false);
+  };
+
+  const handleDeleteEmailConfig = (configId: string) => {
+    if (
+      window.confirm(
+        "Are you sure you want to delete this email configuration?"
+      )
+    ) {
+      setEmailConfigs((prev) =>
+        prev.filter((config) => config.id !== configId)
+      );
+    }
+  };
+
+  const closeEmailConfigModal = () => {
+    setShowEmailConfigModal(false);
+    setEditingEmailConfig(null);
+    setEmailConfigForm(emptyEmailConfigForm);
+    setShowEmailPassword(false);
+    setCcEnabled(false);
+  };
+
   const renderUserTab = () => {
     // Get sub-modules for a user (after creation)
     const getUserSubModules = (user: UserRecord) => {
@@ -1972,6 +1937,110 @@ Hotel Management System
     );
   };
 
+  const renderEmailConfigTab = () => {
+    return (
+      <div className="space-y-6">
+        <Card
+          title="Email Configuration"
+          actions={
+            <Button
+              onClick={() => {
+                setEditingEmailConfig(null);
+                setEmailConfigForm(emptyEmailConfigForm);
+                setShowEmailPassword(false);
+                setShowEmailConfigModal(true);
+              }}
+            >
+              Add Email Config
+            </Button>
+          }
+        >
+          {emailConfigs.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+              <div className="text-5xl">📧</div>
+              <p className="text-base font-semibold text-slate-700">
+                No email configurations yet
+              </p>
+              <p className="max-w-md text-sm text-slate-500">
+                Click "Add Email Config" to set up SMTP email configuration for
+                sending notifications.
+              </p>
+            </div>
+          ) : (
+            <div className="-mx-4 overflow-x-auto md:mx-0">
+              <table className="min-w-[1100px] w-full text-left">
+                <thead>
+                  <tr className="text-xs uppercase tracking-widest text-slate-500">
+                    <th className="px-4 py-3">Display Name</th>
+                    <th className="px-4 py-3">Sent Email</th>
+                    <th className="px-4 py-3">Hostname</th>
+                    <th className="px-4 py-3">Email</th>
+                    <th className="px-4 py-3">Port</th>
+                    <th className="px-4 py-3">Protocol</th>
+                    <th className="px-4 py-3">CC Email</th>
+                    <th className="px-4 py-3">Created</th>
+                    <th className="px-4 py-3">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="text-sm text-slate-700">
+                  {emailConfigs.map((config) => (
+                    <tr
+                      key={config.id}
+                      className="border-b border-slate-100 transition-colors hover:bg-slate-50"
+                    >
+                      <td className="px-4 py-4 font-medium">
+                        {config.displayName}
+                      </td>
+                      <td className="px-4 py-4">{config.sentEmail}</td>
+                      <td className="px-4 py-4">{config.hostname}</td>
+                      <td className="px-4 py-4">{config.email}</td>
+                      <td className="px-4 py-4">{config.port}</td>
+                      <td className="px-4 py-4">
+                        <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium">
+                          {config.protocol}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4">
+                        {config.ccEmail ? (
+                          <span className="text-slate-700">
+                            {config.ccEmail}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 italic">Not set</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-4 text-xs text-slate-500">
+                        {formatDate(config.createdAt)}
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => handleOpenEditEmailConfig(config)}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="danger"
+                            onClick={() => handleDeleteEmailConfig(config.id)}
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+      </div>
+    );
+  };
+
   const sectionMeta =
     sections.find((sectionItem) => sectionItem.id === activeSection) ??
     sections[0];
@@ -1999,12 +2068,12 @@ Hotel Management System
           <div className="h-full overflow-y-auto space-y-6 pr-1">
             {activeSection === "hotel" && renderHotelTab()}
             {activeSection === "role" && renderRoleTab()}
-            {activeSection === "hotelAssignRole" && renderHotelAssignRoleTab()}
             {activeSection === "hotelPrivileges" && renderHotelPrivilegesTab()}
             {activeSection === "hotelRolePrivileges" &&
               renderHotelRolePrivilegesTab()}
             {activeSection === "userPrivileges" && renderUserPrivilegesTab()}
             {activeSection === "user" && renderUserTab()}
+            {activeSection === "emailConfig" && renderEmailConfigTab()}
           </div>
         </main>
       </div>
@@ -2285,15 +2354,32 @@ Hotel Management System
           }}
         >
           <div className="space-y-4">
+            <Select
+              label="Hotel"
+              value={roleForm.hotelId}
+              onChange={(e) =>
+                setRoleForm({ ...roleForm, hotelId: e.target.value })
+              }
+              options={[
+                { value: "", label: "Select a hotel" },
+                ...hotels.map((hotel) => ({
+                  value: hotel.id,
+                  label: hotel.name,
+                })),
+              ]}
+              required
+            />
             <Input
               label="Role Name"
               placeholder="e.g., Manager"
               value={roleForm.name}
-              onChange={(e) => setRoleForm({ name: e.target.value })}
+              onChange={(e) =>
+                setRoleForm({ ...roleForm, name: e.target.value })
+              }
               required
             />
             <p className="text-sm text-slate-500">
-              Enter a descriptive role name for the system.
+              Select a hotel and enter a descriptive role name.
             </p>
           </div>
         </form>
@@ -2478,6 +2564,203 @@ Hotel Management System
                   </p>
                 </>
               )}
+            </div>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Email Configuration Modal */}
+      <Modal
+        isOpen={showEmailConfigModal}
+        onClose={closeEmailConfigModal}
+        title={
+          editingEmailConfig
+            ? "Edit Email Configuration"
+            : "Add Email Configuration"
+        }
+        size="xl"
+        footer={
+          <>
+            <Button variant="secondary" onClick={closeEmailConfigModal}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              form={
+                editingEmailConfig
+                  ? "edit-email-config-form"
+                  : "create-email-config-form"
+              }
+            >
+              {editingEmailConfig ? "Update" : "Create"}
+            </Button>
+          </>
+        }
+      >
+        <form
+          id={
+            editingEmailConfig
+              ? "edit-email-config-form"
+              : "create-email-config-form"
+          }
+          onSubmit={
+            editingEmailConfig
+              ? (e) => {
+                  e.preventDefault();
+                  handleUpdateEmailConfig();
+                }
+              : handleCreateEmailConfig
+          }
+        >
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                label="Display Name"
+                placeholder="Hotel Management System"
+                value={emailConfigForm.displayName}
+                onChange={(e) =>
+                  setEmailConfigForm({
+                    ...emailConfigForm,
+                    displayName: e.target.value,
+                  })
+                }
+                required
+              />
+              <Input
+                label="Sent Email"
+                type="email"
+                placeholder="noreply@hotel.com"
+                value={emailConfigForm.sentEmail}
+                onChange={(e) =>
+                  setEmailConfigForm({
+                    ...emailConfigForm,
+                    sentEmail: e.target.value,
+                  })
+                }
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                label="Hostname"
+                placeholder="smtp.gmail.com"
+                value={emailConfigForm.hostname}
+                onChange={(e) =>
+                  setEmailConfigForm({
+                    ...emailConfigForm,
+                    hostname: e.target.value,
+                  })
+                }
+                required
+              />
+              <Input
+                label="Port"
+                type="number"
+                placeholder="587"
+                value={emailConfigForm.port}
+                onChange={(e) =>
+                  setEmailConfigForm({
+                    ...emailConfigForm,
+                    port: e.target.value,
+                  })
+                }
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Select
+                label="Protocol"
+                value={emailConfigForm.protocol}
+                onChange={(e) =>
+                  setEmailConfigForm({
+                    ...emailConfigForm,
+                    protocol: e.target.value,
+                  })
+                }
+                options={[
+                  { value: "SMTP", label: "SMTP" },
+                  { value: "SMTPS", label: "SMTPS" },
+                  { value: "TLS", label: "TLS" },
+                ]}
+                required
+              />
+              <Input
+                label="Email"
+                type="email"
+                placeholder="username@example.com"
+                value={emailConfigForm.email}
+                onChange={(e) =>
+                  setEmailConfigForm({
+                    ...emailConfigForm,
+                    email: e.target.value,
+                  })
+                }
+                required
+              />
+            </div>
+
+            <div className="relative">
+              <Input
+                label="Password"
+                type={showEmailPassword ? "text" : "password"}
+                placeholder="Enter password"
+                value={emailConfigForm.password}
+                onChange={(e) =>
+                  setEmailConfigForm({
+                    ...emailConfigForm,
+                    password: e.target.value,
+                  })
+                }
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowEmailPassword(!showEmailPassword)}
+                className="absolute right-3 top-9 text-slate-500 hover:text-slate-700"
+              >
+                {showEmailPassword ? "Hide" : "Show"}
+              </button>
+            </div>
+
+            <div className="border-t pt-4">
+              <div className="space-y-3">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    checked={ccEnabled}
+                    onChange={(e) => {
+                      setCcEnabled(e.target.checked);
+                      if (!e.target.checked) {
+                        setEmailConfigForm({
+                          ...emailConfigForm,
+                          ccEmail: "",
+                        });
+                      }
+                    }}
+                  />
+                  <span className="text-sm font-medium text-slate-700">
+                    Enable CC (Carbon Copy) - Optional
+                  </span>
+                </label>
+
+                {ccEnabled && (
+                  <Input
+                    label="CC Email Address"
+                    type="email"
+                    placeholder="cc@hotel.com"
+                    value={emailConfigForm.ccEmail}
+                    onChange={(e) =>
+                      setEmailConfigForm({
+                        ...emailConfigForm,
+                        ccEmail: e.target.value,
+                      })
+                    }
+                  />
+                )}
+              </div>
             </div>
           </div>
         </form>
