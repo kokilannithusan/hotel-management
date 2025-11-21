@@ -21,6 +21,14 @@ import {
   Package,
   Sparkles,
   Mail,
+  Eye,
+  Grid3x3,
+  MapPin,
+  Star,
+  Bed,
+  UtensilsCrossed,
+  Layers,
+  Clock,
 } from "lucide-react";
 
 interface NavItem {
@@ -142,42 +150,42 @@ const navItems: NavItem[] = [
       {
         path: "/rooms/overview",
         label: "Overview",
-        icon: <Home className="w-4 h-4" />,
+        icon: <Eye className="w-4 h-4" />,
       },
       {
         path: "/rooms/view-type",
         label: "View Type",
-        icon: <Home className="w-4 h-4" />,
+        icon: <MapPin className="w-4 h-4" />,
       },
       {
         path: "/rooms/areas",
         label: "Room Areas",
-        icon: <Home className="w-4 h-4" />,
+        icon: <Grid3x3 className="w-4 h-4" />,
       },
       {
         path: "/rooms/amenities",
         label: "Amenities",
-        icon: <Home className="w-4 h-4" />,
+        icon: <Star className="w-4 h-4" />,
       },
       {
         path: "/rooms/types",
         label: "Room Types",
-        icon: <Home className="w-4 h-4" />,
+        icon: <Layers className="w-4 h-4" />,
       },
       {
         path: "/rooms/meal-plan",
         label: "Meal Plan",
-        icon: <Home className="w-4 h-4" />,
+        icon: <UtensilsCrossed className="w-4 h-4" />,
       },
       {
         path: "/rooms/all",
         label: "All Rooms",
-        icon: <Building className="w-4 h-4" />,
+        icon: <Bed className="w-4 h-4" />,
       },
       {
         path: "/rooms/stay-types",
         label: "Stay Types",
-        icon: <Home className="w-4 h-4" />,
+        icon: <Clock className="w-4 h-4" />,
       },
     ],
   },
@@ -357,6 +365,8 @@ export const Sidebar: React.FC = () => {
             } py-2.5 text-sm font-medium rounded-lg transition-all duration-300 cursor-pointer ${
               active
                 ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
+                : isOpen
+                ? "bg-gray-700/50 text-white border-l-4 border-blue-500"
                 : "text-gray-300 hover:bg-gray-700/70 hover:text-white hover:translate-x-1"
             }`}
           >
@@ -370,8 +380,8 @@ export const Sidebar: React.FC = () => {
             </div>
             {!isCollapsed && (
               <span
-                className={`transition-transform duration-200 ${
-                  isOpen ? "rotate-90" : ""
+                className={`transition-transform duration-300 ${
+                  isOpen ? "rotate-90 text-blue-400" : "text-gray-500"
                 }`}
               >
                 <ChevronRight className="w-4 h-4" />
@@ -379,7 +389,7 @@ export const Sidebar: React.FC = () => {
             )}
           </div>
           {!isCollapsed && isOpen && item.children && (
-            <div className="ml-4 mt-1 space-y-1">
+            <div className="ml-2 mt-1 space-y-1 pl-2 border-l-2 border-gray-700/50 animate-fade-in">
               {item.children.map((child) => (
                 <Link
                   key={child.path}
