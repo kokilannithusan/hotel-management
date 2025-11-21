@@ -21,7 +21,6 @@ import {
   Package,
   Sparkles,
 } from "lucide-react";
-import { useAuth } from "../../hooks/useAuth";
 
 interface NavItem {
   path: string;
