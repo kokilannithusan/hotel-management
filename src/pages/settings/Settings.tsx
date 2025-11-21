@@ -1311,8 +1311,11 @@ export const Settings: React.FC = () => {
   };
 
   const renderUserPrivilegesTab = () => {
+    // Get roles from Role Management for the selected hotel
     const rolesForSelectedHotel = selectedHotelForUserPrivileges
-      ? hotelRoles[selectedHotelForUserPrivileges] || []
+      ? roleRecords
+          .filter((role) => role.hotelId === selectedHotelForUserPrivileges)
+          .map((role) => role.name)
       : [];
     const assignedPagesForHotel = selectedHotelForUserPrivileges
       ? hotelAssignedPages[selectedHotelForUserPrivileges] || []
@@ -1682,9 +1685,9 @@ Hotel Management System
     if (!hotelId) {
       return [];
     }
-    const assignedRoles = hotelRoles[hotelId] || [];
+    // Get roles from Role Management for the selected hotel
     return roleRecords
-      .filter((role) => assignedRoles.includes(role.name))
+      .filter((role) => role.hotelId === hotelId)
       .map((role) => ({ value: role.id, label: role.name }));
   };
   const handleToggleRoleSelection = (roleId: string) => {
